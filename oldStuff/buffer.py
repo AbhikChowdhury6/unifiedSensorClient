@@ -13,7 +13,7 @@ Dependencies:
 """
 
 import logging
-from typing import Tuple
+from typing import Tuple, Union
 
 from datetime import datetime, timezone
 import torch
@@ -29,7 +29,7 @@ class Buffer:
     def __init__(self,
                  hz: int,
                  seconds: int = 1,
-                 num_buffs: int = 3,
+                 num_buffs: int = 3, # an extra buffer in case a lag spike puts processing above hz
                  shape: Tuple[int, ...] = (1,),
                  dtype: torch.dtype = torch.float32,
                  debug_lvl: torch.tensor = torch.tensor([30],
@@ -50,15 +50,17 @@ class Buffer:
         self.log.setLevel(int(debug_lvl[0]))
 
         def z_tensor(s: Tuple[int, ...] = (1,),
-                     dt: torch.dtype = torch.int32) -> torch.Tensor:
-            return torch.zeros(s, dtype=dt).share_memory_()
+                     dt: torch.dtype = torch.int32,
+                     val: Union[int, float] = 0,
+                     ) -> torch.Tensor:
+            t = torch.zeros(s, dtype=dt).share_memory_()
+            if val != 0:
+                t.fill(val)
+            return t
 
-        self.num_buffs = z_tensor()
-        self.num_buffs[0] = num_buffs
-        self.buff_secs = z_tensor()
-        self.buff_secs[0] = seconds
-        self.size = z_tensor()
-        self.size[0] = int(hz*seconds) + 1
+        self.num_buffs = z_tensor(val=num_buffs)
+        self.buff_secs = z_tensor(val=seconds)
+        self.size = z_tensor(val=int(hz*seconds) + 1)
 
         # Used for resetting length
         self.last_bn = z_tensor()
