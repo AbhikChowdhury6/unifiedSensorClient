@@ -75,6 +75,8 @@ so a reminder all workers will have a source
 so I think that I'm making it overly generic
 let's make things harder to misuse
 
+for the intemittent frame readers High Water Mark to 1
+
 more fundamental data types
 - sensor
   - has a buss that it make sure spins up
@@ -82,17 +84,22 @@ more fundamental data types
   - 
 
 how about clinets are configured around sensors as first class
-- sensor (implements read)
-- csv writer
-- image writer
-- h264 writer
-- detector
-- mover
-- deleter
-- json sender
-- file uploader
+- sensor (implements read, and publishes, optionally uses shm for large data)
+- csv writer (reads from publish and writes, publishes completed files)
+- image writer (subscribes, and writes jpegs every 4s)
+- h264 writer (subscribes, and writes via an ffmpeg command) (to fs shm)
+- detector (subscribes, detects, publishes)
+- mover(subscribes, moves files conditionally)(moves from fs shm to fs)
+- deleter(subscribes, deletes files conditionally)(deletes from fs shm)
+
+#network stuff
+- json sender(subscribes and sends on an outbound socket)
+- file uploader(subscribes to descriptors, posts files publishes success)
+
+- cron job to check for cached files to send. 
 
 (we can handle control and state later)
+(we can also manually manage busses for now)
 
 
 
