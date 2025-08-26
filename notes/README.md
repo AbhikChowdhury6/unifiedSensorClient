@@ -69,11 +69,30 @@ the device class
 
 
 
+alright we're so back
+so a reminder all workers will have a source
 
+so I think that I'm making it overly generic
+let's make things harder to misuse
 
+more fundamental data types
+- sensor
+  - has a buss that it make sure spins up
+  - has a class that describes
+  - 
 
+how about clinets are configured around sensors as first class
+- sensor (implements read)
+- csv writer
+- image writer
+- h264 writer
+- detector
+- mover
+- deleter
+- json sender
+- file uploader
 
-
+(we can handle control and state later)
 
 
 
