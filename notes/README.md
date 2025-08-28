@@ -101,6 +101,11 @@ how about clinets are configured around sensors as first class
 (we can handle control and state later)
 (we can also manually manage busses for now)
 
+alright so subscribers are the ones who are going to handle the config
+and there are going to be generic services the handle multiple sensors
+
+i2c bus
+csv writer
 
 
 
