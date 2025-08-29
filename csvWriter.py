@@ -10,8 +10,8 @@ sub.connect("tcp://localhost:5555")
 # Subscribe to multiple topics
 # we'll have an object of all the topics we want to subscribe to
 
-sub.setsockopt(zmq.SUBSCRIBE, b"images")
-sub.setsockopt(zmq.SUBSCRIBE, b"sensors")
+sub.setsockopt(zmq.SUBSCRIBE, b"control")
+sub.setsockopt(zmq.SUBSCRIBE, b"csvWriter")
 
 while True:
     topic, msg = sub.recv_multipart()
