@@ -4,6 +4,8 @@ testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
 
 platform_uuid = testpi5UUID
 
+zmq_control_endpoint = f"ipc:///tmp/{platform_uuid}_control.sock"
+
 # this is the platform name
 platform_name = "raspberry_pi_5"
 
