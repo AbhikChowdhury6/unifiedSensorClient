@@ -21,26 +21,38 @@ csv_writer_write_location = [
     "/home/pi/csv_writer/data",
 ]
 
+
+# note all sensors are floats and are in units standard for the sensor
+
 i2c_controller_config = {
     "bus_number": 0,
     "devices": [
         {   
-            "class": "bme280",
+            "class": "abme280",
             "manufacturer": "bosch",
             "model": "bme280",
-            "address": 77,
+            "address": 0x77,
             "sensors": [
                 {
                     "name": "air-temprature",
-                    "topic": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
+                    "update_hz": 1,
+                    "rounding_bits": 5,
                 },
                 {
                     "name": "relative-humidity",
-                    "topic": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
+                    "update_hz": .25,
+                    "rounding_bits": 4,
                 },
                 {
                     "name": "barometric-pressure",
-                    "topic": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
+                    "update_hz": 16,
+                    "rounding_bits": 0,
                 },
             ],
         }
