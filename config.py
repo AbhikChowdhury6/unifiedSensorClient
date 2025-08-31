@@ -12,15 +12,20 @@ platform_name = "raspberry_pi_5"
 # this is the responsible party
 responsible_party = "Abhik"
 
-csv_writer_subscriptions = [
+csv_writer_subscription_endpoints = [
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
 ]
 
+csv_writer_subscriptions_topics = [
+    f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature",
+    f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity",
+    f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure",
+]
 # the write locations, note the file name will be the topic name.csv
 csv_writer_write_location = [
-    "/home/pi/csv_writer/data",
+    "/home/pi/csv_writer/data/",
 ]
 
 
