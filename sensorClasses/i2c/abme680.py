@@ -8,8 +8,8 @@ from sensor import Sensor
 
 
 class aBME680:
-    def __init__(self, bus, descriptor, debug_lvl):
-        print('starting a ' + descriptor['deviceName'] + '!')
+    def __init__(self, bus, descriptor):
+        print('starting a ' + descriptor['model'] + '!')
         self.bme680 = adafruit_bme680.Adafruit_BME680_I2C(bus, debug=False)
 
         self.is_ready = lambda: True
@@ -19,21 +19,15 @@ class aBME680:
         self.get_pressure_pa = lambda: self.bme680.pressure * 100
         self.get_voc_ohm = lambda: self.bme680.gas
 
-        retrieve_datas = {'temp-c': self.get_temp_c,
-                          'relativeHumidity': self.get_relative_humidity,
-                          'pressure-pa': self.get_pressure_pa,
-                          'voc-ohm': self.get_voc_ohm,}
+        retrieve_datas = {'air-temprature': self.get_temp_c,
+                          'relative-humidity': self.get_relative_humidity,
+                          'barometric-pressure': self.get_pressure_pa,
+                          'volatile-organic-compounds': self.get_voc_ohm,}
 
         sensor_descriptors = descriptor['sensors']
         self.sensors = []
         for s in sensor_descriptors:
-            dd = [descriptor['responsiblePartyName'],
-                  descriptor['instanceName'],
-                  descriptor['manufacturer'],
-                  descriptor['deviceName'],
-                  s,
-                  'internal']
-            sen = Sensor(sensor_descriptors[s], retrieve_datas[s],
-                         self.is_ready, dd, debug_lvl)
+            sen = Sensor(sensor_descriptors[s], retrieve_datas[s['sensor_type']],
+                         self.is_ready)
             self.sensors.append(sen)
 

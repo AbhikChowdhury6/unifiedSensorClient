@@ -15,6 +15,8 @@ class aBME280:
         print('starting a ' + device_config['model'] + '!')
         self.bme280 = adafruit_bme280.Adafruit_BME280_I2C(bus, address=device_config['address'])
         
+        self.is_ready = lambda: True
+
         self.get_temp_c = lambda: self.bme280.temperature
         self.get_relative_humidity = lambda: self.bme280.relative_humidity
         self.get_pressure_pa = lambda: self.bme280.pressure * 100
@@ -26,7 +28,7 @@ class aBME280:
 
         self.sensors = []
         for s in device_config['sensors']:
-            sen = Sensor(s, retrieve_datas[s['sensor_type']])
+            sen = Sensor(s, retrieve_datas[s['sensor_type']], self.is_ready)
             self.sensors.append(sen)
 
         

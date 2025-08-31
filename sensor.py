@@ -17,7 +17,7 @@ def secs_since_midnight(dt):
     return (dt - dt.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
 
 class Sensor:
-    def __init__(self, config, retrieve_data):
+    def __init__(self, config, retrieve_data, is_ready):
         print('starting sensor!')
         sys.stdout.flush()
         self.hz = config['update_hz']
@@ -34,6 +34,8 @@ class Sensor:
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.endpoint)
         time.sleep(.25)
+
+        self.is_ready = is_ready
         while not self.is_ready():
             print("Waiting for data...")
             time.sleep(self.delay_micros/1_000_000)
