@@ -15,6 +15,8 @@ def csv_writer():
     sub.connect(zmq_control_endpoint)
     for subscription in csv_writer_subscription_endpoints:
         sub.connect(subscription)
+        print(f"csv writer connected to {subscription}")
+        sys.stdout.flush()
     print("csv writer connected to all endpoints")
     sys.stdout.flush()
 
@@ -22,6 +24,8 @@ def csv_writer():
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     for topic in csv_writer_subscription_topics:
         sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
+        print(f"csv writer subscribed to {topic}")
+        sys.stdout.flush()
     print("csv writer subscribed to all topics")
     sys.stdout.flush()
     
@@ -37,5 +41,8 @@ def csv_writer():
             with open(f"{csv_writer_write_location}{topic}.csv", "a") as f:
                 f.write(f"{msg}\n")
             print(f"csv writer wrote {msg} to {topic}.csv")
+            sys.stdout.flush()
+        else:
+            print(f"csv writer got unknown topic {topic}")
             sys.stdout.flush()
     print("csv writer exiting")
