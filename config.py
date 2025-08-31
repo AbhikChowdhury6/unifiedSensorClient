@@ -24,9 +24,8 @@ csv_writer_subscription_topics = [
     f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
 ]
 # the write locations, note the file name will be the topic name.csv
-csv_writer_write_location = [
-    "/home/pi/csv_writer/data/",
-]
+csv_writer_write_location = "/home/pi/csv_writer/data/"
+
 
 
 # note all sensors are floats and are in units standard for the sensor
