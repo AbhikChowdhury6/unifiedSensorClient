@@ -38,8 +38,8 @@ def I2C_BUS():
     devices = []
     for device in i2c_controller_config['devices']:
         devices.append(load_class_and_instantiate(
-            class_loc + device['class'] + '.py',
-            device['class'],
+            class_loc + device['module_name'] + '.py',
+            device['class_name'],
             I2C_BUS,
             device))
 

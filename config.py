@@ -35,7 +35,8 @@ i2c_controller_config = {
     "bus_number": 0,
     "devices": [
         {   
-            "class": "abme280",
+            "module_name": "abme280",
+            "class_name": "aBME280",
             "manufacturer": "bosch",
             "model": "bme280",
             "address": 0x77,
