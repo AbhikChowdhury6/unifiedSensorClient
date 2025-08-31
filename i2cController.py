@@ -31,7 +31,8 @@ def I2C_BUS():
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    
+    print("i2c controller connected to control topic")
+    sys.stdout.flush()
     # init a bus using smbus2
     I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100000) 
     # compile a list of all of the devices
@@ -49,19 +50,23 @@ def I2C_BUS():
         sensors.extend(device.sensors)
 
     max_hz = max(s.hz for s in sensors)
+    print(f"max hz: {max_hz}")
+    sys.stdout.flush()
     # works perfectly up to 64 hz
     delay_micros = 1_000_000/max_hz
 
     # Start loop
     time.sleep(1 - datetime.now().microsecond/1_000_000)
     while True:
+        print(f"in loop time is {datetime.now()}")
+        sys.stdout.flush()
         for sensor in sensors:
             sensor.read_data()
 
         # check if there's any messages in the control signal topic
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
-            topic, obj = ZmqCodec.decode(parts)
+            _, obj = ZmqCodec.decode(parts)
             print("i2c control message:", obj)
             if obj == "exit":
                 print('i2c exiting')

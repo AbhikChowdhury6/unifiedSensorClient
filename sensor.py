@@ -57,6 +57,8 @@ class Sensor:
         # i'd like it to automatically wait till the rounded hz seconds
         # up to 128 seconds
         # calc the offset seconds from the start of the day
+        print(f"reading data from {self.topic}")
+        sys.stdout.flush()
 
         #check if it's the right time
         now = datetime.now().astimezone(ZoneInfo("UTC"))
