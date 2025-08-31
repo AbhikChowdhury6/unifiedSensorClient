@@ -32,14 +32,14 @@ csv_writer_write_location = [
 # note all sensors are floats and are in units standard for the sensor
 
 i2c_controller_config = {
-    "bus_number": 0,
+    "bus_number": 1,
     "devices": [
         {   
             "module_name": "abme280",
             "class_name": "aBME280",
             "manufacturer": "bosch",
             "model": "bme280",
-            "address": 0x77,
+            "address": 0x76,
             "sensors": [
                 {
                     "sensor_type": "air-temprature",
