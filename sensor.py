@@ -20,7 +20,7 @@ class Sensor:
     def __init__(self, config, retrieve_data):
         print('starting sensor!')
         sys.stdout.flush()
-        self.hz = config['hz']
+        self.hz = config['update_hz']
         self.delay_micros = int(1_000_000/self.hz)
         self.rounding_bits = config['rounding_bits']
         self.trillionths = 1_000_000_000_000/(2**self.rounding_bits)
