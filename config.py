@@ -18,7 +18,7 @@ csv_writer_subscription_endpoints = [
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
 ]
 
-csv_writer_subscriptions_topics = [
+csv_writer_subscription_topics = [
     f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature",
     f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity",
     f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure",
