@@ -40,8 +40,7 @@ def I2C_BUS():
         devices.append(load_class_and_instantiate(
             class_loc + device['module_name'] + '.py',
             device['class_name'],
-            I2C_BUS,
-            device))
+            I2C_BUS))
 
 
     # loop through the devices and collect the sensors
