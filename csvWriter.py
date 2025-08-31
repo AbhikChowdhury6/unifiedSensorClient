@@ -29,14 +29,16 @@ def csv_writer():
     print("csv writer subscribed to all topics")
     sys.stdout.flush()
     
-    #check if the files exist
+    os.makedirs(csv_writer_write_location, exist_ok=True)
+    #check if the files exist and create directories if needed
     for topic in csv_writer_subscription_topics:
-        if not os.path.exists(f"{csv_writer_write_location}{topic}.csv"):
-            print(f"csv writer creating {topic}.csv")
+            
+        filepath = os.path.join(csv_writer_write_location, f"{topic}.csv")
+        if not os.path.exists(filepath):
+            print(f"csv writer creating {filepath}")
             sys.stdout.flush()
-            with open(f"{csv_writer_write_location}{topic}.csv", "w") as f:
+            with open(filepath, "w") as f:
                 f.write("time,data\n")
-
 
     while True:
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
