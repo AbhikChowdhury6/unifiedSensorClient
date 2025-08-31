@@ -43,21 +43,21 @@ i2c_controller_config = {
             "sensors": [
                 {
                     "sensor_type": "air-temprature-celcius",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
                     "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
                     "update_hz": 1,
                     "rounding_bits": 5,
                 },
                 {
                     "sensor_type": "relative-humidity-percent",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
                     "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
                     "update_hz": .25,
                     "rounding_bits": 4,
                 },
                 {
                     "sensor_type": "barometric-pressure-pa",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
                     "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
                     "update_hz": 16,
                     "rounding_bits": 0,
