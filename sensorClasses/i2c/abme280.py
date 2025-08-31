@@ -8,7 +8,7 @@ from sensor import Sensor
 from config import i2c_controller_config
 
 # find the config for this device
-device_config = [d for d in i2c_controller_config['devices'] if d['class'] == 'abme280'][0]
+device_config = [d for d in i2c_controller_config['devices'] if d['module_name'] == 'abme280'][0]
 
 class aBME280:
     def __init__(self, bus):
@@ -26,7 +26,7 @@ class aBME280:
 
         self.sensors = []
         for s in device_config['sensors']:
-            sen = Sensor(s, retrieve_datas[s['name']])
+            sen = Sensor(s, retrieve_datas[s['sensor_type']])
             self.sensors.append(sen)
 
         
