@@ -57,8 +57,7 @@ class Sensor:
         # i'd like it to automatically wait till the rounded hz seconds
         # up to 128 seconds
         # calc the offset seconds from the start of the day
-        print(f"reading data from {self.topic}")
-        sys.stdout.flush()
+        
 
         #check if it's the right time
         now = datetime.now().astimezone(ZoneInfo("UTC"))
@@ -89,6 +88,8 @@ class Sensor:
             
             if self.rounding_bits == 0:
                 #make a tensor out of the data I think
+                print(f"reading data from {self.topic} not rounded to {new_data}")
+                sys.stdout.flush()
                 self.pub.send_multipart(ZmqCodec.encode(self.topic, new_data))
                 return
 
@@ -98,7 +99,8 @@ class Sensor:
             # honestly let's just handle up to 9 bits of rounding for now and that should even cover our quats ok
             npd = np.array(new_data)
             npd = np.vectorize(self._round_data)(npd)
-            # change this to send via zmq 
+            print(f"reading data from {self.topic} rounded to {npd}")
+            sys.stdout.flush()
             self.pub.send_multipart(ZmqCodec.encode(self.topic, npd))
             return
         
