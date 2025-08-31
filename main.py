@@ -2,11 +2,10 @@
 
 import os
 import sys
-import torch
-import torch.multiprocessing as mp
 import select
 import time
 import zmq
+import multiprocessing as mp
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
