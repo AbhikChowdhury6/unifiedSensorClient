@@ -7,7 +7,7 @@ from sensor import Sensor
 
 
 class aPMSA003I:
-    def __init__(self, bus, descriptor, debug_lvl):
+    def __init__(self, bus, descriptor):
         print('starting a ' + descriptor['deviceName'] + '!')
         self.pm25 = PM25_I2C(bus, None)
         
@@ -34,19 +34,13 @@ class aPMSA003I:
         self.get_envpm10um = lambda: get_aqdata_field("pm100 env")
         self.get_gtpm0p3um = lambda: get_aqdata_field("particles 03um")
         
-        retrieve_datas = {'envpm1um-ugperm3': self.get_envpm1um,
-                            'envpm2.5um-ugperm3': self.get_envpm2p5um,
-                            'envpm10um-ugperm3': self.get_envpm10um,
-                            'gtpm0.3um-per.1l': self.get_gtpm0p3um}
+        retrieve_datas = {'air-particulate-pm1-ugPerM3': self.get_envpm1um,
+                            'air-particulate-pm1-ugPerM3': self.get_envpm2p5um,
+                            'air-particulate-pm10-ugPerM3': self.get_envpm10um,
+                            'air-particulate-particle-count-greaterThan0p3um-per0p1L': self.get_gtpm0p3um}
 
         sensor_descriptors = descriptor['sensors']
         self.sensors = []
         for s in sensor_descriptors:
-            dd = [descriptor['responsiblePartyName'],
-                descriptor['instanceName'],
-                descriptor['manufacturer'],
-                descriptor['deviceName'],
-                s,
-                'internal']
-            sen = Sensor(sensor_descriptors[s], retrieve_datas[s], self.is_ready, dd, debug_lvl)
+            sen = Sensor(sensor_descriptors[s], retrieve_datas[s], self.is_ready)
             self.sensors.append(sen)

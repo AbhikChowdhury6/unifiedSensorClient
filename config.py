@@ -13,15 +13,15 @@ platform_name = "raspberry_pi_5"
 responsible_party = "Abhik"
 
 csv_writer_subscription_endpoints = [
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
+    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
+    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
 ]
 
 csv_writer_subscription_topics = [
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature",
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity",
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure",
+    f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
+    f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
+    f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
 ]
 # the write locations, note the file name will be the topic name.csv
 csv_writer_write_location = [
@@ -42,23 +42,23 @@ i2c_controller_config = {
             "address": 0x76,
             "sensors": [
                 {
-                    "sensor_type": "air-temprature",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
-                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature.sock",
+                    "sensor_type": "air-temprature-celcius",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
                     "update_hz": 1,
                     "rounding_bits": 5,
                 },
                 {
-                    "sensor_type": "relative-humidity",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
-                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity.sock",
+                    "sensor_type": "relative-humidity-percent",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
                     "update_hz": .25,
                     "rounding_bits": 4,
                 },
                 {
-                    "sensor_type": "barometric-pressure",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
-                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure.sock",
+                    "sensor_type": "barometric-pressure-pa",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
                     "update_hz": 16,
                     "rounding_bits": 0,
                 },

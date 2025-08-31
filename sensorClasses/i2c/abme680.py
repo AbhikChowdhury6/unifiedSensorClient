@@ -19,10 +19,10 @@ class aBME680:
         self.get_pressure_pa = lambda: self.bme680.pressure * 100
         self.get_voc_ohm = lambda: self.bme680.gas
 
-        retrieve_datas = {'air-temprature': self.get_temp_c,
-                          'relative-humidity': self.get_relative_humidity,
-                          'barometric-pressure': self.get_pressure_pa,
-                          'volatile-organic-compounds': self.get_voc_ohm,}
+        retrieve_datas = {'air-temprature-celcius': self.get_temp_c,
+                          'relative-humidity-percent': self.get_relative_humidity,
+                          'barometric-pressure-pa': self.get_pressure_pa,
+                          'volatile-organic-compounds-ohm': self.get_voc_ohm,}
 
         sensor_descriptors = descriptor['sensors']
         self.sensors = []

@@ -21,9 +21,9 @@ class aBME280:
         self.get_relative_humidity = lambda: self.bme280.relative_humidity
         self.get_pressure_pa = lambda: self.bme280.pressure * 100
         
-        retrieve_datas = {'air-temprature': self.get_temp_c,
-                            'relative-humidity': self.get_relative_humidity,
-                            'barometric-pressure': self.get_pressure_pa}
+        retrieve_datas = {'air-temprature-celcius': self.get_temp_c,
+                            'relative-humidity-percent': self.get_relative_humidity,
+                            'barometric-pressure-pa': self.get_pressure_pa}
 
 
         self.sensors = []
