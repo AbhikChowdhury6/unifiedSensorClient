@@ -8,7 +8,8 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
-from config import sqlite_writer_subscription_endpoint, sqlite_writer_write_location, sqlite_writer_subscription_topics
+from config import sqlite_writer_subscription_endpoint, sqlite_writer_write_location
+from config import sqlite_writer_subscription_topics
 
 def sqlite_writer():
     ctx = zmq.Context()

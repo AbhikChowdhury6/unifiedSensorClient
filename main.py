@@ -11,6 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from i2cController import I2C_BUS
 from csvWriter import csv_writer
+from sqliteWriter import sqlite_writer
 from config import zmq_control_endpoint
 from zmq_codec import ZmqCodec
 
@@ -26,9 +27,13 @@ if __name__ == "__main__":
     csv_process = mp.Process(target=csv_writer)
     csv_process.start()
 
+    sqlite_process = mp.Process(target=sqlite_writer)
+    sqlite_process.start()
+
     processes = {
         "i2c": i2c_process,
-        "csv": csv_process
+        "csv": csv_process,
+        "sqlite": sqlite_process
     }
 
     while True:
