@@ -9,14 +9,15 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
 from config import sqlite_writer_subscription_endpoint, sqlite_writer_write_location
-from config import sqlite_writer_subscription_topics
+from config import sqlite_writer_subscription_topics, zmq_control_endpoint
 
 def sqlite_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
+    sub.connect(zmq_control_endpoint)
     sub.connect(sqlite_writer_subscription_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("sqlite writer connected to control topic")
+    print("sqlite writer connected to control and subscription topics")
     sys.stdout.flush()
 
     for topic in sqlite_writer_subscription_topics:
