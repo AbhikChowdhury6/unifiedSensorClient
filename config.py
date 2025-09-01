@@ -12,9 +12,7 @@ platform_name = "raspberry_pi_5"
 # this is the responsible party
 responsible_party = "Abhik"
 
-csv_writer_subscription_endpoints = [
-    f"ipc:///tmp/{platform_uuid}_low_data_rate_messages.sock",
-]
+csv_writer_subscription_endpoint = f"ipc:///tmp/{platform_uuid}_low_data_rate_messages.sock"
 
 csv_writer_subscription_topics = [
     f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
