@@ -90,7 +90,7 @@ class Sensor:
                 #make a tensor out of the data I think
                 print(f"reading data from {self.topic} not rounded to {new_data}")
                 sys.stdout.flush()
-                self.pub.send_multipart(ZmqCodec.encode(self.topic, new_data))
+                self.pub.send_multipart(ZmqCodec.encode(self.topic,[now,new_data]))
                 return
 
             #ic(new_data)
@@ -101,6 +101,6 @@ class Sensor:
             npd = np.vectorize(self._round_data)(npd)
             print(f"reading data from {self.topic} rounded to {npd}")
             sys.stdout.flush()
-            self.pub.send_multipart(ZmqCodec.encode(self.topic, npd))
+            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, npd]))
             return
         
