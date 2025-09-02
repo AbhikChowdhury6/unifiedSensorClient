@@ -21,14 +21,19 @@ if __name__ == "__main__":
     pub = ctx.socket(zmq.PUB)
     pub.bind(zmq_control_endpoint)
 
-    i2c_process = mp.Process(target=I2C_BUS)
-    i2c_process.start()
-
+    # Start subscribers first to avoid slow-joiner drops
     csv_process = mp.Process(target=csv_writer)
     csv_process.start()
 
     sqlite_process = mp.Process(target=sqlite_writer)
     sqlite_process.start()
+
+    # Give subscribers a moment to connect and subscribe
+    time.sleep(0.5)
+
+    # Start publisher/producer last
+    i2c_process = mp.Process(target=I2C_BUS)
+    i2c_process.start()
 
     processes = {
         "i2c": i2c_process,
