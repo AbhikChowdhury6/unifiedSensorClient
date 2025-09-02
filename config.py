@@ -46,6 +46,13 @@ i2c_controller_config = {
             "address": 0x76,
             "sensors": [
                 {
+                    "sensor_type": "barometric-pressure-pa",
+                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
+                    "endpoint": f"ipc:///tmp/{platform_uuid}_low_data_rate_messages.sock",
+                    "update_hz": 16,
+                    "rounding_bits": 0,
+                },
+                {
                     "sensor_type": "air-temprature-celcius",
                     "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
                     "endpoint": f"ipc:///tmp/{platform_uuid}_low_data_rate_messages.sock",
@@ -58,13 +65,6 @@ i2c_controller_config = {
                     "endpoint": f"ipc:///tmp/{platform_uuid}_low_data_rate_messages.sock",
                     "update_hz": .25,
                     "rounding_bits": 4,
-                },
-                {
-                    "sensor_type": "barometric-pressure-pa",
-                    "topic": f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
-                    "endpoint": f"ipc:///tmp/{platform_uuid}_low_data_rate_messages.sock",
-                    "update_hz": 16,
-                    "rounding_bits": 0,
                 },
             ],
         }
