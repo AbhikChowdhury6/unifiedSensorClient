@@ -78,3 +78,23 @@ i2c_controller_config = {
         }
     ]
 }
+
+
+picamv3noirwide = "picamV3-sony-imx708-noir-120fov-12MP"
+picamv3noir = "picamV3-sony-imx708-noir-80fov-12MP"
+picamv3wide = "picamV3-sony-imx708-120fov-12MP"
+
+cameras = [{
+    "camera_type_module": "piCamera",
+    "camera_type_class": "PiCamera",
+    "camera_index": 0,
+    "camera_type": picamv3noirwide,
+    "camera_name": f"{platform_uuid}_{picamv3noirwide}-0",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_{picamv3noirwide}-0.sock",
+    "camera_width": 1920,
+    "camera_height": 1080,
+    "format": "RGB888",
+    "fps": 8,
+    "subsample_ratio": 2,
+    "timestamp_images": True,
+}]

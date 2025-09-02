@@ -2,6 +2,7 @@ import msgpack
 import numpy as np
 import zmq
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 
 class ZmqCodec:
@@ -16,35 +17,38 @@ class ZmqCodec:
         """Encode an object into a multipart [topic, ...]"""
         topic_b = topic.encode() if isinstance(topic, str) else topic
 
-        # Helper to convert objects into msgpack-safe structures
-        def to_packable(value):
-            # Datetime -> epoch nanoseconds integer (UTC)
-            if isinstance(value, datetime):
-                if value.tzinfo is None:
-                    # Assume naive datetimes are UTC
-                    value = value.replace(tzinfo=timezone.utc)
-                return int(value.timestamp() * 1_000_000_000)
+        # Use msgpack ExtType to preserve raw numpy arrays and timezone-aware datetimes
+        # ExtType codes
+        EXT_DATETIME = 1
+        EXT_NDARRAY = 2
 
-            # Numpy ndarray -> Python nested lists
-            if isinstance(value, np.ndarray):
-                return value.tolist()
+        def default(obj_to_pack):
+            # Datetime -> ExtType with (epoch_ns, tz_key)
+            if isinstance(obj_to_pack, datetime):
+                dt = obj_to_pack
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                tz_key = getattr(dt.tzinfo, "key", dt.tzname()) or "UTC"
+                payload = msgpack.packb((int(dt.timestamp() * 1_000_000_000), tz_key), use_bin_type=True)
+                return msgpack.ExtType(EXT_DATETIME, payload)
 
-            # Numpy scalar -> Python scalar
-            if isinstance(value, np.generic):
-                return value.item()
+            # Numpy ndarray -> ExtType with (shape, dtype_str, raw_bytes)
+            if isinstance(obj_to_pack, np.ndarray):
+                shape = obj_to_pack.shape
+                dtype_str = obj_to_pack.dtype.str
+                raw = obj_to_pack.tobytes()
+                payload = msgpack.packb((shape, dtype_str, raw), use_bin_type=True)
+                return msgpack.ExtType(EXT_NDARRAY, payload)
 
-            # Lists/Tuples -> recurse
-            if isinstance(value, (list, tuple)):
-                return [to_packable(v) for v in value]
+            # Numpy scalar -> convert to Python scalar
+            if isinstance(obj_to_pack, np.generic):
+                return obj_to_pack.item()
 
-            # Dicts -> recurse on values (keys left as-is)
-            if isinstance(value, dict):
-                return {k: to_packable(v) for k, v in value.items()}
+            # Let msgpack handle the rest
+            raise TypeError("Unsupported type")
 
-            return value
-
-        packable_obj = to_packable(obj)
-        return [topic_b, b"MSGPACK", msgpack.packb(packable_obj, use_bin_type=True)]
+        packed = msgpack.packb(obj, use_bin_type=True, default=default)
+        return [topic_b, b"MSGPACK", packed]
 
     @staticmethod
     def decode(parts):
@@ -59,7 +63,21 @@ class ZmqCodec:
             return topic, arr
 
         elif parts[1] == b"MSGPACK":
-            obj = msgpack.unpackb(parts[2], raw=False)
+            EXT_DATETIME = 1
+            EXT_NDARRAY = 2
+
+            def ext_hook(code, data):
+                if code == EXT_DATETIME:
+                    epoch_ns, tz_key = msgpack.unpackb(data, raw=False)
+                    tz = ZoneInfo(tz_key) if tz_key else timezone.utc
+                    return datetime.fromtimestamp(epoch_ns / 1_000_000_000, tz=tz)
+                if code == EXT_NDARRAY:
+                    shape, dtype_str, raw = msgpack.unpackb(data, raw=False)
+                    arr = np.frombuffer(raw, dtype=np.dtype(dtype_str)).reshape(tuple(shape))
+                    return arr
+                return msgpack.ExtType(code, data)
+
+            obj = msgpack.unpackb(parts[2], raw=False, ext_hook=ext_hook)
             return topic, obj
 
         else:

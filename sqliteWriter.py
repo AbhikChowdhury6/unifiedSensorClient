@@ -3,6 +3,8 @@ import sys
 import zmq
 import sqlite3
 import time
+from datetime import datetime, timezone
+import numpy as np
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -47,6 +49,21 @@ def sqlite_writer():
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
         ts = msg[0]
         value = msg[1]
+        # Normalize timestamp to epoch ns integer
+        if isinstance(ts, datetime):
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            ts = int(ts.timestamp() * 1_000_000_000)
+        # Normalize value to float for scalar sensors
+        if isinstance(value, np.ndarray):
+            if value.ndim == 0:
+                value = float(value)
+            else:
+                print(f"sqlite writer skipping non-scalar value for {topic}: shape={value.shape}")
+                sys.stdout.flush()
+                continue
+        elif isinstance(value, np.generic):
+            value = float(value)
         if topic == "control":
             if msg == "exit":
                 print("sqlite writer got control exit")

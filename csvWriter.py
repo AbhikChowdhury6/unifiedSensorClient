@@ -1,6 +1,8 @@
 import os
 import sys
 import zmq
+from datetime import datetime, timezone
+import numpy as np
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -47,8 +49,29 @@ def csv_writer():
                 break
         # this will write the data to a csv file with the topic name
         if topic in csv_writer_subscription_topics:
+            ts, value = msg[0], msg[1]
+            # Normalize timestamp to ISO 8601 UTC
+            if isinstance(ts, datetime):
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                ts_str = ts.isoformat()
+            else:
+                # assume epoch ns
+                ts_str = datetime.fromtimestamp(ts/1_000_000_000, tz=timezone.utc).isoformat()
+
+            # Normalize numpy values for CSV
+            if isinstance(value, np.ndarray):
+                if value.ndim == 0:
+                    value_str = str(float(value))
+                else:
+                    value_str = np.array2string(value, separator=',')
+            elif isinstance(value, np.generic):
+                value_str = str(float(value))
+            else:
+                value_str = str(value)
+
             with open(f"{csv_writer_write_location}{topic}.csv", "a") as f:
-                f.write(f"{msg[0]},{msg[1]}\n")
+                f.write(f"{ts_str},{value_str}\n")
             print(f"csv writer wrote {msg} to {topic}.csv")
             sys.stdout.flush()
         else: 

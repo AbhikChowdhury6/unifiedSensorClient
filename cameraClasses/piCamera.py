@@ -1,0 +1,72 @@
+import zmq
+import numpy as np
+import sys
+import os
+import picamera2
+import cv2
+from datetime import datetime
+import tzlocal
+import gc
+
+repoPath = "/home/pi/Documents/"
+sys.path.append(repoPath + "unifiedSensorClient/")
+from zmq_codec import ZmqCodec
+
+
+class PiCamera:
+    def __init__(self, camera_config):
+        self.camera_config = camera_config
+        self.is_enabled = False
+        self.ctx = zmq.Context()
+        self.pub = self.ctx.socket(zmq.PUB)
+        self.pub.bind(self.camera_config['endpoint'])
+        print(f"camera {self.camera_config['camera_name']} connected to {self.camera_config['endpoint']}")
+        sys.stdout.flush()
+
+        self.topic = self.camera_config['camera_name']
+        
+        st = datetime.now()
+        self.camera = picamera2.Picamera2(self.camera_config['camera_index'])
+        self.camera.configure(main={
+            "size": (self.camera_config['camera_width'], self.camera_config['camera_height']), 
+            "format": self.camera_config['format']})
+        self.camera.start()
+        print("Camera initialized in %s", str(datetime.now()  - st))
+        st = datetime.now()
+        frame = self.camera.capture_array()
+        print("The first Frame took %s to capture", str(datetime.now()  - st))
+        st = datetime.now()
+        frame = self.camera.capture_array()
+        print("The second Frame took %s to capture", str(datetime.now()  - st))
+        del frame
+        gc.collect()
+        sys.stdout.flush()
+
+        self.subsample_ratio = self.camera_config['subsample_ratio']
+        self.timestamp_images = self.camera_config['timestamp_images']
+
+    def enable(self):
+        self.is_enabled = True
+
+    def disable(self):
+        self.is_enabled = False
+
+    def capture(self):
+        ts = datetime.now()
+        frame = self.camera.capture_array()
+        if self.subsample_ratio > 1:
+            frame = frame[::self.subsample_ratio, ::self.subsample_ratio]
+            frame = np.ascontiguousarray(frame)
+        if self.timestamp_images:
+            frame = self.add_timestamp(frame)
+        self.pub.send_multipart(ZmqCodec.encode(self.topic, [ts, frame]))
+    
+    def is_enabled(self):
+        return self.is_enabled
+    
+    def add_timestamp(self, frame):
+        frameTS = datetime.now(tzlocal.get_localzone()).strftime("%Y-%m-%d %H:%M:%S %z")
+        cv2.putText(frame, frameTS, (10, 50),
+                cv2.FONT_HERSHEY_SIMPLEX, 1, 
+                (0, 255, 0), 2, cv2.LINE_AA)
+        return frame
