@@ -1,13 +1,21 @@
 import sqlite3
 import sys
 from datetime import datetime
+import argparse
+
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from config import sqlite_writer_write_location
 
+# Set up command line argument parsing
+parser = argparse.ArgumentParser(description='Show the last N rows per topic from the database.')
+parser.add_argument('-n', '--num_rows', type=int, default=10,
+                   help='Number of rows to display per topic (default: 10)')
+args = parser.parse_args()
+
 db_path = f"{sqlite_writer_write_location}data.db"
 
-query = """
+query = f"""
 WITH RankedRows AS (
     SELECT 
         *,
@@ -16,7 +24,7 @@ WITH RankedRows AS (
 )
 SELECT topic, ts, value
 FROM RankedRows 
-WHERE rn <= 20
+WHERE rn <= {args.num_rows}
 ORDER BY topic, ts DESC;
 """
 

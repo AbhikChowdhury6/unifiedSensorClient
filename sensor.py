@@ -87,7 +87,12 @@ class Sensor:
                 return
             
             if self.rounding_bits == 0:
-                #make a tensor out of the data I think
+                print(f"reading data from {self.topic} rounded to {int(new_data)}")
+                sys.stdout.flush()
+                self.pub.send_multipart(ZmqCodec.encode(self.topic,[now,int(new_data)]))
+                return
+
+            if self.rounding_bits == -1:
                 print(f"reading data from {self.topic} not rounded to {new_data}")
                 sys.stdout.flush()
                 self.pub.send_multipart(ZmqCodec.encode(self.topic,[now,new_data]))
