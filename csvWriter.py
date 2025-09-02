@@ -6,14 +6,15 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
-from config import csv_writer_subscription_endpoint, zmq_control_endpoint
+from config import csv_writer_subscription_endpoints, zmq_control_endpoint
 from config import csv_writer_subscription_topics, csv_writer_write_location
 
 def csv_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
-    sub.connect(csv_writer_subscription_endpoint)
+    for endpoint in csv_writer_subscription_endpoints:
+        sub.connect(endpoint)
     print("csv writer connected to subscription endpoint")
     sys.stdout.flush()
 

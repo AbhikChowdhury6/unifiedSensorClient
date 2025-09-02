@@ -21,6 +21,8 @@ if __name__ == "__main__":
     pub = ctx.socket(zmq.PUB)
     pub.bind(zmq_control_endpoint)
 
+    
+
     # Start subscribers first to avoid slow-joiner drops
     csv_process = mp.Process(target=csv_writer)
     csv_process.start()
