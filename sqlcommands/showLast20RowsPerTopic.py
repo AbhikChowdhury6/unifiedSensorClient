@@ -8,7 +8,16 @@ from config import sqlite_writer_write_location
 db_path = f"{sqlite_writer_write_location}data.db"
 
 query = """
-SELECT * FROM readings GROUP BY topic ORDER BY ts DESC LIMIT 20;
+WITH RankedRows AS (
+    SELECT 
+        *,
+        ROW_NUMBER() OVER (PARTITION BY topic ORDER BY ts DESC) as rn
+    FROM readings
+)
+SELECT topic, ts, value
+FROM RankedRows 
+WHERE rn <= 20
+ORDER BY topic, ts DESC;
 """
 
 try:
@@ -17,11 +26,18 @@ try:
         if not rows:
             print("No rows found.")
         else:
-            print(f"{'topic':<40} {'ts':>10} {'value':>10}")
-            print("-" * 52)
+            current_topic = None
             for topic, ts, value in rows:
+                if topic != current_topic:
+                    if current_topic is not None:
+                        print("\n" + "=" * 80 + "\n")  # Separator between topics
+                    current_topic = topic
+                    print(f"Topic: {topic}")
+                    print(f"{'Timestamp':<25} {'Value':>15}")
+                    print("-" * 40)
+                
                 dt = datetime.fromtimestamp(ts/1_000_000_000)  # Convert ns to seconds
-                print(f"{topic:<40} {dt.strftime('%Y-%m-%d %H:%M:%S')} {value:>10}")
+                print(f"{dt.strftime('%Y-%m-%d %H:%M:%S.%f'):<25} {value:>15.6f}")
 except sqlite3.OperationalError as e:
     if "no such table" in str(e).lower():
         print("Table 'readings' not found. Did you create it first?")
