@@ -114,7 +114,7 @@ def jpeg_writer():
     sys.stdout.flush()
 
     while True:
-        parts = sub.recv_multipart(flags=zmq.NOBLOCK)
+        parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
 
         if topic == "control":
