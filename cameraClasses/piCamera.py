@@ -20,7 +20,7 @@ class PiCamera:
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.camera_config['camera_endpoint'])
-        print(f"camera {self.camera_config['camera_name']} connected to {self.camera_config['endpoint']}")
+        print(f"camera {self.camera_config['camera_name']} connected to {self.camera_config['camera_endpoint']}")
         sys.stdout.flush()
 
         self.topic = self.camera_config['camera_name']
