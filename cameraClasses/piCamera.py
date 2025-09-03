@@ -16,7 +16,7 @@ from zmq_codec import ZmqCodec
 class PiCamera:
     def __init__(self, camera_config):
         self.camera_config = camera_config
-        self.is_enabled = False
+        self._enabled = False
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.camera_config['camera_endpoint'])
@@ -47,10 +47,10 @@ class PiCamera:
         self.timestamp_images = self.camera_config['timestamp_images']
 
     def enable(self):
-        self.is_enabled = True
+        self._enabled = True
 
     def disable(self):
-        self.is_enabled = False
+        self._enabled = False
 
     def capture(self):
         ts = datetime.now()
@@ -63,7 +63,7 @@ class PiCamera:
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [ts, frame]))
     
     def is_enabled(self):
-        return self.is_enabled
+        return self._enabled
     
     def add_timestamp(self, frame):
         frameTS = datetime.now(tzlocal.get_localzone()).strftime("%Y-%m-%d %H:%M:%S %z")

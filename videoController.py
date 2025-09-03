@@ -38,6 +38,7 @@ def videoController():
 
     hz = cameras[0]['fps']
     delay_micros = 1_000_000/hz
+    camera.enable()
 
     while True:
         if camera.is_enabled():
