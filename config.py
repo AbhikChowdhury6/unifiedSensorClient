@@ -121,3 +121,12 @@ h264_writer_config = {
     "frame_gap_restart_seconds": .5,
     "format": "RGB888",
 }
+
+jpeg_writer_config = {
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "write_location": "/home/pi/jpeg_writer/data/",
+    "capture_tolerance_seconds": 0.25,
+    "quality": 80,
+    "image_interval_seconds": 4,
+}

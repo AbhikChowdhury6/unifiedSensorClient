@@ -51,7 +51,7 @@ def videoController():
             if topic == "control" and obj == "exit":
                 print('video controller exiting')
                 break
-            if topic == camera_config_0['camera_name']:
+            if topic == cameras[0]['camera_name']:
                 if obj == "enable":
                     camera.enable()
                 if obj == "disable":
