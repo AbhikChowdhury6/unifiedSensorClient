@@ -33,7 +33,8 @@ def videoController():
 
     camera = load_class_and_instantiate(
         class_loc + cameras[0]['camera_type_module'] + '.py',
-        cameras[0]['camera_type_class'])
+        cameras[0]['camera_type_class'],
+        cameras[0])
 
     hz = cameras[0]['fps']
     delay_micros = 1_000_000/hz

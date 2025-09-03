@@ -14,7 +14,10 @@ from csvWriter import csv_writer
 from sqliteWriter import sqlite_writer
 from h264Writer import h264_writer
 from videoController import videoController
-from config import zmq_control_endpoint
+from config import (
+    zmq_control_endpoint,
+    cameras,
+)
 from zmq_codec import ZmqCodec
 
 
