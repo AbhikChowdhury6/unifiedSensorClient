@@ -79,13 +79,8 @@ def jpeg_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
 
-    # Drop old frames: keep only the latest
-    sub.setsockopt(zmq.RCVHWM, 1)
-    try:
-        sub.setsockopt(zmq.CONFLATE, 1)
-    except Exception:
-        # CONFLATE may not be available in some builds; HWM still helps
-        pass
+    # Drop old frames: keep only the latest couple per pipe
+    sub.setsockopt(zmq.RCVHWM, 2)
 
     # Control
     sub.connect(zmq_control_endpoint)
