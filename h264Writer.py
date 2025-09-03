@@ -2,7 +2,7 @@ import os
 import sys
 import zmq
 import subprocess
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import numpy as np
 
 repoPath = "/home/pi/Documents/"
@@ -80,13 +80,13 @@ def h264_writer():
     duration_s = int(h264_writer_config.get("video_duration", 4))
     container = h264_writer_config.get("container_type", "mp4")
     cfg_fps = int(h264_writer_config.get("fps", 8))
-    cfg_width = int(h264_writer_config.get("camera_width", 1920))
-    cfg_height = int(h264_writer_config.get("camera_height", 1080))
     fmt = h264_writer_config.get("format", "RGB888")
     quality = int(h264_writer_config.get("quality", 80))
     crf = _quality_to_crf(quality)
     gop_interval_seconds = int(h264_writer_config.get("keyframe_interval_seconds", 1))
     gop_frames = max(1, cfg_fps * gop_interval_seconds)
+    # If there's a long gap between frames, start a new file. Default 2 seconds.
+    gap_restart_seconds = float(h264_writer_config.get("frame_gap_restart_seconds", .5))
 
     os.makedirs(write_location, exist_ok=True)
 
@@ -97,8 +97,8 @@ def h264_writer():
     frames_written_in_segment = 0
     frames_per_segment = cfg_fps * duration_s
     segment_start_ts = None
-    width = cfg_width
-    height = cfg_height
+    last_ts_seconds = None
+
 
     print(f"h264 writer subscribed to {camera_topic} at {camera_endpoint}")
     sys.stdout.flush()
@@ -118,9 +118,14 @@ def h264_writer():
 
         ts, frame = msg[0], msg[1]
 
-        # Ensure timestamp is aware UTC
-        if isinstance(ts, datetime) and ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+        # Normalize timestamp and compute seconds for gap detection
+        if isinstance(ts, datetime):
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            ts_seconds = ts.timestamp()
+        else:
+            # assume epoch ns integer
+            ts_seconds = ts/1_000_000_000
 
         # Ensure frame is a contiguous uint8 array in expected shape
         if not isinstance(frame, np.ndarray):
@@ -131,6 +136,23 @@ def h264_writer():
             frame = np.ascontiguousarray(frame)
         if frame.dtype != np.uint8:
             frame = frame.astype(np.uint8, copy=False)
+
+        # If there's a large break in frames, close current segment
+        if ffmpeg_proc is not None and last_ts_seconds is not None:
+            if (ts_seconds - last_ts_seconds) > gap_restart_seconds:
+                try:
+                    ffmpeg_proc.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    ffmpeg_proc.wait(timeout=3)
+                except Exception:
+                    pass
+                ffmpeg_proc = None
+                frames_written_in_segment = 0
+                segment_start_ts = None
+                print(f"h264 writer detected frame gap {(ts_seconds - last_ts_seconds):.3f}s, starting new file")
+                sys.stdout.flush()
 
         # Detect actual WxH from first frame (in case of subsampling)
         if ffmpeg_proc is None:
@@ -164,6 +186,7 @@ def h264_writer():
             continue
 
         frames_written_in_segment += 1
+        last_ts_seconds = ts_seconds
 
         if frames_written_in_segment >= frames_per_segment:
             # Close current segment

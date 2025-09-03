@@ -118,7 +118,6 @@ h264_writer_config = {
     "quality": 80,
     "keyframe_interval_seconds": 2,
     "fps": 8,
-    "camera_width": 1920,
-    "camera_height": 1080,
+    "frame_gap_restart_seconds": .5,
     "format": "RGB888",
 }

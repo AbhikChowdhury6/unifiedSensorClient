@@ -13,6 +13,7 @@ from i2cController import I2C_BUS
 from csvWriter import csv_writer
 from sqliteWriter import sqlite_writer
 from h264Writer import h264_writer
+from videoController import videoController
 from config import zmq_control_endpoint
 from zmq_codec import ZmqCodec
 
@@ -31,9 +32,6 @@ if __name__ == "__main__":
     sqlite_process = mp.Process(target=sqlite_writer)
     sqlite_process.start()
 
-    h264_process = mp.Process(target=h264_writer)
-    h264_process.start()
-
     # Give subscribers a moment to connect and subscribe
     time.sleep(0.5)
 
@@ -41,11 +39,21 @@ if __name__ == "__main__":
     i2c_process = mp.Process(target=I2C_BUS)
     i2c_process.start()
 
+
+    video_process = mp.Process(target=videoController)
+    video_process.start()
+
+    time.sleep(1)
+
+    h264_process = mp.Process(target=h264_writer)
+    h264_process.start()
+
     processes = {
         "i2c": i2c_process,
         "csv": csv_process,
         "sqlite": sqlite_process,
         "h264": h264_process,
+        "video": video_process,
     }
 
     while True:
