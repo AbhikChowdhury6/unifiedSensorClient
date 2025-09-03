@@ -4,7 +4,7 @@ import sys
 import os
 import picamera2
 import cv2
-from datetime import datetime
+from datetime import datetime, timezone
 import tzlocal
 import gc
 
@@ -53,7 +53,7 @@ class PiCamera:
         self._enabled = False
 
     def capture(self):
-        ts = datetime.now()
+        ts = datetime.now(timezone.utc)
         frame = self.camera.capture_array()
         if self.subsample_ratio > 1:
             frame = frame[::self.subsample_ratio, ::self.subsample_ratio]
