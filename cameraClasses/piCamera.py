@@ -27,9 +27,10 @@ class PiCamera:
         
         st = datetime.now()
         self.camera = picamera2.Picamera2(self.camera_config['camera_index'])
-        self.camera.configure(main={
+        self.video_config = self.camera.create_video_configuration(main={
             "size": (self.camera_config['camera_width'], self.camera_config['camera_height']), 
             "format": self.camera_config['format']})
+        self.camera.configure(self.video_config)
         self.camera.start()
         print("Camera initialized in %s", str(datetime.now()  - st))
         st = datetime.now()
