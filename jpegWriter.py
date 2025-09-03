@@ -103,6 +103,8 @@ def jpeg_writer():
     latest_ts = None
     now = time.time()
     next_capture = _compute_next_capture(now, image_interval_s)
+    print(f"jpeg writer next capture: {next_capture}")
+    sys.stdout.flush()
     capture_tolerance_s = float(jpeg_writer_config.get("capture_tolerance_seconds", 0.25))
 
     print(f"jpeg writer subscribed to {camera_topic} at {camera_endpoint}")
@@ -123,6 +125,8 @@ def jpeg_writer():
             continue
 
         ts, frame = msg[0], msg[1]
+        print(f"jpeg writer got frame: {ts}")
+        sys.stdout.flush()
 
         # Keep raw latest; process only if we will write
         latest_frame = frame
@@ -139,12 +143,14 @@ def jpeg_writer():
             # Reschedule to the aligned time closest to the frame timestamp
             nearest = _nearest_aligned_capture(frame_ts_seconds, image_interval_s)
             next_capture = nearest if nearest >= frame_ts_seconds else _compute_next_capture(frame_ts_seconds, image_interval_s)
-
+            print(f"jpeg writer next capture: {next_capture}")
+            sys.stdout.flush()
             should_write = False
             ts_diff = abs(frame_ts_seconds - next_capture)
             if ts_diff <= capture_tolerance_s:
                 should_write = True
-
+            print(f"jpeg writer should write: {should_write}")
+            sys.stdout.flush()
             if should_write:
                 # Validate and convert only now
                 frame_to_write = latest_frame
@@ -161,7 +167,8 @@ def jpeg_writer():
                     ts_str = _format_ts_for_filename(latest_ts)
                     filename = f"{platform_uuid}_{camera_topic}_{ts_str}.jpeg"
                     filepath = os.path.join(write_location, filename)
-
+                    print(f"jpeg writer saving {filepath}")
+                    sys.stdout.flush()
                     try:
                         cv2.imwrite(filepath, frame_to_write, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
                         print(f"jpeg writer saved {filepath}")
@@ -172,7 +179,8 @@ def jpeg_writer():
 
             # Schedule the next aligned capture (strictly after current)
             next_capture = _compute_next_capture(next_capture + 1e-6, image_interval_s)
-
+            print(f"jpeg writer next capture: {next_capture}")
+            sys.stdout.flush() 
     print("jpeg writer exiting")
     sys.stdout.flush()
 
