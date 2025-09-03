@@ -147,7 +147,7 @@ def jpeg_writer():
             print(f"jpeg writer next capture: {next_capture}")
             sys.stdout.flush()
             should_write = False
-            ts_diff = abs(frame_ts_seconds - next_capture)
+            ts_diff = abs(frame_ts_seconds - (next_capture - image_interval_s))
             if ts_diff <= capture_tolerance_s:
                 should_write = True
             print(f"jpeg writer should write: {should_write}")
@@ -178,9 +178,6 @@ def jpeg_writer():
                         print(f"jpeg writer failed to save {filepath}: {e}")
                         sys.stdout.flush()
 
-            # Schedule the next aligned capture (strictly after current)
-            next_capture = _compute_next_capture(next_capture + 1e-6, image_interval_s)
-            print(f"jpeg writer next capture: {next_capture}")
             sys.stdout.flush() 
     print("jpeg writer exiting")
     sys.stdout.flush()
