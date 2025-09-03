@@ -19,7 +19,7 @@ class PiCamera:
         self.is_enabled = False
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
-        self.pub.bind(self.camera_config['endpoint'])
+        self.pub.bind(self.camera_config['camera_endpoint'])
         print(f"camera {self.camera_config['camera_name']} connected to {self.camera_config['endpoint']}")
         sys.stdout.flush()
 
