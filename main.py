@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from i2cController import I2C_BUS
 from csvWriter import csv_writer
 from sqliteWriter import sqlite_writer
+from h264Writer import h264_writer
 from config import zmq_control_endpoint
 from zmq_codec import ZmqCodec
 
@@ -30,6 +31,9 @@ if __name__ == "__main__":
     sqlite_process = mp.Process(target=sqlite_writer)
     sqlite_process.start()
 
+    h264_process = mp.Process(target=h264_writer)
+    h264_process.start()
+
     # Give subscribers a moment to connect and subscribe
     time.sleep(0.5)
 
@@ -40,7 +44,8 @@ if __name__ == "__main__":
     processes = {
         "i2c": i2c_process,
         "csv": csv_process,
-        "sqlite": sqlite_process
+        "sqlite": sqlite_process,
+        "h264": h264_process,
     }
 
     while True:

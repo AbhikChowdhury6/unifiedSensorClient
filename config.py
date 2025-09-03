@@ -89,8 +89,8 @@ cameras = [{
     "camera_type_class": "PiCamera",
     "camera_index": 0,
     "camera_type": picamv3noirwide,
-    "camera_name": f"{platform_uuid}_{picamv3noirwide}-0",
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_{picamv3noirwide}-0.sock",
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "camera_width": 1920,
     "camera_height": 1080,
     "format": "RGB888",
@@ -98,3 +98,27 @@ cameras = [{
     "subsample_ratio": 2,
     "timestamp_images": True,
 }]
+
+h264_writer_subscription_endpoints = [
+    f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+]
+
+h264_writer_subscription_topics = [
+    f"{platform_uuid}_csi-0_{picamv3noirwide}",
+]
+
+
+h264_writer_config = {
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "write_location": "/home/pi/h264_writer/data/",
+    "video_duration": 4,
+    "container_type": "mp4",
+    "codec": "h264",
+    "quality": 80,
+    "keyframe_interval_seconds": 2,
+    "fps": 8,
+    "camera_width": 1920,
+    "camera_height": 1080,
+    "format": "RGB888",
+}
