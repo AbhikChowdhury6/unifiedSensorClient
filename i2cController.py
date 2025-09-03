@@ -58,8 +58,8 @@ def I2C_BUS():
     # Start loop
     time.sleep(1 - datetime.now().microsecond/1_000_000)
     while True:
-        print(f"in loop time is {datetime.now()}")
-        sys.stdout.flush()
+        #print(f"in loop time is {datetime.now()}")
+        #sys.stdout.flush()
         for sensor in sensors:
             sensor.read_data()
 

@@ -72,8 +72,8 @@ def sqlite_writer():
         if topic in sqlite_writer_subscription_topics:
             ins.execute("INSERT OR IGNORE INTO readings(topic, ts, value) " + 
                 "VALUES (?, ?, ?)", (topic, ts, value))
-            print(f"sqlite writer wrote {msg} to {topic}")
-            sys.stdout.flush()
+            #print(f"sqlite writer wrote {msg} to {topic}")
+            #sys.stdout.flush()
             
             # Commit every second
             current_time = time.time()

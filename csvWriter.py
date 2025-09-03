@@ -72,8 +72,8 @@ def csv_writer():
 
             with open(f"{csv_writer_write_location}{topic}.csv", "a") as f:
                 f.write(f"{ts_str},{value_str}\n")
-            print(f"csv writer wrote {msg} to {topic}.csv")
-            sys.stdout.flush()
+            #print(f"csv writer wrote {msg} to {topic}.csv")
+            #sys.stdout.flush()
         else: 
             print(f"csv writer got unknown topic {topic}")
             sys.stdout.flush()
