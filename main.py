@@ -13,6 +13,7 @@ from i2cController import I2C_BUS
 from csvWriter import csv_writer
 from sqliteWriter import sqlite_writer
 from h264Writer import h264_writer
+from jpegWriter import jpeg_writer
 from videoController import videoController
 from config import (
     zmq_control_endpoint,
@@ -51,12 +52,16 @@ if __name__ == "__main__":
     h264_process = mp.Process(target=h264_writer)
     h264_process.start()
 
+    jpeg_process = mp.Process(target=jpeg_writer)
+    jpeg_process.start()
+
     processes = {
         "i2c": i2c_process,
         "csv": csv_process,
         "sqlite": sqlite_process,
         "h264": h264_process,
         "video": video_process,
+        "jpeg": jpeg_process,
     }
 
     while True:
