@@ -132,9 +132,11 @@ def jpeg_writer():
         else:
             latest_ts = datetime.fromtimestamp(ts / 1_000_000_000, tz=timezone.utc)
 
-        if latest_ts >= next_capture:
+        # Work in seconds for comparisons
+        frame_ts_seconds = latest_ts.timestamp()
+
+        if frame_ts_seconds >= next_capture:
             # Reschedule to the aligned time closest to the frame timestamp
-            frame_ts_seconds = latest_ts.timestamp()
             nearest = _nearest_aligned_capture(frame_ts_seconds, image_interval_s)
             next_capture = nearest if nearest >= frame_ts_seconds else _compute_next_capture(frame_ts_seconds, image_interval_s)
 
