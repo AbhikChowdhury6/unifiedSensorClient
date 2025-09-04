@@ -128,5 +128,16 @@ jpeg_writer_config = {
     "write_location": "/home/pi/jpeg_writer/data/",
     "capture_tolerance_seconds": 0.25,
     "quality": 80,
-    "image_interval_seconds": 4,
+    "image_interval_seconds": 16,
+}
+
+yolo_person_detection_config = {
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo_person_detection.sock",
+    "pub_topic": f"{platform_uuid}_yolo_person_detection",
+    "model": "yolo11m",
+    "confidence_threshold": 0.7,
+    "nms_threshold": 0.7,
+    "interval_seconds": 4,
 }
