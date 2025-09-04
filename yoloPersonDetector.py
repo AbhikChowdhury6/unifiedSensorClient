@@ -88,16 +88,22 @@ def yolo_person_detector():
             latest_ts = datetime.fromtimestamp(ts / 1_000_000_000, tz=timezone.utc)
 
         frame_ts_seconds = latest_ts.timestamp()
+        print(f"yolo person detector frame ts seconds: {frame_ts_seconds}, next capture: {next_capture}, latest ts: {latest_ts}")
+        sys.stdout.flush()
         if frame_ts_seconds >= next_capture:
             next_capture = _compute_next_capture_ts(frame_ts_seconds, interval_s)
 
             # Run detection on this frame
             if isinstance(latest_frame, np.ndarray):
                 img = latest_frame
+                print(f"yolo person detector img: {img.shape}")
+                sys.stdout.flush()
                 if img.ndim == 3 and img.shape[2] == 3 and img.dtype == np.uint8:
                     try:
                         # YOLO expects RGB by default; convert if needed here
                         results = model.predict(source=img, verbose=False, conf=conf_thresh, iou=nms_thresh)
+                        print(f"yolo person detector results: {results}")
+                        sys.stdout.flush()
                     except Exception as e:
                         print(f"yolo inference failed: {e}")
                         sys.stdout.flush()

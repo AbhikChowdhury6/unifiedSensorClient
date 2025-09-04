@@ -84,8 +84,8 @@ def jpeg_writer():
             continue
 
         ts, frame = msg[0], msg[1]
-        print(f"jpeg writer got frame: {ts}")
-        sys.stdout.flush()
+        #print(f"jpeg writer got frame: {ts}")
+        #sys.stdout.flush()
 
         # Keep raw latest; process only if we will write
         latest_frame = frame
@@ -97,8 +97,8 @@ def jpeg_writer():
 
         # Work in seconds for comparisons
         frame_ts_seconds = latest_ts.timestamp()
-        print(f"jpeg writer frame ts seconds: {frame_ts_seconds}, next capture: {next_capture}, latest ts: {latest_ts}")
-        sys.stdout.flush()
+        #print(f"jpeg writer frame ts seconds: {frame_ts_seconds}, next capture: {next_capture}, latest ts: {latest_ts}")
+        #sys.stdout.flush()
         if frame_ts_seconds >= next_capture:
             # Reschedule to the aligned time closest to the frame timestamp
             next_capture = _compute_next_capture_ts(frame_ts_seconds, image_interval_s)
@@ -108,8 +108,8 @@ def jpeg_writer():
             ts_diff = abs(frame_ts_seconds - (next_capture - image_interval_s))
             if ts_diff <= capture_tolerance_s:
                 should_write = True
-            print(f"jpeg writer should write: {should_write}")
-            sys.stdout.flush()
+            #print(f"jpeg writer should write: {should_write}")
+            #sys.stdout.flush()
             if should_write:
                 # Validate and convert only now
                 frame_to_write = latest_frame
