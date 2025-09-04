@@ -20,6 +20,7 @@ from config import (
     cameras,
 )
 from zmq_codec import ZmqCodec
+from yoloPersonDetector import yolo_person_detector
 
 
 if __name__ == "__main__":
@@ -55,6 +56,9 @@ if __name__ == "__main__":
     jpeg_process = mp.Process(target=jpeg_writer)
     jpeg_process.start()
 
+    yolo_person_detector_process = mp.Process(target=yolo_person_detector)
+    yolo_person_detector_process.start()
+
     processes = {
         "i2c": i2c_process,
         "csv": csv_process,
@@ -62,6 +66,7 @@ if __name__ == "__main__":
         "h264": h264_process,
         "video": video_process,
         "jpeg": jpeg_process,
+        "yolo_person_detector": yolo_person_detector_process,
     }
 
     while True:

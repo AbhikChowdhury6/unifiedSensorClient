@@ -131,11 +131,11 @@ jpeg_writer_config = {
     "image_interval_seconds": 16,
 }
 
-yolo_person_detection_config = {
+yolo_person_detector_config = {
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo_person_detection.sock",
-    "pub_topic": f"{platform_uuid}_yolo_person_detection",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+    "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
     "model": "yolo11m",
     "confidence_threshold": 0.7,
     "nms_threshold": 0.7,
