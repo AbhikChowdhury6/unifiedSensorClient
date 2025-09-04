@@ -143,3 +143,8 @@ yolo_person_detector_config = {
     "nms_threshold": 0.7,
     "interval_seconds": 4,
 }
+
+audio_publisher_config = {
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_publisher.sock",
+    "pub_topic": f"{platform_uuid}_audio_publisher",
+}
