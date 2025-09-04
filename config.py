@@ -30,6 +30,7 @@ sqlite_writer_subscription_endpoints = [
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
+    f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
 ]
 
 sqlite_writer_write_location = "/home/pi/sqlite_writer/data/"
@@ -39,6 +40,7 @@ sqlite_writer_subscription_topics = [
     f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
     f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
     f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
+    f"{platform_uuid}_yolo11m_person_detection",
 ]
 
 # note all sensors are floats and are in units standard for the sensor
