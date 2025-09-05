@@ -35,7 +35,20 @@ class AudioCapture:
         self._queue: queue.Queue = queue.Queue(maxsize=8)
         self._stream = None
 
+        self._enabled = False
+
+    def enable(self):
+        self._enabled = True
+
+    def disable(self):
+        self._enabled = False
+
+    def is_enabled(self):
+        return self._enabled
+
     def _callback(self, indata, frames, time_info, status):
+        if not self._enabled:
+            return
         if status:
             print(f"audio callback status: {status}")
             sys.stdout.flush()
@@ -77,6 +90,8 @@ class AudioCapture:
             sys.stdout.flush()
 
     def publish_pending(self):
+        if not self._enabled:
+            return
         while True:
             try:
                 ts, chunk = self._queue.get_nowait()

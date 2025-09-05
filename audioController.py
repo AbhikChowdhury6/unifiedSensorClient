@@ -36,11 +36,14 @@ def audioController():
     cap.start()
 
     last_publish_check = time.time()
+    target_hz = 16
+    delay_micros = 1_000_000/target_hz
 
     try:
         while True:
             # Publish any pending audio frames
-            cap.publish_pending()
+            if cap.is_enabled():
+                cap.publish_pending()
 
             try:
                 parts = sub.recv_multipart(flags=zmq.NOBLOCK)
@@ -49,10 +52,16 @@ def audioController():
                     print("audio controller exiting")
                     sys.stdout.flush()
                     break
+                if topic == audio_publisher_config['pub_topic']:
+                    if obj == "enable":
+                        cap.enable()
+                    if obj == "disable":
+                        cap.disable()
             except zmq.Again:
                 pass
 
-            time.sleep(0.01)
+            micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
+            time.sleep(micros_to_delay/1_000_000)
     finally:
         cap.stop()
         try:
