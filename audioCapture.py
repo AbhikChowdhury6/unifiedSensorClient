@@ -64,6 +64,26 @@ class AudioCapture:
     def start(self):
         if self._stream is not None:
             return
+        # Validate sample rate and fall back to common supported rates if needed
+        desired_sr = self.sample_rate
+        candidates = [desired_sr, 48000, 44100, 32000, 22050, 16000, 8000]
+        chosen_sr = None
+        for sr in candidates:
+            try:
+                sd.check_input_settings(device=self.device, channels=self.channels, samplerate=sr, dtype=self.dtype)
+                chosen_sr = sr
+                break
+            except Exception:
+                continue
+        if chosen_sr is None:
+            raise RuntimeError("audio: no supported sample rate found for the selected device")
+
+        if chosen_sr != self.sample_rate:
+            print(f"audio: requested {self.sample_rate} Hz not supported, using {chosen_sr} Hz")
+            sys.stdout.flush()
+            self.sample_rate = chosen_sr
+            self.blocksize = max(1, int(round(self.sample_rate / self.frame_hz)))
+
         self._stream = sd.InputStream(
             device=self.device,
             channels=self.channels,
