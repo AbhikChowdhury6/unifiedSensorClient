@@ -9,6 +9,7 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 from config import audio_writer_config, zmq_control_endpoint, platform_uuid
 import zmq
+import numpy as np
 
 def ensure_base_dir(path: str) -> None:
     try:
@@ -99,8 +100,10 @@ def audio_writer():
     print("audio writer subscribed to control and audio publisher topics")
     sys.stdout.flush()
 
-    channels = audio_writer_config.get("channels", 1)
-    sample_rate = audio_writer_config.get("sample_rate", 16000)
+    channels = int(audio_writer_config.get("channels", 1))
+    sample_rate = int(audio_writer_config.get("sample_rate", 16000))
+    target_frame_hz = float(audio_writer_config.get("frame_hz", 16))
+    expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
     ff = spawn_ffmpeg_audio_segments_stdin(
         channels=channels,
         sample_rate=sample_rate,
@@ -135,14 +138,41 @@ def audio_writer():
             if topic == audio_writer_config["sub_topic"]:
                 try:
                     ts, chunk = obj
-                    # Expect numpy array; ensure dtype and shape
-                    import numpy as np
-                    if isinstance(chunk, np.ndarray):
-                        if chunk.dtype != np.int16:
-                            chunk = chunk.astype(np.int16, copy=False)
-                        if not chunk.flags["C_CONTIGUOUS"]:
-                            chunk = np.ascontiguousarray(chunk)
-                        ff.stdin.write(chunk.tobytes())
+                    # Ensure numpy array (samples, channels)
+                    if not isinstance(chunk, np.ndarray):
+                        continue
+                    if chunk.ndim == 1:
+                        chunk = chunk.reshape((-1, 1))
+                    in_samples, in_channels = chunk.shape[0], chunk.shape[1]
+
+                    # Channel conversion
+                    if in_channels != channels:
+                        if in_channels > channels:
+                            # downmix: average first 'channels'
+                            chunk = chunk[:, :channels].mean(axis=1, keepdims=True)
+                        else:
+                            # upmix: duplicate channels
+                            chunk = np.repeat(chunk, repeats=channels, axis=1)[:, :channels]
+
+                    # Resample to expected_samples_per_chunk via linear interpolation
+                    if in_samples != expected_samples_per_chunk:
+                        x = np.linspace(0, in_samples - 1, num=in_samples, dtype=np.float32)
+                        xi = np.linspace(0, in_samples - 1, num=expected_samples_per_chunk, dtype=np.float32)
+                        work = chunk.astype(np.float32, copy=False)
+                        if work.shape[1] == 1:
+                            yi = np.interp(xi, x, work.reshape(-1))
+                            chunk = yi.reshape(-1, 1)
+                        else:
+                            cols = [np.interp(xi, x, work[:, c]) for c in range(work.shape[1])]
+                            chunk = np.stack(cols, axis=1)
+                        # Back to int16
+                        chunk = np.clip(np.rint(chunk), -32768, 32767).astype(np.int16)
+
+                    if chunk.dtype != np.int16:
+                        chunk = chunk.astype(np.int16, copy=False)
+                    if not chunk.flags["C_CONTIGUOUS"]:
+                        chunk = np.ascontiguousarray(chunk)
+                    ff.stdin.write(chunk.tobytes())
                 except Exception as e:
                     print(f"audio writer failed to write chunk: {e}")
                     sys.stdout.flush()
