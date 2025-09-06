@@ -124,8 +124,12 @@ def jpeg_writer():
                         frame_to_write = cv2.cvtColor(frame_to_write, cv2.COLOR_RGB2BGR)
 
                     ts_str = _format_ts_for_filename(latest_ts)
+                    # Write into UTC hourly folders: YYYY/MM/DD/HH
+                    hourly_subdir = latest_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H")
+                    out_dir = os.path.join(write_location, hourly_subdir)
+                    os.makedirs(out_dir, exist_ok=True)
                     filename = f"{platform_uuid}_{camera_topic}_{ts_str}.jpeg"
-                    filepath = os.path.join(write_location, filename)
+                    filepath = os.path.join(out_dir, filename)
                     try:
                         cv2.imwrite(filepath, frame_to_write, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
                         print(f"jpeg writer saved {filepath}")

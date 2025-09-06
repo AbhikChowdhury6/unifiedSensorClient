@@ -21,7 +21,8 @@ from config import (
 )
 from zmq_codec import ZmqCodec
 from yoloPersonDetector import yolo_person_detector
-
+from audioWriter import audio_writer
+from audioController import audioController
 
 if __name__ == "__main__":
     ctx = zmq.Context()
@@ -36,6 +37,9 @@ if __name__ == "__main__":
 
     sqlite_process = mp.Process(target=sqlite_writer)
     sqlite_process.start()
+
+    audio_controller_process = mp.Process(target=audioController)
+    audio_controller_process.start()
 
     # Give subscribers a moment to connect and subscribe
     time.sleep(0.5)
@@ -59,14 +63,19 @@ if __name__ == "__main__":
     yolo_person_detector_process = mp.Process(target=yolo_person_detector)
     yolo_person_detector_process.start()
 
+    audio_writer_process = mp.Process(target=audio_writer)
+    audio_writer_process.start()
+
     processes = {
         "i2c": i2c_process,
         "csv": csv_process,
         "sqlite": sqlite_process,
+        "audio_controller": audio_controller_process,
         "h264": h264_process,
         "video": video_process,
         "jpeg": jpeg_process,
         "yolo_person_detector": yolo_person_detector_process,
+        "audio_writer": audio_writer_process,
     }
 
     while True:

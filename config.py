@@ -147,6 +147,10 @@ yolo_person_detector_config = {
 audio_publisher_config = {
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_publisher.sock",
     "pub_topic": f"{platform_uuid}_audio_publisher",
+    "sample_rate": 16000,
+    "channels": 1,
+    "hz": 16,
+    "dtype": "int16",
 }
 
 audio_writer_config = {
@@ -154,8 +158,10 @@ audio_writer_config = {
     "sub_topic": f"{platform_uuid}_audio_publisher",
     "write_location": "/home/pi/audio_writer/data/",
     "bitrate": "16k",
-    "application": "voip",
-    "frame_duration_ms": 20,
+    "sample_rate": 16000,
+    "channels": 1,
+    "application": "audio",
+    "frame_duration_ms": 50,
     "segment_time_s": 4,
     "loglevel": "warning",
     "alsa_device": "plughw:CARD=MICTEST,DEV=0",

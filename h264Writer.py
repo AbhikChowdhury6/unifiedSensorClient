@@ -160,8 +160,12 @@ def h264_writer():
             frames_per_segment = cfg_fps * duration_s
             segment_start_ts = ts if isinstance(ts, datetime) else datetime.fromtimestamp(ts/1_000_000_000, tz=timezone.utc)
             start_str = _format_ts_for_filename(segment_start_ts)
+            # Write into UTC hourly folders: YYYY/MM/DD/HH
+            hourly_subdir = segment_start_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H")
+            out_dir = os.path.join(write_location, hourly_subdir)
+            os.makedirs(out_dir, exist_ok=True)
             base_name = f"{camera_topic}_{start_str}.{container}"
-            out_path = os.path.join(write_location, base_name)
+            out_path = os.path.join(out_dir, base_name)
             ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, cfg_fps, duration_s, pix_fmt, crf, gop_frames)
             frames_written_in_segment = 0
             print(f"h264 writer started segment {out_path} using libx264 crf {crf}")

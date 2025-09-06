@@ -7,7 +7,7 @@ from datetime import datetime
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from config import audio_writer_config, zmq_control_endpoint
+from config import audio_writer_config, zmq_control_endpoint, platform_uuid
 import zmq
 
 def ensure_base_dir(path: str) -> None:
@@ -18,16 +18,16 @@ def ensure_base_dir(path: str) -> None:
         sys.stdout.flush()
 
 
-def spawn_ffmpeg_audio_segments(
-    alsa_device: str = audio_writer_config["alsa_device"],
+def spawn_ffmpeg_audio_segments_stdin(
     channels: int = 1,
     sample_rate: int = 16000,
     bitrate: str = audio_writer_config["bitrate"],
-    application: str = "voip",
-    frame_duration_ms: int = 20,
+    application: str = audio_writer_config["application"],
+    frame_duration_ms: int = audio_writer_config["frame_duration_ms"],
     segment_time_s: int = audio_writer_config["segment_time_s"],
     output_root: str = audio_writer_config["write_location"],
     loglevel: str = audio_writer_config["loglevel"],
+    sample_fmt: str = "s16le",
 ):
     """Spawn ffmpeg to capture ALSA audio and write segmented Opus files.
 
@@ -35,16 +35,16 @@ def spawn_ffmpeg_audio_segments(
     """
     ensure_base_dir(output_root)
 
-    output_pattern = f"{output_root}/%Y/%m/%d/%H/audio_%Y-%m-%d_%H-%M-%S.opus"
+    output_pattern = f"{output_root}/%Y/%m/%d/%H/{platform_uuid}_audio_%Y-%m-%d_%H-%M-%S.opus"
 
     cmd = [
         "ffmpeg",
         "-hide_banner",
         "-loglevel", loglevel,
-        "-f", "alsa",
+        "-f", "s16le" if sample_fmt == "s16le" else sample_fmt,
         "-ac", str(channels),
         "-ar", str(sample_rate),
-        "-i", alsa_device,
+        "-i", "pipe:0",
         "-c:a", "libopus",
         "-b:a", bitrate,
         "-vbr", "on",
@@ -59,7 +59,7 @@ def spawn_ffmpeg_audio_segments(
 
     try:
         proc = subprocess.Popen(
-            cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
         )
         print("audio: started ffmpeg:", " ".join(cmd))
         sys.stdout.flush()
@@ -99,16 +99,18 @@ def audio_writer():
     print("audio writer subscribed to control and audio publisher topics")
     sys.stdout.flush()
 
-    ff = spawn_ffmpeg_audio_segments(
-        alsa_device=audio_writer_config["alsa_device"],
-        channels=audio_writer_config.get("channels", 1),
-        sample_rate=audio_writer_config.get("sample_rate", 16000),
+    channels = audio_writer_config.get("channels", 1)
+    sample_rate = audio_writer_config.get("sample_rate", 16000)
+    ff = spawn_ffmpeg_audio_segments_stdin(
+        channels=channels,
+        sample_rate=sample_rate,
         bitrate=audio_writer_config["bitrate"],
         application=audio_writer_config.get("application", "voip"),
         frame_duration_ms=audio_writer_config.get("frame_duration_ms", 20),
         segment_time_s=audio_writer_config.get("segment_time_s", 4),
         output_root=audio_writer_config["write_location"],
         loglevel=audio_writer_config.get("loglevel", "warning"),
+        sample_fmt="s16le",
     )
 
     if ff is None:
@@ -127,9 +129,21 @@ def audio_writer():
                 sys.stdout.flush()
                 break
 
-            # For audio publisher messages, we don't need the payload here since ffmpeg
-            # writes directly from ALSA. The message simply drives the loop so we can
-            # periodically check ffmpeg health and remain responsive.
+            # For audio messages, write raw PCM to ffmpeg stdin
+            if topic == audio_writer_config["sub_topic"]:
+                try:
+                    ts, chunk = obj
+                    # Expect numpy array; ensure dtype and shape
+                    import numpy as np
+                    if isinstance(chunk, np.ndarray):
+                        if chunk.dtype != np.int16:
+                            chunk = chunk.astype(np.int16, copy=False)
+                        if not chunk.flags["C_CONTIGUOUS"]:
+                            chunk = np.ascontiguousarray(chunk)
+                        ff.stdin.write(chunk.tobytes())
+                except Exception as e:
+                    print(f"audio writer failed to write chunk: {e}")
+                    sys.stdout.flush()
 
             # Check ffmpeg health on each received message
             if ff.poll() is not None:
