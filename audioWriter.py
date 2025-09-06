@@ -88,7 +88,7 @@ def spawn_ffmpeg_audio_segments_stdin(
     """
     ensure_base_dir(output_root)
 
-    output_pattern = f"{output_root}/%Y/%m/%d/%H/{platform_uuid}_audio_%Y-%m-%d_%H-%M-%S.opus"
+    output_pattern = f"{output_root}%Y/%m/%d/%H/{platform_uuid}_audio_%Y-%m-%d_%H-%M-%S.opus"
 
     cmd = [
         "ffmpeg",
