@@ -104,12 +104,25 @@ def audio_writer():
     sample_rate = int(audio_writer_config.get("sample_rate", 16000))
     target_frame_hz = float(audio_writer_config.get("frame_hz", 16))
     expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
+    # Validate frame duration to common Opus values to avoid ffmpeg exit
+    requested_fd = audio_writer_config.get("frame_duration_ms", 20)
+    try:
+        requested_fd = float(requested_fd)
+    except Exception:
+        requested_fd = 20.0
+    valid_fd = [10.0, 20.0, 40.0, 60.0]  # common safe values
+    if requested_fd not in valid_fd:
+        nearest = min(valid_fd, key=lambda v: abs(v - requested_fd))
+        print(f"audio writer: frame_duration_ms {requested_fd} not supported, using {nearest}")
+        sys.stdout.flush()
+        requested_fd = nearest
+
     ff = spawn_ffmpeg_audio_segments_stdin(
         channels=channels,
         sample_rate=sample_rate,
         bitrate=audio_writer_config["bitrate"],
         application=audio_writer_config.get("application", "voip"),
-        frame_duration_ms=audio_writer_config.get("frame_duration_ms", 20),
+        frame_duration_ms=requested_fd,
         segment_time_s=audio_writer_config.get("segment_time_s", 4),
         output_root=audio_writer_config["write_location"],
         loglevel=audio_writer_config.get("loglevel", "warning"),

@@ -161,7 +161,7 @@ audio_writer_config = {
     "sample_rate": 16000,
     "channels": 1,
     "application": "audio",
-    "frame_duration_ms": 50,
+    "frame_duration_ms": 40,
     "segment_time_s": 4,
     "loglevel": "warning",
     "alsa_device": "plughw:CARD=MICTEST,DEV=0",
