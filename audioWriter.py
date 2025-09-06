@@ -111,9 +111,12 @@ def spawn_ffmpeg_audio_segments_stdin(
     ]
 
     try:
+        # Force UTC for strftime in ffmpeg so paths match UTC-based folders
+        env = os.environ.copy()
+        env["TZ"] = "UTC"
         proc = subprocess.Popen(
             cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
-            bufsize=0
+            bufsize=0, env=env
         )
         print("audio: started ffmpeg:", " ".join(cmd))
         sys.stdout.flush()
