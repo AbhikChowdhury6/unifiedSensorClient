@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import subprocess
+import threading
 from datetime import datetime, timezone, timedelta
 
 repoPath = "/home/pi/Documents/"
@@ -26,6 +27,48 @@ def ensure_hour_dir(root: str, dt_utc: datetime) -> None:
     except Exception as e:
         print(f"audio: failed to create hour dir {root}: {e}")
         sys.stdout.flush()
+
+
+def _prepare_chunk(chunk, target_channels: int, expected_samples_per_chunk: int):
+    """Validate, channel-match, resample, and return int16 C-contiguous PCM."""
+    if not isinstance(chunk, np.ndarray):
+        return None
+    # Ensure 2D shape (samples, channels)
+    if chunk.ndim == 1:
+        chunk = chunk.reshape((-1, 1))
+
+    in_samples = int(chunk.shape[0])
+    in_channels = int(chunk.shape[1])
+
+    # Channel conversion
+    if in_channels != target_channels:
+        if in_channels > target_channels:
+            # Downmix: average first target channels
+            chunk = chunk[:, :target_channels].mean(axis=1, keepdims=True)
+        else:
+            # Upmix: duplicate channels
+            chunk = np.repeat(chunk, repeats=target_channels, axis=1)[:, :target_channels]
+
+    # Resample via linear interpolation to expected samples
+    if in_samples != expected_samples_per_chunk:
+        x = np.linspace(0, in_samples - 1, num=in_samples, dtype=np.float32)
+        xi = np.linspace(0, in_samples - 1, num=expected_samples_per_chunk, dtype=np.float32)
+        work = chunk.astype(np.float32, copy=False)
+        if work.shape[1] == 1:
+            yi = np.interp(xi, x, work.reshape(-1))
+            chunk = yi.reshape(-1, 1)
+        else:
+            cols = [np.interp(xi, x, work[:, c]) for c in range(work.shape[1])]
+            chunk = np.stack(cols, axis=1)
+        # Convert back to int16
+        chunk = np.clip(np.rint(chunk), -32768, 32767).astype(np.int16)
+
+    # Ensure dtype and contiguity
+    if chunk.dtype != np.int16:
+        chunk = chunk.astype(np.int16, copy=False)
+    if not chunk.flags["C_CONTIGUOUS"]:
+        chunk = np.ascontiguousarray(chunk)
+    return chunk
 
 
 def spawn_ffmpeg_audio_segments_stdin(
@@ -74,6 +117,25 @@ def spawn_ffmpeg_audio_segments_stdin(
         )
         print("audio: started ffmpeg:", " ".join(cmd))
         sys.stdout.flush()
+
+        # Start a background stderr reader for diagnostics
+        def _stderr_reader(p):
+            try:
+                for raw in iter(p.stderr.readline, b""):
+                    line = raw.decode(errors="replace").rstrip()
+                    if line:
+                        print(f"audio ffmpeg stderr: {line}")
+                        sys.stdout.flush()
+            except Exception as e:
+                print(f"audio ffmpeg stderr reader error: {e}")
+                sys.stdout.flush()
+            finally:
+                print("audio ffmpeg stderr: [closed]")
+                sys.stdout.flush()
+
+        t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
+        t.start()
+        proc._stderr_thread = t  # attach for lifecycle awareness
         return proc
     except FileNotFoundError:
         print("audio: ffmpeg not found. Please install ffmpeg.")
@@ -83,7 +145,6 @@ def spawn_ffmpeg_audio_segments_stdin(
         print(f"audio: failed to start ffmpeg: {e}")
         sys.stdout.flush()
         return None
-
 
 def stop_ffmpeg(proc) -> None:
     if proc is None:
@@ -133,17 +194,20 @@ def audio_writer():
     ensure_hour_dir(output_root, now_utc)
     ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
 
-    ff = spawn_ffmpeg_audio_segments_stdin(
-        channels=channels,
-        sample_rate=sample_rate,
-        bitrate=audio_writer_config["bitrate"],
-        application=audio_writer_config.get("application", "voip"),
-        frame_duration_ms=requested_fd,
-        segment_time_s=audio_writer_config.get("segment_time_s", 4),
-        output_root=audio_writer_config["write_location"],
-        loglevel=audio_writer_config.get("loglevel", "warning"),
-        sample_fmt="s16le",
-    )
+    def start_ffmpeg():
+        return spawn_ffmpeg_audio_segments_stdin(
+            channels=channels,
+            sample_rate=sample_rate,
+            bitrate=audio_writer_config["bitrate"],
+            application=audio_writer_config.get("application", "voip"),
+            frame_duration_ms=requested_fd,
+            segment_time_s=audio_writer_config.get("segment_time_s", 4),
+            output_root=audio_writer_config["write_location"],
+            loglevel=audio_writer_config.get("loglevel", "warning"),
+            sample_fmt="s16le",
+        )
+
+    ff = start_ffmpeg()
 
     if ff is None:
         print("audio writer failed to start ffmpeg; exiting")
@@ -166,7 +230,7 @@ def audio_writer():
                 sys.stdout.flush()
                 break
 
-            # For audio messages, write raw PCM to ffmpeg stdin
+            # For audio messages, validate/reshape/resample and write PCM to ffmpeg stdin
             if topic == audio_writer_config["sub_topic"]:
                 try:
                     ts, chunk = obj
@@ -177,47 +241,19 @@ def audio_writer():
                         ensure_hour_dir(output_root, now_utc)
                         ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
                         last_ensured_hour = hour_key
-                    # Ensure numpy array (samples, channels)
-                    if not isinstance(chunk, np.ndarray):
+                    # Prepare chunk to target shape/rate
+                    chunk = _prepare_chunk(chunk, channels, expected_samples_per_chunk)
+                    if chunk is None:
                         continue
-                    if chunk.ndim == 1:
-                        chunk = chunk.reshape((-1, 1))
-                    in_samples, in_channels = chunk.shape[0], chunk.shape[1]
-
-                    # Channel conversion
-                    if in_channels != channels:
-                        if in_channels > channels:
-                            # downmix: average first 'channels'
-                            chunk = chunk[:, :channels].mean(axis=1, keepdims=True)
-                        else:
-                            # upmix: duplicate channels
-                            chunk = np.repeat(chunk, repeats=channels, axis=1)[:, :channels]
-
-                    # Resample to expected_samples_per_chunk via linear interpolation
-                    if in_samples != expected_samples_per_chunk:
-                        x = np.linspace(0, in_samples - 1, num=in_samples, dtype=np.float32)
-                        xi = np.linspace(0, in_samples - 1, num=expected_samples_per_chunk, dtype=np.float32)
-                        work = chunk.astype(np.float32, copy=False)
-                        if work.shape[1] == 1:
-                            yi = np.interp(xi, x, work.reshape(-1))
-                            chunk = yi.reshape(-1, 1)
-                        else:
-                            cols = [np.interp(xi, x, work[:, c]) for c in range(work.shape[1])]
-                            chunk = np.stack(cols, axis=1)
-                        # Back to int16
-                        chunk = np.clip(np.rint(chunk), -32768, 32767).astype(np.int16)
-
-                    if chunk.dtype != np.int16:
-                        chunk = chunk.astype(np.int16, copy=False)
-                    if not chunk.flags["C_CONTIGUOUS"]:
-                        chunk = np.ascontiguousarray(chunk)
                     try:
                         ff.stdin.write(chunk.tobytes())
-                        ff.stdin.flush()
                     except BrokenPipeError:
                         print("audio writer: ffmpeg pipe closed")
                         sys.stdout.flush()
-                        break
+                        # Attempt restart
+                        ff = start_ffmpeg()
+                        if ff is None:
+                            break
                 except Exception as e:
                     print(f"audio writer failed to write chunk: {e}")
                     sys.stdout.flush()
@@ -226,7 +262,10 @@ def audio_writer():
             if ff.poll() is not None:
                 print("audio writer: ffmpeg exited with code", ff.returncode)
                 sys.stdout.flush()
-                break
+                # Attempt restart
+                ff = start_ffmpeg()
+                if ff is None:
+                    break
     finally:
         stop_ffmpeg(ff)
         try:
