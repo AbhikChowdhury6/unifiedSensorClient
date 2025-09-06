@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -16,6 +16,15 @@ def ensure_base_dir(path: str) -> None:
         os.makedirs(path, exist_ok=True)
     except Exception as e:
         print(f"audio: failed to create base dir {path}: {e}")
+        sys.stdout.flush()
+
+
+def ensure_hour_dir(root: str, dt_utc: datetime) -> None:
+    try:
+        hour_dir = os.path.join(root, dt_utc.astimezone(timezone.utc).strftime("%Y/%m/%d/%H"))
+        os.makedirs(hour_dir, exist_ok=True)
+    except Exception as e:
+        print(f"audio: failed to create hour dir {root}: {e}")
         sys.stdout.flush()
 
 
@@ -118,6 +127,12 @@ def audio_writer():
         sys.stdout.flush()
         requested_fd = nearest
 
+    # Pre-create current and next hour directories so strftime path exists
+    output_root = audio_writer_config["write_location"]
+    now_utc = datetime.now(timezone.utc)
+    ensure_hour_dir(output_root, now_utc)
+    ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
+
     ff = spawn_ffmpeg_audio_segments_stdin(
         channels=channels,
         sample_rate=sample_rate,
@@ -134,6 +149,9 @@ def audio_writer():
         print("audio writer failed to start ffmpeg; exiting")
         sys.stdout.flush()
         return
+
+    # Track last ensured hour to avoid redundant mkdirs
+    last_ensured_hour = now_utc.strftime("%Y%m%d%H")
 
     try:
         while True:
@@ -152,6 +170,13 @@ def audio_writer():
             if topic == audio_writer_config["sub_topic"]:
                 try:
                     ts, chunk = obj
+                    # Ensure the current hour directory exists (handles hour rollovers)
+                    now_utc = datetime.now(timezone.utc)
+                    hour_key = now_utc.strftime("%Y%m%d%H")
+                    if hour_key != last_ensured_hour:
+                        ensure_hour_dir(output_root, now_utc)
+                        ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
+                        last_ensured_hour = hour_key
                     # Ensure numpy array (samples, channels)
                     if not isinstance(chunk, np.ndarray):
                         continue
