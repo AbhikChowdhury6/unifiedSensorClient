@@ -42,6 +42,7 @@ def spawn_ffmpeg_audio_segments_stdin(
         "ffmpeg",
         "-hide_banner",
         "-loglevel", loglevel,
+        "-fflags", "+genpts",
         "-f", "s16le" if sample_fmt == "s16le" else sample_fmt,
         "-ac", str(channels),
         "-ar", str(sample_rate),
@@ -53,14 +54,14 @@ def spawn_ffmpeg_audio_segments_stdin(
         "-frame_duration", str(frame_duration_ms),
         "-f", "segment",
         "-segment_time", str(segment_time_s),
-        "-segment_atclocktime", "1",
         "-strftime", "1",
         output_pattern,
     ]
 
     try:
         proc = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            bufsize=0
         )
         print("audio: started ffmpeg:", " ".join(cmd))
         sys.stdout.flush()
@@ -185,7 +186,13 @@ def audio_writer():
                         chunk = chunk.astype(np.int16, copy=False)
                     if not chunk.flags["C_CONTIGUOUS"]:
                         chunk = np.ascontiguousarray(chunk)
-                    ff.stdin.write(chunk.tobytes())
+                    try:
+                        ff.stdin.write(chunk.tobytes())
+                        ff.stdin.flush()
+                    except BrokenPipeError:
+                        print("audio writer: ffmpeg pipe closed")
+                        sys.stdout.flush()
+                        break
                 except Exception as e:
                     print(f"audio writer failed to write chunk: {e}")
                     sys.stdout.flush()
