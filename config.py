@@ -149,7 +149,7 @@ audio_publisher_config = {
     "pub_topic": f"{platform_uuid}_audio_publisher",
     "sample_rate": 16000,
     "channels": 1,
-    "hz": 16,
+    "hz": 2,
     "dtype": "int16",
 }
 
@@ -165,4 +165,5 @@ audio_writer_config = {
     "segment_time_s": 4,
     "loglevel": "warning",
     "alsa_device": "plughw:CARD=MICTEST,DEV=0",
+    "frame_hz": 2,
 }

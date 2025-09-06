@@ -26,14 +26,15 @@ def audioController():
 
     # Start audio capture publisher
     cap = AudioCapture({
-        "sample_rate": 16000,
-        "channels": 1,
-        "hz": 16,
-        "dtype": "int16",
+        "sample_rate": audio_publisher_config["sample_rate"],
+        "channels": audio_publisher_config["channels"],
+        "hz": audio_publisher_config["hz"],
+        "dtype": audio_publisher_config["dtype"],
         "pub_topic": audio_publisher_config["pub_topic"],
         "pub_endpoint": audio_publisher_config["pub_endpoint"],
     })
     cap.start()
+    cap.enable()
 
     last_publish_check = time.time()
     target_hz = 16
