@@ -16,60 +16,6 @@ from config import (
 )
 
 
-def _format_ts_for_filename(ts: datetime) -> str:
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
-    ts_utc = ts.astimezone(timezone.utc)
-    return ts_utc.strftime("%Y%m%dT%H%M%S") + "p" + str(ts_utc.microsecond // 1000).zfill(3) + "Z"
-
-
-def _align_segment_start(ts: datetime, segment_seconds: int) -> datetime:
-    if ts.tzinfo is None:
-        ts = ts.replace(tzinfo=timezone.utc)
-    epoch = int(ts.timestamp())
-    aligned = epoch - (epoch % int(segment_seconds))
-    return datetime.fromtimestamp(aligned, tz=timezone.utc)
-
-
-def _quality_to_crf(quality_0_100: int) -> int:
-    # Map 0..100 (low..high) to CRF 51..16 (high..low)
-    q = max(0, min(100, int(quality_0_100)))
-    # Linear map to a reasonable CRF window
-    return int(round(51 - (q / 100.0) * 35))
-
-
-def _spawn_ffmpeg(output_path: str, width: int, height: int, fps: int, input_pix_fmt: str, crf: int, gop_frames: int):
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-f", "rawvideo",
-        "-pix_fmt", input_pix_fmt,
-        "-s", f"{width}x{height}",
-        "-r", str(fps),
-        "-i", "pipe:0",
-    ]
-
-    # Use libx264 with CRF-based quality control
-    cmd += [
-        "-c:v", "libx264",
-        "-preset", "veryfast",
-        "-crf", str(crf),
-        # Control keyframe interval: exactly one I-frame every gop_frames
-        "-g", str(gop_frames),
-        "-keyint_min", str(gop_frames),
-        "-sc_threshold", "0",
-        # Ensure broad compatibility
-        "-vf", "format=yuv420p",
-    ]
-
-    cmd += [
-        "-movflags", "+faststart",
-        output_path,
-    ]
-    # Use Popen with a PIPE for stdin
-    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
 def h264_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -86,19 +32,11 @@ def h264_writer():
 
     write_location = h264_writer_config["write_location"]
     duration_s = int(h264_writer_config.get("video_duration", 4))
-    container = h264_writer_config.get("container_type", "mp4")
-    cfg_fps = int(h264_writer_config.get("fps", 8))
-    fmt = h264_writer_config.get("format", "RGB888")
-    quality = int(h264_writer_config.get("quality", 80))
-    crf = _quality_to_crf(quality)
-    gop_interval_seconds = int(h264_writer_config.get("keyframe_interval_seconds", 1))
-    gop_frames = max(1, cfg_fps * gop_interval_seconds)
     # If there's a long gap between frames, start a new file. Default 2 seconds.
     gap_restart_seconds = float(h264_writer_config.get("frame_gap_restart_seconds", .5))
 
     os.makedirs(write_location, exist_ok=True)
 
-    pix_fmt = "rgb24" if fmt.upper() in ("RGB888", "RGB24") else "bgr24"
     # Always use software libx264 with CRF
 
     ffmpeg_proc = None
@@ -137,12 +75,20 @@ def h264_writer():
 
         # Ensure frame is a contiguous uint8 array in expected shape
         if not isinstance(frame, np.ndarray):
+            print("h264 writer: frame is not a numpy array")
+            sys.stdout.flush()
             continue
         if frame.ndim != 3 or frame.shape[2] != 3:
+            print(f"h264 writer: invalid frame shape {frame.shape}, expected (H,W,3)")
+            sys.stdout.flush() 
             continue
         if not frame.flags["C_CONTIGUOUS"]:
+            print("h264 writer: frame is not C contiguous, making a copy")
+            sys.stdout.flush()
             frame = np.ascontiguousarray(frame)
         if frame.dtype != np.uint8:
+            print(f"h264 writer: converting frame from {frame.dtype} to uint8")
+            sys.stdout.flush()
             frame = frame.astype(np.uint8, copy=False)
 
         # If there's a large break in frames, close current segment
@@ -191,11 +137,11 @@ def h264_writer():
             hourly_subdir = segment_start_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H")
             out_dir = os.path.join(write_location, hourly_subdir)
             os.makedirs(out_dir, exist_ok=True)
-            base_name = f"{camera_topic}_{start_str}.{container}"
+            base_name = f"{camera_topic}_{start_str}.h264"
             out_path = os.path.join(out_dir, base_name)
-            ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, cfg_fps, pix_fmt, crf, gop_frames)
+            ffmpeg_proc = _spawn_ffmpeg(out_path)
             frames_written_in_segment = 0
-            print(f"h264 writer started segment {out_path} using libx264 crf {crf}")
+            print(f"h264 writer started segment {out_path}")
             sys.stdout.flush()
 
         # Write frame to ffmpeg stdin
@@ -234,6 +180,66 @@ def h264_writer():
 
     print("h264 writer exiting")
     sys.stdout.flush()
+
+
+
+
+def _spawn_ffmpeg(output_path: str):
+    # Read settings from config
+    cfg_fps = int(h264_writer_config.get("fps", 8))
+    fmt = h264_writer_config.get("format", "RGB888")
+    quality = int(h264_writer_config.get("quality", 80))
+    crf = _quality_to_crf(quality)
+    gop_interval_seconds = int(h264_writer_config.get("keyframe_interval_seconds", 1))
+    gop_frames = max(1, cfg_fps * gop_interval_seconds)
+    width = int(h264_writer_config.get("width", 640))
+    height = int(h264_writer_config.get("height", 480))
+    pix_fmt = "rgb24" if fmt.upper() in ("RGB888", "RGB24") else "bgr24"
+
+    cmd = [
+        "ffmpeg",
+        "-y", 
+        "-f", "rawvideo",
+        "-pix_fmt", pix_fmt,
+        "-s", f"{width}x{height}",
+        "-r", str(cfg_fps),
+        "-i", "pipe:0",
+    ]
+
+    # Use libx264 with CRF-based quality control
+    cmd += [
+        "-c:v", "libx264",
+        "-preset", "veryfast", 
+        "-crf", str(crf),
+        # Control keyframe interval: exactly one I-frame every gop_frames
+        "-g", str(gop_frames),
+        "-keyint_min", str(gop_frames),
+        "-sc_threshold", "0",
+        # Ensure broad compatibility
+        "-vf", "format=yuv420p",
+    ]
+
+    cmd += [
+        "-movflags", "+faststart",
+        output_path,
+    ]
+    # Use Popen with a PIPE for stdin
+    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+
+def _format_ts_for_filename(ts: datetime) -> str:
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    ts_utc = ts.astimezone(timezone.utc)
+    return ts_utc.strftime("%Y%m%dT%H%M%S") + "p" + str(ts_utc.microsecond // 1000).zfill(3) + "Z"
+
+
+def _quality_to_crf(quality_0_100: int) -> int:
+    # Map 0..100 (low..high) to CRF 51..16 (high..low)
+    q = max(0, min(100, int(quality_0_100)))
+    # Linear map to a reasonable CRF window
+    return int(round(51 - (q / 100.0) * 35))
 
 
 if __name__ == "__main__":
