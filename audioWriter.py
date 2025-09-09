@@ -81,14 +81,13 @@ def spawn_ffmpeg_audio_segments_stdin(
     output_root: str = audio_writer_config["write_location"],
     loglevel: str = audio_writer_config["loglevel"],
     sample_fmt: str = "s16le",
+    output_path: str | None = None,
 ):
     """Spawn ffmpeg to capture ALSA audio and write segmented Opus files.
 
     Returns a subprocess.Popen handle with stdin=None (ffmpeg reads from device).
     """
     ensure_base_dir(output_root)
-
-    output_pattern = f"{output_root}%Y/%m/%d/%H/{platform_uuid}_audio_%Y-%m-%d_%H-%M-%S.opus"
 
     cmd = [
         "ffmpeg",
@@ -104,11 +103,23 @@ def spawn_ffmpeg_audio_segments_stdin(
         "-vbr", "on",
         "-application", application,
         "-frame_duration", str(frame_duration_ms),
-        "-f", "segment",
-        "-segment_time", str(segment_time_s),
-        "-strftime", "1",
-        output_pattern,
     ]
+
+    if output_path:
+        # Single-file output; we will close/restart per segment
+        cmd += [
+            "-t", str(segment_time_s),
+            output_path,
+        ]
+    else:
+        # Fallback to segmenter with UTC strftime pattern
+        output_pattern = f"{output_root}%Y/%m/%d/%H/{platform_uuid}_audio_%Y-%m-%d_%H-%M-%S.opus"
+        cmd += [
+            "-f", "segment",
+            "-segment_time", str(segment_time_s),
+            "-strftime", "1",
+            output_pattern,
+        ]
 
     try:
         # Force UTC for strftime in ffmpeg so paths match UTC-based folders
@@ -178,6 +189,7 @@ def audio_writer():
     sample_rate = int(audio_writer_config.get("sample_rate", 16000))
     target_frame_hz = float(audio_writer_config.get("frame_hz", 16))
     expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
+    segment_time_s = int(audio_writer_config.get("segment_time_s", 4))
     # Validate frame duration to common Opus values to avoid ffmpeg exit
     requested_fd = audio_writer_config.get("frame_duration_ms", 20)
     try:
@@ -197,7 +209,7 @@ def audio_writer():
     ensure_hour_dir(output_root, now_utc)
     ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
 
-    def start_ffmpeg():
+    def start_ffmpeg(output_path: str | None = None):
         return spawn_ffmpeg_audio_segments_stdin(
             channels=channels,
             sample_rate=sample_rate,
@@ -208,9 +220,23 @@ def audio_writer():
             output_root=audio_writer_config["write_location"],
             loglevel=audio_writer_config.get("loglevel", "warning"),
             sample_fmt="s16le",
+            output_path=output_path,
         )
 
-    ff = start_ffmpeg()
+    # Start first segment with an explicit file path including milliseconds
+    def make_output_path(now_utc: datetime) -> str:
+        hourly_subdir = now_utc.strftime("%Y/%m/%d/%H")
+        out_dir = os.path.join(output_root, hourly_subdir)
+        os.makedirs(out_dir, exist_ok=True)
+        fname = f"{platform_uuid}_audio_{now_utc.strftime('%Y-%m-%d_%H-%M-%S')}p{str(now_utc.microsecond//1000).zfill(3)}.opus"
+        return os.path.join(out_dir, fname)
+
+    segment_start = datetime.now(timezone.utc)
+    # Align first segment to the 4s UTC grid
+    aligned_start_epoch = int(segment_start.timestamp()) - (int(segment_start.timestamp()) % segment_time_s)
+    segment_start = datetime.fromtimestamp(aligned_start_epoch, tz=timezone.utc)
+    segment_end = segment_start + timedelta(seconds=segment_time_s)
+    ff = start_ffmpeg(make_output_path(segment_start))
 
     if ff is None:
         print("audio writer failed to start ffmpeg; exiting")
@@ -244,6 +270,27 @@ def audio_writer():
                         ensure_hour_dir(output_root, now_utc)
                         ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
                         last_ensured_hour = hour_key
+
+                    # If timestamp crosses the current 4s grid window, close and start new aligned segment
+                    if isinstance(ts, datetime):
+                        if ts.tzinfo is None:
+                            ts = ts.replace(tzinfo=timezone.utc)
+                        if segment_end is not None and ts >= segment_end:
+                            try:
+                                ff.stdin.close()
+                            except Exception:
+                                pass
+                            try:
+                                ff.wait(timeout=3)
+                            except Exception:
+                                pass
+                            aligned_epoch = int(ts.timestamp()) - (int(ts.timestamp()) % segment_time_s)
+                            segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
+                            segment_end = segment_start + timedelta(seconds=segment_time_s)
+                            ff = start_ffmpeg(make_output_path(segment_start))
+                            if ff is None:
+                                break
+
                     # Prepare chunk to target shape/rate
                     chunk = _prepare_chunk(chunk, channels, expected_samples_per_chunk)
                     if chunk is None:
@@ -253,8 +300,12 @@ def audio_writer():
                     except BrokenPipeError:
                         print("audio writer: ffmpeg pipe closed")
                         sys.stdout.flush()
-                        # Attempt restart
-                        ff = start_ffmpeg()
+                        # Attempt restart into a new aligned file
+                        now_utc = datetime.now(timezone.utc)
+                        aligned_epoch = int(now_utc.timestamp()) - (int(now_utc.timestamp()) % segment_time_s)
+                        segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
+                        segment_end = segment_start + timedelta(seconds=segment_time_s)
+                        ff = start_ffmpeg(make_output_path(segment_start))
                         if ff is None:
                             break
                 except Exception as e:
@@ -265,8 +316,12 @@ def audio_writer():
             if ff.poll() is not None:
                 print("audio writer: ffmpeg exited with code", ff.returncode)
                 sys.stdout.flush()
-                # Attempt restart
-                ff = start_ffmpeg()
+                # Start a new segment file aligned to grid
+                now_utc = datetime.now(timezone.utc)
+                aligned_epoch = int(now_utc.timestamp()) - (int(now_utc.timestamp()) % segment_time_s)
+                segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
+                segment_end = segment_start + timedelta(seconds=segment_time_s)
+                ff = start_ffmpeg(make_output_path(segment_start))
                 if ff is None:
                     break
     finally:

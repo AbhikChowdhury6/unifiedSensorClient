@@ -1,6 +1,6 @@
 import sys
 import queue
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import numpy as np
 import sounddevice as sd
@@ -34,6 +34,8 @@ class AudioCapture:
 
         self._queue: queue.Queue = queue.Queue(maxsize=8)
         self._stream = None
+        self._next_chunk_ts_utc: datetime | None = None
+        self._pa_epoch_utc_base: datetime | None = None  # maps PortAudio time to UTC
 
         self._enabled = False
 
@@ -52,7 +54,18 @@ class AudioCapture:
         if status:
             print(f"audio callback status: {status}")
             sys.stdout.flush()
-        ts = datetime.now(timezone.utc)
+        # Prefer PortAudio-provided ADC time for drift-free timestamps
+        try:
+            if self._pa_epoch_utc_base is None and time_info is not None:
+                # Map PortAudio currentTime (seconds) to UTC now
+                self._pa_epoch_utc_base = datetime.now(timezone.utc) - timedelta(seconds=time_info.currentTime)
+            if self._pa_epoch_utc_base is not None and time_info is not None:
+                ts = self._pa_epoch_utc_base + timedelta(seconds=time_info.inputBufferAdcTime)
+            else:
+                # Fallback: align to start-of-chunk by subtracting buffer duration from now
+                ts = datetime.now(timezone.utc) - timedelta(seconds=frames / float(self.sample_rate))
+        except Exception:
+            ts = datetime.now(timezone.utc)
         try:
             # Copy to avoid buffer reuse
             chunk = np.array(indata, copy=True)
@@ -97,6 +110,8 @@ class AudioCapture:
             f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, dtype {self.dtype}"
         )
         sys.stdout.flush()
+        # Reset PortAudio epoch mapping on start
+        self._pa_epoch_utc_base = None
 
     def stop(self):
         if self._stream is None:

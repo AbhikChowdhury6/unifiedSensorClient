@@ -2,7 +2,8 @@ import os
 import sys
 import zmq
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import math
 import numpy as np
 
 repoPath = "/home/pi/Documents/"
@@ -22,6 +23,14 @@ def _format_ts_for_filename(ts: datetime) -> str:
     return ts_utc.strftime("%Y%m%dT%H%M%S") + "p" + str(ts_utc.microsecond // 1000).zfill(3) + "Z"
 
 
+def _align_segment_start(ts: datetime, segment_seconds: int) -> datetime:
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    epoch = int(ts.timestamp())
+    aligned = epoch - (epoch % int(segment_seconds))
+    return datetime.fromtimestamp(aligned, tz=timezone.utc)
+
+
 def _quality_to_crf(quality_0_100: int) -> int:
     # Map 0..100 (low..high) to CRF 51..16 (high..low)
     q = max(0, min(100, int(quality_0_100)))
@@ -29,7 +38,7 @@ def _quality_to_crf(quality_0_100: int) -> int:
     return int(round(51 - (q / 100.0) * 35))
 
 
-def _spawn_ffmpeg(output_path: str, width: int, height: int, fps: int, duration_s: int, input_pix_fmt: str, crf: int, gop_frames: int):
+def _spawn_ffmpeg(output_path: str, width: int, height: int, fps: int, input_pix_fmt: str, crf: int, gop_frames: int):
     cmd = [
         "ffmpeg",
         "-y",
@@ -55,7 +64,6 @@ def _spawn_ffmpeg(output_path: str, width: int, height: int, fps: int, duration_
 
     cmd += [
         "-movflags", "+faststart",
-        "-t", str(duration_s),
         output_path,
     ]
     # Use Popen with a PIPE for stdin
@@ -95,8 +103,8 @@ def h264_writer():
 
     ffmpeg_proc = None
     frames_written_in_segment = 0
-    frames_per_segment = cfg_fps * duration_s
     segment_start_ts = None
+    segment_end_ts = None
     last_ts_seconds = None
 
 
@@ -154,11 +162,30 @@ def h264_writer():
                 print(f"h264 writer detected frame gap {(ts_seconds - last_ts_seconds):.3f}s, starting new file")
                 sys.stdout.flush()
 
+        # If current frame is in a newer 4s grid, roll to the next aligned segment
+        if ffmpeg_proc is not None and segment_end_ts is not None and isinstance(ts, datetime):
+            if ts >= segment_end_ts:
+                try:
+                    ffmpeg_proc.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    ffmpeg_proc.wait(timeout=3)
+                except Exception:
+                    pass
+                ffmpeg_proc = None
+                frames_written_in_segment = 0
+                segment_start_ts = None
+                segment_end_ts = None
+
         # Detect actual WxH from first frame (in case of subsampling)
         if ffmpeg_proc is None:
             height, width, _ = frame.shape
-            frames_per_segment = cfg_fps * duration_s
-            segment_start_ts = ts if isinstance(ts, datetime) else datetime.fromtimestamp(ts/1_000_000_000, tz=timezone.utc)
+            base_ts = ts if isinstance(ts, datetime) else datetime.fromtimestamp(ts/1_000_000_000, tz=timezone.utc)
+            # Align start to 4s grid; allow partial segments at boundaries
+            aligned_epoch = int(base_ts.timestamp()) - (int(base_ts.timestamp()) % duration_s)
+            segment_start_ts = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
+            segment_end_ts = segment_start_ts + timedelta(seconds=duration_s)
             start_str = _format_ts_for_filename(segment_start_ts)
             # Write into UTC hourly folders: YYYY/MM/DD/HH
             hourly_subdir = segment_start_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H")
@@ -166,7 +193,7 @@ def h264_writer():
             os.makedirs(out_dir, exist_ok=True)
             base_name = f"{camera_topic}_{start_str}.{container}"
             out_path = os.path.join(out_dir, base_name)
-            ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, cfg_fps, duration_s, pix_fmt, crf, gop_frames)
+            ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, cfg_fps, pix_fmt, crf, gop_frames)
             frames_written_in_segment = 0
             print(f"h264 writer started segment {out_path} using libx264 crf {crf}")
             sys.stdout.flush()
@@ -192,20 +219,7 @@ def h264_writer():
         frames_written_in_segment += 1
         last_ts_seconds = ts_seconds
 
-        if frames_written_in_segment >= frames_per_segment:
-            # Close current segment
-            try:
-                ffmpeg_proc.stdin.close()
-            except Exception:
-                pass
-            try:
-                ffmpeg_proc.wait(timeout=3)
-            except Exception:
-                pass
-            ffmpeg_proc = None
-            frames_written_in_segment = 0
-            segment_start_ts = None
-            # Next iteration will create a new segment
+        # End the segment only on gap; otherwise allow variable-length files
 
     # Cleanup on exit
     if ffmpeg_proc is not None:
