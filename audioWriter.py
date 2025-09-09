@@ -25,13 +25,13 @@ def audio_writer():
     print("audio writer subscribed to control and audio publisher topics")
     sys.stdout.flush()
 
-    channels = int(audio_writer_config.get("channels", 1))
-    sample_rate = int(audio_writer_config.get("sample_rate", 16000))
-    target_frame_hz = float(audio_writer_config.get("frame_hz", 16))
+    channels = int(cfg_get_or_default(audio_writer_config, "channels", 1))
+    sample_rate = int(cfg_get_or_default(audio_writer_config, "sample_rate", 16000))
+    target_frame_hz = float(cfg_get_or_default(audio_writer_config, "frame_hz", 16))
     expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
-    segment_time_s = int(audio_writer_config.get("segment_time_s", 4))
+    segment_time_s = int(cfg_get_or_default(audio_writer_config, "segment_time_s", 4))
     # Validate frame duration to common Opus values to avoid ffmpeg exit
-    requested_fd = audio_writer_config.get("frame_duration_ms", 20)
+    requested_fd = cfg_get_or_default(audio_writer_config, "frame_duration_ms", 20)
     try:
         requested_fd = float(requested_fd)
     except Exception:
@@ -44,7 +44,7 @@ def audio_writer():
         requested_fd = nearest
 
     # Pre-create current and next hour directories so strftime path exists
-    output_root = audio_writer_config["write_location"]
+    output_root = cfg_get_or_default(audio_writer_config, "write_location", "/home/pi/audio_writer/data/")
     now_utc = datetime.now(timezone.utc)
     ensure_hour_dir(output_root, now_utc)
     ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
@@ -164,14 +164,14 @@ def spawn_ffmpeg_audio_segments_stdin(
     Reads all parameters from audio_writer_config for simplicity.
     Returns a subprocess.Popen handle with stdin PIPE for feeding PCM.
     """
-    channels = int(audio_writer_config.get("channels", 1))
-    sample_rate = int(audio_writer_config.get("sample_rate", 16000))
-    bitrate = str(audio_writer_config.get("bitrate", "16k"))
-    application = str(audio_writer_config.get("application", "audio"))
-    frame_duration_ms = int(audio_writer_config.get("frame_duration_ms", 20))
-    segment_time_s = int(audio_writer_config.get("segment_time_s", 4))
-    output_root = audio_writer_config["write_location"]
-    loglevel = str(audio_writer_config.get("loglevel", "warning"))
+    channels = int(cfg_get_or_default(audio_writer_config, "channels", 1))
+    sample_rate = int(cfg_get_or_default(audio_writer_config, "sample_rate", 16000))
+    bitrate = str(cfg_get_or_default(audio_writer_config, "bitrate", "16k"))
+    application = str(cfg_get_or_default(audio_writer_config, "application", "audio"))
+    frame_duration_ms = int(cfg_get_or_default(audio_writer_config, "frame_duration_ms", 20))
+    segment_time_s = int(cfg_get_or_default(audio_writer_config, "segment_time_s", 4))
+    output_root = cfg_get_or_default(audio_writer_config, "write_location", "/home/pi/audio_writer/data/")
+    loglevel = str(cfg_get_or_default(audio_writer_config, "loglevel", "warning"))
     sample_fmt = "s16le"
 
     ensure_base_dir(output_root)
@@ -326,6 +326,18 @@ def _prepare_chunk(chunk, target_channels: int, expected_samples_per_chunk: int)
     if not chunk.flags["C_CONTIGUOUS"]:
         chunk = np.ascontiguousarray(chunk)
     return chunk
+
+def cfg_get_or_default(cfg, key, default):
+    try:
+        value = cfg.get(key)
+    except Exception:
+        value = None
+    if value is None:
+        print(f"audio writer: config missing '{key}', using default {default}")
+        sys.stdout.flush()
+        return default
+    return value
+
 
 
 if __name__ == "__main__":

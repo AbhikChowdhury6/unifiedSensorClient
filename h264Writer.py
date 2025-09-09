@@ -16,6 +16,7 @@ from config import (
 )
 
 
+
 def h264_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -25,15 +26,15 @@ def h264_writer():
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
 
     # Subscribe to camera frames
-    camera_topic = h264_writer_config["camera_name"]
-    camera_endpoint = h264_writer_config["camera_endpoint"]
+    camera_topic = cfg_get_or_default(h264_writer_config, "camera_name", "camera")
+    camera_endpoint = cfg_get_or_default(h264_writer_config, "camera_endpoint", "")
     sub.connect(camera_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
 
-    write_location = h264_writer_config["write_location"]
-    duration_s = int(h264_writer_config.get("video_duration", 4))
+    write_location = cfg_get_or_default(h264_writer_config, "write_location", "/home/pi/h264_writer/data/")
+    duration_s = int(cfg_get_or_default(h264_writer_config, "video_duration", 4))
     # If there's a long gap between frames, start a new file. Default 2 seconds.
-    gap_restart_seconds = float(h264_writer_config.get("frame_gap_restart_seconds", .5))
+    gap_restart_seconds = float(cfg_get_or_default(h264_writer_config, "frame_gap_restart_seconds", .5))
 
     os.makedirs(write_location, exist_ok=True)
 
@@ -186,14 +187,14 @@ def h264_writer():
 
 def _spawn_ffmpeg(output_path: str):
     # Read settings from config
-    cfg_fps = int(h264_writer_config.get("fps", 8))
-    fmt = h264_writer_config.get("format", "RGB888")
-    quality = int(h264_writer_config.get("quality", 80))
+    cfg_fps = int(cfg_get_or_default(h264_writer_config, "fps", 8))
+    fmt = cfg_get_or_default(h264_writer_config, "format", "RGB888")
+    quality = int(cfg_get_or_default(h264_writer_config, "quality", 80))
     crf = _quality_to_crf(quality)
-    gop_interval_seconds = int(h264_writer_config.get("keyframe_interval_seconds", 1))
+    gop_interval_seconds = int(cfg_get_or_default(h264_writer_config, "keyframe_interval_seconds", 1))
     gop_frames = max(1, cfg_fps * gop_interval_seconds)
-    width = int(h264_writer_config.get("width", 640))
-    height = int(h264_writer_config.get("height", 480))
+    width = int(cfg_get_or_default(h264_writer_config, "width", 640))
+    height = int(cfg_get_or_default(h264_writer_config, "height", 480))
     pix_fmt = "rgb24" if fmt.upper() in ("RGB888", "RGB24") else "bgr24"
 
     cmd = [
@@ -241,6 +242,16 @@ def _quality_to_crf(quality_0_100: int) -> int:
     # Linear map to a reasonable CRF window
     return int(round(51 - (q / 100.0) * 35))
 
+def cfg_get_or_default(cfg, key, default):
+    try:
+        value = cfg.get(key)
+    except Exception:
+        value = None
+    if value is None:
+        print(f"h264 writer: config missing '{key}', using default {default}")
+        sys.stdout.flush()
+        return default
+    return value
 
 if __name__ == "__main__":
     h264_writer()
