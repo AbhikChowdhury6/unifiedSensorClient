@@ -21,6 +21,7 @@ from config import (
 )
 from zmq_codec import ZmqCodec
 from yoloPersonDetector import yolo_person_detector
+from detectorBasedDeleter import detector_based_deleter
 from audioWriter import audio_writer
 from audioController import audioController
 
@@ -66,6 +67,9 @@ if __name__ == "__main__":
     audio_writer_process = mp.Process(target=audio_writer)
     audio_writer_process.start()
 
+    deleter_process = mp.Process(target=detector_based_deleter)
+    deleter_process.start()
+
     processes = {
         "i2c": i2c_process,
         "csv": csv_process,
@@ -76,6 +80,7 @@ if __name__ == "__main__":
         "jpeg": jpeg_process,
         "yolo_person_detector": yolo_person_detector_process,
         "audio_writer": audio_writer_process,
+        "detector_based_deleter": deleter_process,
     }
 
     while True:

@@ -167,3 +167,9 @@ audio_writer_config = {
     "alsa_device": "plughw:CARD=MICTEST,DEV=0",
     "frame_hz": 2,
 }
+
+detector_based_deleter_config = {
+    "detector_name": f"{platform_uuid}_yolo11m_person_detection",
+    "detector_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+    "manage_root_location": "/home/pi/h264_writer/data/",
+}
