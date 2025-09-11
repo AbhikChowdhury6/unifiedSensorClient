@@ -37,22 +37,55 @@ def _get_files_in_location(location: str):
 
 
 def detector_based_deleter():
+    config = detector_based_deleter_config
     # ZMQ setup
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    sub.connect(detector_based_deleter_config["detector_endpoint"])
-    sub.setsockopt(zmq.SUBSCRIBE, detector_based_deleter_config["detector_name"].encode())
-    print(f"detector_based_deleter subscribed to {detector_based_deleter_config['detector_name']} at {detector_based_deleter_config['detector_endpoint']}")
+    sub.connect(config["detector_endpoint"])
+    sub.setsockopt(zmq.SUBSCRIBE, config["detector_name"].encode())
+    print(f"detector_based_deleter subscribed to {config['detector_name']} at {config['detector_endpoint']}")
+    sys.stdout.flush()
+
+    sub.connect(config["h264_writer_endpoint"])
+    sub.setsockopt(zmq.SUBSCRIBE, config["h264_writer_topic"].encode())
+    print(f"detector_based_deleter subscribed to {config['h264_writer_topic']} at {config['h264_writer_endpoint']}")
     sys.stdout.flush()
     
-    files = _get_files_in_location(detector_based_deleter_config["files_location"])
-    print(f"detector_based_deleter found {len(files)} files in {detector_based_deleter_config['files_location']}")
+    #initialize to min datetime
+    evict_after_dt = datetime.min.replace(tzinfo=timezone.utc)
+    potential_evictions = []
+
+    while True:
+        parts = sub.recv_multipart()
+        topic, msg = ZmqCodec.decode(parts)
+        if topic == "control":
+            if msg == "exit":
+                print("detector_based_deleter got control exit")
+                sys.stdout.flush()
+                break
+            continue
+        if topic == config["detector_name"]:
+            dt_utc, detected = msg
+            if detected:
+                evict_after_dt = dt_utc + timedelta(seconds=config["seconds_after_keep"])
+            continue
+        if topic == config["h264_writer_topic"]:
+            potential_evictions.append(msg)
+
+            potential_evictions.sort(key=lambda x: x[0])
+            for eviction in potential_evictions:
+                if eviction[0] < evict_after_dt:
+                    potential_evictions.remove(eviction)
+                    continue
+                os.remove(eviction[1])
+                print(f"detector_based_deleter deleted {eviction[1]}")
+                sys.stdout.flush()
+                potential_evictions.remove(eviction)
+            continue
+
+    print("detector_based_deleter exiting")
     sys.stdout.flush()
-    
-    files_by_second = [_parse_ts_from_filename(file) for file in files if file is not None]
-    files_by_second.sort()
-    print(f"detector_based_deleter sorted {len(files_by_second)} files by timestamp")
-    sys.stdout.flush()
-    
+
+

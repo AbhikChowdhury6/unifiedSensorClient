@@ -28,8 +28,12 @@ def h264_writer():
     # Subscribe to camera frames
     camera_topic = cfg_get_or_default(h264_writer_config, "camera_name", "camera")
     camera_endpoint = cfg_get_or_default(h264_writer_config, "camera_endpoint", "")
+    pub_endpoint = cfg_get_or_default(h264_writer_config, "publish_endpoint", "")
+    pub_topic = cfg_get_or_default(h264_writer_config, "publish_topic", "")
     sub.connect(camera_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
+    pub = ctx.socket(zmq.PUB)
+    pub.bind(pub_endpoint)
 
     write_location = cfg_get_or_default(h264_writer_config, "write_location", "/home/pi/h264_writer/data/")
     duration_s = int(cfg_get_or_default(h264_writer_config, "video_duration", 4))
@@ -48,6 +52,7 @@ def h264_writer():
 
 
     print(f"h264 writer subscribed to {camera_topic} at {camera_endpoint}")
+    print(f"h264 writer publishing to {pub_topic} at {pub_endpoint}")
     sys.stdout.flush()
 
     while True:
@@ -63,16 +68,7 @@ def h264_writer():
         if topic != camera_topic:
             continue
 
-        ts, frame = msg[0], msg[1]
-
-        # Normalize timestamp and compute seconds for gap detection
-        if isinstance(ts, datetime):
-            if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
-            ts_seconds = ts.timestamp()
-        else:
-            # assume epoch ns integer
-            ts_seconds = ts/1_000_000_000
+        dt_utc, frame = msg[0], msg[1]
 
         # Ensure frame is a contiguous uint8 array in expected shape
         if not isinstance(frame, np.ndarray):
@@ -94,7 +90,7 @@ def h264_writer():
 
         # If there's a large break in frames, close current segment
         if ffmpeg_proc is not None and last_ts_seconds is not None:
-            if (ts_seconds - last_ts_seconds) > gap_restart_seconds:
+            if (dt_utc.timestamp() - last_ts_seconds) > gap_restart_seconds:
                 try:
                     ffmpeg_proc.stdin.close()
                 except Exception:
@@ -106,12 +102,12 @@ def h264_writer():
                 ffmpeg_proc = None
                 frames_written_in_segment = 0
                 segment_start_ts = None
-                print(f"h264 writer detected frame gap {(ts_seconds - last_ts_seconds):.3f}s, starting new file")
+                print(f"h264 writer detected frame gap {(dt_utc.timestamp() - last_ts_seconds):.3f}s, starting new file")
                 sys.stdout.flush()
 
         # If current frame is in a newer 4s grid, roll to the next aligned segment
-        if ffmpeg_proc is not None and segment_end_ts is not None and isinstance(ts, datetime):
-            if ts >= segment_end_ts:
+        if ffmpeg_proc is not None and segment_end_ts is not None and isinstance(dt_utc, datetime):
+            if dt_utc >= segment_end_dt:
                 try:
                     ffmpeg_proc.stdin.close()
                 except Exception:
@@ -128,22 +124,25 @@ def h264_writer():
         # Detect actual WxH from first frame (in case of subsampling)
         if ffmpeg_proc is None:
             height, width, _ = frame.shape
-            base_ts = ts if isinstance(ts, datetime) else datetime.fromtimestamp(ts/1_000_000_000, tz=timezone.utc)
+            base_ts = dt_utc
             # Align start to 4s grid; allow partial segments at boundaries
             aligned_epoch = int(base_ts.timestamp()) - (int(base_ts.timestamp()) % duration_s)
-            segment_start_ts = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
-            segment_end_ts = segment_start_ts + timedelta(seconds=duration_s)
-            start_str = _format_ts_for_filename(segment_start_ts)
-            # Write into UTC hourly folders: YYYY/MM/DD/HH
-            hourly_subdir = segment_start_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H")
+            segment_start_dt = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
+            segment_end_dt = segment_start_dt + timedelta(seconds=duration_s)
+            start_str = _format_ts_for_filename(segment_start_dt)
+            
+            # Write into UTC hourly folders: YYYY/MM/DD/HH/MM/
+            hourly_subdir = segment_start_dt.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/")
             out_dir = os.path.join(write_location, hourly_subdir)
             os.makedirs(out_dir, exist_ok=True)
             base_name = f"{camera_topic}_{start_str}.h264"
             out_path = os.path.join(out_dir, base_name)
+            
             ffmpeg_proc = _spawn_ffmpeg(out_path)
             frames_written_in_segment = 0
             print(f"h264 writer started segment {out_path}")
             sys.stdout.flush()
+            pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, out_dir]))
 
         # Write frame to ffmpeg stdin
         try:
@@ -164,7 +163,7 @@ def h264_writer():
             continue
 
         frames_written_in_segment += 1
-        last_ts_seconds = ts_seconds
+        last_ts_seconds = dt_utc.timestamp()
 
         # End the segment only on gap; otherwise allow variable-length files
 

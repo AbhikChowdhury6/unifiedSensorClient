@@ -53,14 +53,14 @@ class PiCamera:
         self._enabled = False
 
     def capture(self):
-        ts = datetime.now(timezone.utc)
+        dt_utc = datetime.now(timezone.utc)
         frame = self.camera.capture_array()
         if self.subsample_ratio > 1:
             frame = frame[::self.subsample_ratio, ::self.subsample_ratio]
             frame = np.ascontiguousarray(frame)
         if self.timestamp_images:
             frame = self.add_timestamp(frame)
-        self.pub.send_multipart(ZmqCodec.encode(self.topic, [ts, frame]))
+        self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, frame]))
     
     def is_enabled(self):
         return self._enabled

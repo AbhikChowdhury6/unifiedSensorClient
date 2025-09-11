@@ -60,16 +60,16 @@ class AudioCapture:
                 # Map PortAudio currentTime (seconds) to UTC now
                 self._pa_epoch_utc_base = datetime.now(timezone.utc) - timedelta(seconds=time_info.currentTime)
             if self._pa_epoch_utc_base is not None and time_info is not None:
-                ts = self._pa_epoch_utc_base + timedelta(seconds=time_info.inputBufferAdcTime)
+                dt_utc = self._pa_epoch_utc_base + timedelta(seconds=time_info.inputBufferAdcTime)
             else:
                 # Fallback: align to start-of-chunk by subtracting buffer duration from now
-                ts = datetime.now(timezone.utc) - timedelta(seconds=frames / float(self.sample_rate))
+                dt_utc = datetime.now(timezone.utc) - timedelta(seconds=frames / float(self.sample_rate))
         except Exception:
-            ts = datetime.now(timezone.utc)
+            dt_utc = datetime.now(timezone.utc)
         try:
             # Copy to avoid buffer reuse
             chunk = np.array(indata, copy=True)
-            self._queue.put_nowait((ts, chunk))
+            self._queue.put_nowait((dt_utc, chunk))
         except queue.Full:
             # Drop if consumer is behind
             pass
@@ -129,7 +129,7 @@ class AudioCapture:
             return
         while True:
             try:
-                ts, chunk = self._queue.get_nowait()
+                dt_utc, chunk = self._queue.get_nowait()
             except queue.Empty:
                 break
             # Ensure contiguous array for serialization
@@ -139,5 +139,5 @@ class AudioCapture:
                 chunk = np.ascontiguousarray(chunk)
             print(f"audio capture publishing {chunk.shape} to {self.topic}")
             sys.stdout.flush()
-            self.pub.send_multipart(ZmqCodec.encode(self.topic, [ts, chunk]))
+            self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk]))
 

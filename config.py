@@ -114,6 +114,8 @@ h264_writer_config = {
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "write_location": "/home/pi/h264_writer/data/",
+    "publish_topic": f"{platform_uuid}_h264_writer",
+    "publish_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
     "video_duration": 4,
     "container_type": "mp4",
     "codec": "h264",

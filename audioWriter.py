@@ -263,7 +263,7 @@ def stop_ffmpeg(proc) -> None:
 
 # Start first segment with an explicit file path including milliseconds
 def make_output_path(now_utc: datetime) -> str:
-    hourly_subdir = now_utc.strftime("%Y/%m/%d/%H")
+    hourly_subdir = now_utc.strftime("%Y/%m/%d/%H/%M/")
     out_dir = os.path.join(audio_writer_config["write_location"], hourly_subdir)
     os.makedirs(out_dir, exist_ok=True)
     # Match video/jpeg timestamp format: YYYYMMDDTHHMMSSpMSZ
@@ -281,7 +281,7 @@ def ensure_base_dir(path: str) -> None:
 
 def ensure_hour_dir(root: str, dt_utc: datetime) -> None:
     try:
-        hour_dir = os.path.join(root, dt_utc.astimezone(timezone.utc).strftime("%Y/%m/%d/%H"))
+        hour_dir = os.path.join(root, dt_utc.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/"))
         os.makedirs(hour_dir, exist_ok=True)
     except Exception as e:
         print(f"audio: failed to create hour dir {root}: {e}")

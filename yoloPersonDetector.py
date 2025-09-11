@@ -78,58 +78,61 @@ def yolo_person_detector():
         if topic != camera_topic:
             continue
 
-        ts, frame = msg[0], msg[1]
+        dt_utc, frame = msg[0], msg[1]
 
         # Keep latest frame only
         latest_frame = frame
-        if isinstance(ts, datetime):
-            latest_ts = ts if ts.tzinfo is not None else ts.replace(tzinfo=timezone.utc)
-        else:
-            latest_ts = datetime.fromtimestamp(ts / 1_000_000_000, tz=timezone.utc)
 
-        frame_ts_seconds = latest_ts.timestamp()
+
+        frame_ts_seconds = dt_utc.timestamp()
         #print(f"yolo person detector frame ts seconds: {frame_ts_seconds}, next capture: {next_capture}, latest ts: {latest_ts}")
         #sys.stdout.flush()
-        if frame_ts_seconds >= next_capture:
-            next_capture = _compute_next_capture_ts(frame_ts_seconds, interval_s)
+        if frame_ts_seconds < next_capture:
+            continue
 
-            # Run detection on this frame
-            if isinstance(latest_frame, np.ndarray):
-                img = latest_frame
-                #print(f"yolo person detector img: {img.shape}")
-                #sys.stdout.flush()
-                if img.ndim == 3 and img.shape[2] == 3 and img.dtype == np.uint8:
-                    try:
-                        # YOLO expects RGB by default; convert if needed here
-                        results = model.predict(source=img, verbose=True, conf=conf_thresh, iou=nms_thresh)
-                        #print(f"yolo person detector results: {results}")
-                        #sys.stdout.flush()
-                    except Exception as e:
-                        print(f"yolo inference failed: {e}")
-                        sys.stdout.flush()
-                        continue
+        next_capture = _compute_next_capture_ts(frame_ts_seconds, interval_s)
 
-                    person_confidence = 0.0
-                    try:
-                        # Iterate over detections to find 'person' class
-                        for r in results:
-                            boxes = r.boxes
-                            names = r.names
-                            if boxes is None:
-                                continue
-                            for cls_id, conf in zip(boxes.cls.tolist(), boxes.conf.tolist()):
-                                name = names.get(int(cls_id), str(int(cls_id)))
-                                if name.lower() == "person":
-                                    person_confidence = max(person_confidence, float(conf))
-                    except Exception as e:
-                        print(f"postprocess failed: {e}")
-                        sys.stdout.flush()
-                        continue
+        # Run detection on this frame
+        if not isinstance(latest_frame, np.ndarray):
+            continue
 
-                    detected = 1 if person_confidence >= conf_thresh else 0
-                    pub.send_multipart(ZmqCodec.encode(pub_topic, [latest_ts, detected]))
-                    print(f"yolo person detector published {detected} (person_conf={person_confidence:.3f})")
-                    sys.stdout.flush()
+        img = latest_frame
+        #print(f"yolo person detector img: {img.shape}")
+        #sys.stdout.flush()
+        if not (img.ndim == 3 and img.shape[2] == 3 and img.dtype == np.uint8):
+            continue
+
+        try:
+            # YOLO expects RGB by default; convert if needed here
+            results = model.predict(source=img, verbose=True, conf=conf_thresh, iou=nms_thresh)
+            #print(f"yolo person detector results: {results}")
+            #sys.stdout.flush()
+        except Exception as e:
+            print(f"yolo inference failed: {e}")
+            sys.stdout.flush()
+            continue
+
+        person_confidence = 0.0
+        try:
+            # Iterate over detections to find 'person' class
+            for r in results:
+                boxes = r.boxes
+                names = r.names
+                if boxes is None:
+                    continue
+                for cls_id, conf in zip(boxes.cls.tolist(), boxes.conf.tolist()):
+                    name = names.get(int(cls_id), str(int(cls_id)))
+                    if name.lower() == "person":
+                        person_confidence = max(person_confidence, float(conf))
+        except Exception as e:
+            print(f"postprocess failed: {e}")
+            sys.stdout.flush()
+            continue
+
+        detected = 1 if person_confidence >= conf_thresh else 0
+        pub.send_multipart(ZmqCodec.encode(pub_topic, [dt_utc, detected]))
+        print(f"yolo person detector published {detected} (person_conf={person_confidence:.3f})")
+        sys.stdout.flush()
 
     print("yolo person detector exiting")
     sys.stdout.flush()
