@@ -70,6 +70,7 @@ def detector_based_deleter():
             dt_utc, detected = msg
             if detected:
                 evict_after_dt = dt_utc + timedelta(seconds=config["seconds_after_keep"])
+                latest_detection_dt = dt_utc
             continue
         if topic == config["h264_writer_topic"]:
             potential_evictions.append(msg)
@@ -78,6 +79,8 @@ def detector_based_deleter():
             for eviction in potential_evictions:
                 if eviction[0] < evict_after_dt:
                     potential_evictions.remove(eviction)
+                    continue
+                if eviction[0] > latest_detection_dt - timedelta(seconds=config["seconds_before_keep"]):
                     continue
                 os.remove(eviction[1])
                 print(f"detector_based_deleter deleted {eviction[1]}")
