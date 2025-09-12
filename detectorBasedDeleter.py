@@ -96,14 +96,16 @@ def detector_based_deleter():
                     sys.stdout.flush()
                     potential_evictions.remove(eviction)
                     continue
-                if eviction[0] > latest_detection_dt - timedelta(seconds=config["seconds_before_keep"]):
-                    print(f"detector_based_deleter skipping eviction: {eviction}")
+                if not eviction[0] > latest_detection_dt - timedelta(seconds=config["seconds_before_keep"]):
+                    os.remove(eviction[1])
+                    potential_evictions.remove(eviction)
+                    print(f"detector_based_deleter deleted {eviction[1]}")
                     sys.stdout.flush()
                     continue
-                os.remove(eviction[1])
-                print(f"detector_based_deleter deleted {eviction[1]}")
+                print(f"detector_based_deleter skipping eviction: {eviction}")
                 sys.stdout.flush()
-                potential_evictions.remove(eviction)
+                continue
+                
             print(f"detector_based_deleter got potential evictions: {potential_evictions}")
             sys.stdout.flush()
 

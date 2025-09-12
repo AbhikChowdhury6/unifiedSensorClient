@@ -147,7 +147,7 @@ def h264_writer():
             frames_written_in_segment = 0
             print(f"h264 writer started segment {out_path}")
             sys.stdout.flush()
-            pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, out_dir]))
+            pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, out_path]))
 
         # Write frame to ffmpeg stdin
         try:
