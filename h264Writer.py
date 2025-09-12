@@ -47,8 +47,8 @@ def h264_writer():
 
     ffmpeg_proc = None
     frames_written_in_segment = 0
-    segment_start_ts = None
-    segment_end_ts = None
+    segment_start_dt = None
+    segment_end_dt = None
     last_ts_seconds = None
 
 
@@ -107,7 +107,7 @@ def h264_writer():
                 sys.stdout.flush()
 
         # If current frame is in a newer 4s grid, roll to the next aligned segment
-        if ffmpeg_proc is not None and segment_end_ts is not None and isinstance(dt_utc, datetime):
+        if ffmpeg_proc is not None and segment_end_dt is not None and isinstance(dt_utc, datetime):
             if dt_utc >= segment_end_dt:
                 try:
                     ffmpeg_proc.stdin.close()
@@ -119,8 +119,8 @@ def h264_writer():
                     pass
                 ffmpeg_proc = None
                 frames_written_in_segment = 0
-                segment_start_ts = None
-                segment_end_ts = None
+                segment_start_dt = None
+                segment_end_dt = None
 
         # Detect actual WxH from first frame (in case of subsampling)
         if ffmpeg_proc is None:
@@ -139,7 +139,11 @@ def h264_writer():
             base_name = f"{camera_topic}_{start_str}.h264"
             out_path = os.path.join(out_dir, base_name)
             
-            ffmpeg_proc = _spawn_ffmpeg(out_path)
+            # Determine runtime width/height/pix_fmt/fps
+            fmt = cfg_get_or_default(h264_writer_config, "format", "RGB888")
+            pix_fmt = "rgb24" if str(fmt).upper() in ("RGB888", "RGB24") else "bgr24"
+            fps = int(cfg_get_or_default(h264_writer_config, "fps", 8))
+            ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, pix_fmt, fps)
             frames_written_in_segment = 0
             print(f"h264 writer started segment {out_path}")
             sys.stdout.flush()
@@ -185,17 +189,12 @@ def h264_writer():
 
 
 
-def _spawn_ffmpeg(output_path: str):
+def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: int):
     # Read settings from config
-    cfg_fps = int(cfg_get_or_default(h264_writer_config, "fps", 8))
-    fmt = cfg_get_or_default(h264_writer_config, "format", "RGB888")
     quality = int(cfg_get_or_default(h264_writer_config, "quality", 80))
     crf = _quality_to_crf(quality)
     gop_interval_seconds = int(cfg_get_or_default(h264_writer_config, "keyframe_interval_seconds", 1))
-    gop_frames = max(1, cfg_fps * gop_interval_seconds)
-    width = int(cfg_get_or_default(h264_writer_config, "width", 640))
-    height = int(cfg_get_or_default(h264_writer_config, "height", 480))
-    pix_fmt = "rgb24" if fmt.upper() in ("RGB888", "RGB24") else "bgr24"
+    gop_frames = max(1, fps * gop_interval_seconds)
     loglevel = str(cfg_get_or_default(h264_writer_config, "loglevel", "warning"))
 
     cmd = [
@@ -206,7 +205,7 @@ def _spawn_ffmpeg(output_path: str):
         "-f", "rawvideo",
         "-pix_fmt", pix_fmt,
         "-s", f"{width}x{height}",
-        "-r", str(cfg_fps),
+        "-r", str(fps),
         "-i", "pipe:0",
     ]
 
