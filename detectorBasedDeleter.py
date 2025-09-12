@@ -61,6 +61,9 @@ def detector_based_deleter():
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
+        print(f"detector_based_deleter got message: {topic}")
+        print(f"detector_based_deleter got message: {msg}")
+        sys.stdout.flush()
         if topic == "control":
             if msg == "exit":
                 print("detector_based_deleter got control exit")
