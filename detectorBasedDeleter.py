@@ -61,36 +61,52 @@ def detector_based_deleter():
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
-        print(f"detector_based_deleter got message: {topic}")
-        print(f"detector_based_deleter got message: {msg}")
-        sys.stdout.flush()
+        #print(f"detector_based_deleter got message: {topic}")
+        #print(f"detector_based_deleter got message: {msg}")
+        #sys.stdout.flush()
         if topic == "control":
             if msg == "exit":
                 print("detector_based_deleter got control exit")
                 sys.stdout.flush()
                 break
             continue
+        
         if topic == config["detector_name"]:
             dt_utc, detected = msg
+            print(f"detector_based_deleter got detection: {dt_utc}, {detected}")
+            sys.stdout.flush()
             if detected:
                 evict_after_dt = dt_utc + timedelta(seconds=config["seconds_after_keep"])
                 latest_detection_dt = dt_utc
+            print(f"detector_based_deleter latest detection dt: {latest_detection_dt}")
+            print(f"detector_based_deleter evict after dt: {evict_after_dt}")
+            sys.stdout.flush()
             continue
+        
         if topic == config["h264_writer_topic"]:
+            print(f"detector_based_deleter got h264 writer message: {msg}")
+            sys.stdout.flush()
             potential_evictions.append(msg)
-
+            print(f"detector_based_deleter got potential evictions: {potential_evictions}")
+            sys.stdout.flush()
             potential_evictions.sort(key=lambda x: x[0])
             for eviction in potential_evictions:
                 if eviction[0] < evict_after_dt:
+                    print(f"detector_based_deleter removing eviction: {eviction}")
+                    sys.stdout.flush()
                     potential_evictions.remove(eviction)
                     continue
                 if eviction[0] > latest_detection_dt - timedelta(seconds=config["seconds_before_keep"]):
+                    print(f"detector_based_deleter skipping eviction: {eviction}")
+                    sys.stdout.flush()
                     continue
                 os.remove(eviction[1])
                 print(f"detector_based_deleter deleted {eviction[1]}")
                 sys.stdout.flush()
                 potential_evictions.remove(eviction)
-            continue
+            print(f"detector_based_deleter got potential evictions: {potential_evictions}")
+            sys.stdout.flush()
+
         print(f"detector_based_deleter got message: {topic}")
         sys.stdout.flush()
 
