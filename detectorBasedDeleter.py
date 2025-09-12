@@ -56,6 +56,7 @@ def detector_based_deleter():
     #initialize to min datetime
     evict_after_dt = datetime.min.replace(tzinfo=timezone.utc)
     potential_evictions = []
+    latest_detection_dt = datetime.min.replace(tzinfo=timezone.utc) + timedelta(seconds=config["seconds_before_keep"])
 
     while True:
         parts = sub.recv_multipart()
