@@ -151,7 +151,7 @@ jpeg_writer_config = {
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "write_location": "/home/pi/data/jpeg_writer/",
     "capture_tolerance_seconds": 0.25,
-    "quality": 80,
+    "quality": 90,
     "image_interval_seconds": 16,
 }
 
