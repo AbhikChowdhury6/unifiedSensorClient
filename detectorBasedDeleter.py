@@ -88,6 +88,8 @@ def detector_based_deleter():
                 sys.stdout.flush()
                 potential_evictions.remove(eviction)
             continue
+        print(f"detector_based_deleter got message: {topic}")
+        sys.stdout.flush()
 
     print("detector_based_deleter exiting")
     sys.stdout.flush()
