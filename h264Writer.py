@@ -2,6 +2,7 @@ import os
 import sys
 import zmq
 import subprocess
+import threading
 from datetime import datetime, timezone, timedelta
 import math
 import numpy as np
@@ -195,9 +196,12 @@ def _spawn_ffmpeg(output_path: str):
     width = int(cfg_get_or_default(h264_writer_config, "width", 640))
     height = int(cfg_get_or_default(h264_writer_config, "height", 480))
     pix_fmt = "rgb24" if fmt.upper() in ("RGB888", "RGB24") else "bgr24"
+    loglevel = str(cfg_get_or_default(h264_writer_config, "loglevel", "warning"))
 
     cmd = [
         "ffmpeg",
+        "-hide_banner",
+        "-loglevel", loglevel,
         "-y", 
         "-f", "rawvideo",
         "-pix_fmt", pix_fmt,
@@ -224,7 +228,43 @@ def _spawn_ffmpeg(output_path: str):
         output_path,
     ]
     # Use Popen with a PIPE for stdin
-    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            bufsize=0,
+        )
+        print("h264: started ffmpeg:", " ".join(cmd))
+        sys.stdout.flush()
+        t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
+        t.start()
+        proc._stderr_thread = t  # attach for lifecycle awareness
+        return proc
+    except FileNotFoundError:
+        print("h264: ffmpeg not found. Please install ffmpeg.")
+        sys.stdout.flush()
+        return None
+    except Exception as e:
+        print(f"h264: failed to start ffmpeg: {e}")
+        sys.stdout.flush()
+        return None
+
+
+def _stderr_reader(p):
+    try:
+        for raw in iter(p.stderr.readline, b""):
+            line = raw.decode(errors="replace").rstrip()
+            if line:
+                print(f"h264 ffmpeg stderr: {line}")
+                sys.stdout.flush()
+    except Exception as e:
+        print(f"h264 ffmpeg stderr reader error: {e}")
+        sys.stdout.flush()
+    finally:
+        print("h264 ffmpeg stderr: [closed]")
+        sys.stdout.flush()
 
 
 
