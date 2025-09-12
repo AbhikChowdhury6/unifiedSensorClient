@@ -50,6 +50,7 @@ def h264_writer():
     segment_start_dt = None
     segment_end_dt = None
     last_ts_seconds = None
+    current_out_path = None
 
 
     print(f"h264 writer subscribed to {camera_topic} at {camera_endpoint}")
@@ -100,9 +101,17 @@ def h264_writer():
                     ffmpeg_proc.wait(timeout=3)
                 except Exception:
                     pass
+                # Publish just-closed segment due to gap
+                try:
+                    if current_out_path is not None:
+                        pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, current_out_path]))
+                except Exception:
+                    pass
                 ffmpeg_proc = None
                 frames_written_in_segment = 0
-                segment_start_ts = None
+                segment_start_dt = None
+                segment_end_dt = None
+                current_out_path = None
                 print(f"h264 writer detected frame gap {(dt_utc.timestamp() - last_ts_seconds):.3f}s, starting new file")
                 sys.stdout.flush()
 
@@ -117,10 +126,17 @@ def h264_writer():
                     ffmpeg_proc.wait(timeout=3)
                 except Exception:
                     pass
+                # Publish just-closed segment on rotation
+                try:
+                    if current_out_path is not None:
+                        pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, current_out_path]))
+                except Exception:
+                    pass
                 ffmpeg_proc = None
                 frames_written_in_segment = 0
                 segment_start_dt = None
                 segment_end_dt = None
+                current_out_path = None
 
         # Detect actual WxH from first frame (in case of subsampling)
         if ffmpeg_proc is None:
@@ -147,7 +163,7 @@ def h264_writer():
             frames_written_in_segment = 0
             print(f"h264 writer started segment {out_path}")
             sys.stdout.flush()
-            pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, out_path]))
+            current_out_path = out_path
 
         # Write frame to ffmpeg stdin
         try:
@@ -163,8 +179,17 @@ def h264_writer():
                     ffmpeg_proc.wait(timeout=1)
                 except Exception:
                     pass
+            # Publish just-closed segment on failure
+            try:
+                if current_out_path is not None:
+                    pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, current_out_path]))
+            except Exception:
+                pass
             ffmpeg_proc = None
             frames_written_in_segment = 0
+            segment_start_dt = None
+            segment_end_dt = None
+            current_out_path = None
             continue
 
         frames_written_in_segment += 1
@@ -180,6 +205,12 @@ def h264_writer():
             pass
         try:
             ffmpeg_proc.wait(timeout=3)
+        except Exception:
+            pass
+        # Publish just-closed segment on shutdown
+        try:
+            if current_out_path is not None:
+                pub.send_multipart(ZmqCodec.encode(pub_topic, [segment_start_dt, current_out_path]))
         except Exception:
             pass
 
