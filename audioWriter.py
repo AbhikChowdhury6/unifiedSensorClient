@@ -70,8 +70,8 @@ def audio_writer():
             # Block until a message arrives on either control or audio pub topic
             parts = sub.recv_multipart()
             topic, obj = ZmqCodec.decode(parts)
-            print(f"audio writer got message: {topic}")
-            sys.stdout.flush()
+            #print(f"audio writer got message: {topic}")
+            #sys.stdout.flush()
 
             # Check ffmpeg health early in the loop
             if ff.poll() is not None:

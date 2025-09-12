@@ -137,7 +137,7 @@ class AudioCapture:
                 chunk = np.asarray(chunk)
             if not chunk.flags["C_CONTIGUOUS"]:
                 chunk = np.ascontiguousarray(chunk)
-            print(f"audio capture publishing {chunk.shape} to {self.topic}")
-            sys.stdout.flush()
+            #print(f"audio capture publishing {chunk.shape} to {self.topic}")
+            #sys.stdout.flush()
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk]))
 
