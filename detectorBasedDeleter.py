@@ -87,16 +87,21 @@ def detector_based_deleter():
             print(f"detector_based_deleter got h264 writer message: {msg}")
             sys.stdout.flush()
             potential_evictions.append(msg)
-            print(f"detector_based_deleter got potential evictions: {potential_evictions}")
+            print(f"detector_based_deleter got potential evictions: {len(potential_evictions)}")
             sys.stdout.flush()
             potential_evictions.sort(key=lambda x: x[0])
             for eviction in potential_evictions:
+                # if its in the clear
                 if eviction[0] < evict_after_dt:
                     print(f"detector_based_deleter removing eviction: {eviction}")
                     sys.stdout.flush()
                     potential_evictions.remove(eviction)
                     continue
-                if not eviction[0] > latest_detection_dt - timedelta(seconds=config["seconds_before_keep"]):
+                # if its not in the grace period
+                grace_period_start = latest_detection_dt - timedelta(seconds=config["seconds_before_keep"])
+                print(f"detector_based_deleter grace period start: {grace_period_start}")
+                sys.stdout.flush()
+                if eviction[0] < grace_period_start:
                     os.remove(eviction[1])
                     potential_evictions.remove(eviction)
                     print(f"detector_based_deleter deleted {eviction[1]}")
@@ -106,7 +111,7 @@ def detector_based_deleter():
                 sys.stdout.flush()
                 continue
                 
-            print(f"detector_based_deleter got potential evictions: {potential_evictions}")
+            print(f"detector_based_deleter got potential evictions: {len(potential_evictions)}")
             sys.stdout.flush()
 
         print(f"detector_based_deleter got message: {topic}")
