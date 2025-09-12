@@ -194,4 +194,8 @@ detector_based_deleter_config = {
     "detector_name": f"{platform_uuid}_yolo11m_person_detection",
     "detector_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
     "files_location": "/home/pi/h264_writer/data/",
+    "h264_writer_topic": f"{platform_uuid}_h264_writer",
+    "h264_writer_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
+    "seconds_after_keep": 20,
+    "seconds_before_keep": 20,
 }
