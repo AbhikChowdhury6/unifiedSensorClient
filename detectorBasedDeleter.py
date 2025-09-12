@@ -103,7 +103,7 @@ def detector_based_deleter():
                 print(f"detector_based_deleter eviction: {eviction[0]}")
                 print(f"the truth is: {eviction[0] < grace_period_start}")
                 sys.stdout.flush()
-                if eviction[0] < grace_period_start:
+                if eviction[0] >= grace_period_start:
                     os.remove(eviction[1])
                     potential_evictions.remove(eviction)
                     print(f"detector_based_deleter deleted {eviction[1]}")
