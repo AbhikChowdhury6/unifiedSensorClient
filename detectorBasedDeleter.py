@@ -91,12 +91,12 @@ def detector_based_deleter():
             print(f"detector_based_deleter got potential evictions: {len(potential_evictions)}")
             sys.stdout.flush()
             potential_evictions.sort(key=lambda x: x[0])
+            new_potential_evictions = []
             for eviction in potential_evictions:
                 # if its in the clear
                 if eviction[0] < evict_after_dt:
                     print(f"detector_based_deleter removing eviction: {eviction}")
                     sys.stdout.flush()
-                    potential_evictions.remove(eviction)
                     continue
                 # if its not in the grace period
                 grace_period_start = latest_detection_signal_dt - timedelta(seconds=config["seconds_before_keep"])
@@ -106,15 +106,16 @@ def detector_based_deleter():
                 sys.stdout.flush()
                 if eviction[0] <= grace_period_start:
                     os.remove(eviction[1])
-                    potential_evictions.remove(eviction)
                     print(f"detector_based_deleter deleted {eviction[1]}")
                     sys.stdout.flush()
                     continue
                 print(f"detector_based_deleter skipping eviction: {eviction}")
+                new_potential_evictions.append(eviction)
                 sys.stdout.flush()
                 continue
+            potential_evictions = new_potential_evictions
                 
-            print(f"detector_based_deleter got potential evictions: {len(potential_evictions)}")
+            print(f"detector_based_deleter has potential evictions: {len(potential_evictions)}")
             sys.stdout.flush()
 
         print(f"detector_based_deleter got message: {topic}")
