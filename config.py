@@ -44,7 +44,7 @@ csv_writer_subscription_topics = [
     f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
 ]
 # the write locations, note the file name will be the topic name.csv
-csv_writer_write_location = "/home/pi/csv_writer/data/"
+csv_writer_write_location = "/home/pi/data/csv_writer/"
 
 sqlite_writer_subscription_endpoints = [
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
@@ -53,7 +53,7 @@ sqlite_writer_subscription_endpoints = [
     f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
 ]
 
-sqlite_writer_write_location = "/home/pi/sqlite_writer/data/"
+sqlite_writer_write_location = "/home/pi/data/sqlite_writer/"
 
 
 sqlite_writer_subscription_topics = [
@@ -133,7 +133,7 @@ h264_writer_subscription_topics = [
 h264_writer_config = {
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "write_location": "/home/pi/h264_writer/data/",
+    "write_location": "/home/pi/data/h264_writer/",
     "publish_topic": f"{platform_uuid}_h264_writer",
     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
     "video_duration": 4,
@@ -149,7 +149,7 @@ h264_writer_config = {
 jpeg_writer_config = {
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "write_location": "/home/pi/jpeg_writer/data/",
+    "write_location": "/home/pi/data/jpeg_writer/",
     "capture_tolerance_seconds": 0.25,
     "quality": 80,
     "image_interval_seconds": 16,
@@ -178,7 +178,7 @@ audio_publisher_config = {
 audio_writer_config = {
     "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_publisher.sock",
     "sub_topic": f"{platform_uuid}_audio_publisher",
-    "write_location": "/home/pi/audio_writer/data/",
+    "write_location": "/home/pi/data/audio_writer/",
     "bitrate": "16k",
     "sample_rate": 16000,
     "channels": 1,
@@ -193,9 +193,9 @@ audio_writer_config = {
 detector_based_deleter_config = {
     "detector_name": f"{platform_uuid}_yolo11m_person_detection",
     "detector_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
-    "files_location": "/home/pi/h264_writer/data/",
+    "files_location": "/home/pi/data/h264_writer/",
     "h264_writer_topic": f"{platform_uuid}_h264_writer",
     "h264_writer_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
     "seconds_after_keep": 20,
-    "seconds_before_keep": 20,
+    "seconds_before_keep": 10,
 }
