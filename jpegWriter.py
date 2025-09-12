@@ -124,8 +124,8 @@ def jpeg_writer():
                         frame_to_write = cv2.cvtColor(frame_to_write, cv2.COLOR_RGB2BGR)
 
                     ts_str = _format_ts_for_filename(latest_ts)
-                    # Write into UTC hourly folders: YYYY/MM/DD/HH
-                    hourly_subdir = latest_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H")
+                    # Write into UTC hourly folders: YYYY/MM/DD/HH/MM/
+                    hourly_subdir = latest_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/")
                     out_dir = os.path.join(write_location, hourly_subdir)
                     os.makedirs(out_dir, exist_ok=True)
                     filename = f"{platform_uuid}_{camera_topic}_{ts_str}.jpeg"

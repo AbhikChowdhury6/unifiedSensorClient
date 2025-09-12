@@ -17,7 +17,7 @@ from jpegWriter import jpeg_writer
 from videoController import videoController
 from config import (
     zmq_control_endpoint,
-    cameras,
+    init_log_queue,
 )
 from zmq_codec import ZmqCodec
 from yoloPersonDetector import yolo_person_detector

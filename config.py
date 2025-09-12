@@ -1,3 +1,5 @@
+import multiprocessing as mp
+
 # this file will evolve based on features
 testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
 
@@ -11,6 +13,24 @@ platform_name = "raspberry_pi_5"
 
 # this is the responsible party
 responsible_party = "Abhik"
+
+log_queue = None
+
+def init_log_queue():
+    global log_queue
+    if log_queue is None:
+        log_queue = mp.Queue()
+    return log_queue
+
+def get_log_queue():
+    global log_queue
+    if log_queue is None:
+        raise RuntimeError("Log queue not initialized. Call init_log_queue() first.")
+    return log_queue
+
+allowed_loggers = []
+allowed_funcs = []
+debugLvl = 10
 
 csv_writer_subscription_endpoints = [
     f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
