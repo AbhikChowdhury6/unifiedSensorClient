@@ -14,7 +14,7 @@ from csvWriter import csv_writer
 from sqliteWriter import sqlite_writer
 from h264Writer import h264_writer
 from jpegWriter import jpeg_writer
-from videoController import videoController
+from videoController import video_controller
 from config import (
     zmq_control_endpoint,
     init_log_queue,
@@ -23,14 +23,13 @@ from zmq_codec import ZmqCodec
 from yoloPersonDetector import yolo_person_detector
 from detectorBasedDeleter import detector_based_deleter
 from audioWriter import audio_writer
-from audioController import audioController
+from audioController import audio_controller
 
 if __name__ == "__main__":
     ctx = zmq.Context()
     pub = ctx.socket(zmq.PUB)
     pub.bind(zmq_control_endpoint)
 
-    
 
     # Start subscribers first to avoid slow-joiner drops
     csv_process = mp.Process(target=csv_writer)
@@ -39,7 +38,7 @@ if __name__ == "__main__":
     sqlite_process = mp.Process(target=sqlite_writer)
     sqlite_process.start()
 
-    audio_controller_process = mp.Process(target=audioController)
+    audio_controller_process = mp.Process(target=audio_controller)
     audio_controller_process.start()
 
     # Give subscribers a moment to connect and subscribe
@@ -50,7 +49,7 @@ if __name__ == "__main__":
     i2c_process.start()
 
 
-    video_process = mp.Process(target=videoController)
+    video_process = mp.Process(target=video_controller)
     video_process.start()
 
     time.sleep(1)

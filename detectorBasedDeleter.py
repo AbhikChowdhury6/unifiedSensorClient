@@ -71,6 +71,7 @@ def detector_based_deleter():
                 break
             continue
         
+        last_msg_time = msg[0]
         if topic == config["detector_name"]:
             dt_utc, detected = msg
             print(f"detector_based_deleter got detection: {dt_utc}, {detected}")
@@ -78,8 +79,6 @@ def detector_based_deleter():
             if detected:
                 evict_after_dt = dt_utc + timedelta(seconds=config["seconds_after_keep"])
             
-            latest_detection_signal_dt = dt_utc
-            print(f"detector_based_deleter latest detection dt: {latest_detection_signal_dt}")
             print(f"detector_based_deleter evict after dt: {evict_after_dt}")
             sys.stdout.flush()
             continue
@@ -99,7 +98,7 @@ def detector_based_deleter():
                     sys.stdout.flush()
                     continue
                 # if its not in the grace period
-                grace_period_start = latest_detection_signal_dt - timedelta(seconds=config["seconds_before_keep"])
+                grace_period_start = last_msg_time - timedelta(seconds=config["seconds_before_keep"])
                 print(f"detector_based_deleter grace period start: {grace_period_start}")
                 print(f"detector_based_deleter eviction timestamp: {eviction[0]}")
                 print(f"the truth is: {eviction[0] <= grace_period_start}")

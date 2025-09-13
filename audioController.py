@@ -16,7 +16,7 @@ from zmq_codec import ZmqCodec
 from audioCapture import AudioCapture
 
 
-def audioController():
+def audio_controller():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)

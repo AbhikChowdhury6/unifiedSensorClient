@@ -32,40 +32,44 @@ allowed_loggers = []
 allowed_funcs = []
 debugLvl = 10
 
-csv_writer_subscription_endpoints = [
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
-]
 
-csv_writer_subscription_topics = [
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
-]
-# the write locations, note the file name will be the topic name.csv
-csv_writer_write_location = "/home/pi/data/csv_writer/"
+csv_writer_process_config = {
+    "module_name": "csvWriter",
+    "class_name": "csv_writer",
+    "write_location": "/home/pi/data/csv_writer/",
+    "subscription_endpoints": [
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
+    ],
+    "subscription_topics": [
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
+    ],
+}
 
-sqlite_writer_subscription_endpoints = [
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
-    f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
-    f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
-]
-
-sqlite_writer_write_location = "/home/pi/data/sqlite_writer/"
-
-
-sqlite_writer_subscription_topics = [
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
-    f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
-    f"{platform_uuid}_yolo11m_person_detection",
-]
+sqlite_writer_process_config = {
+    "module_name": "sqliteWriter",
+    "class_name": "sqlite_writer",
+    "write_location": "/home/pi/data/sqlite_writer/",
+    "subscription_endpoints": [
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
+        f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+    ],
+    "subscription_topics": [
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
+        f"{platform_uuid}_yolo11m_person_detection",
+    ],
+}
 
 # note all sensors are floats and are in units standard for the sensor
 
-i2c_controller_config = {
+i2c_controller_process_config = {
     "bus_number": 1,
     "devices": [
         {   
@@ -106,7 +110,7 @@ picamv3noirwide = "picamV3-sony-imx708-noir-120fov-12MP"
 picamv3noir = "picamV3-sony-imx708-noir-80fov-12MP"
 picamv3wide = "picamV3-sony-imx708-120fov-12MP"
 
-cameras = [{
+video_controller_process_config = {
     "camera_type_module": "piCamera",
     "camera_type_class": "PiCamera",
     "camera_index": 0,
@@ -119,21 +123,15 @@ cameras = [{
     "fps": 8,
     "subsample_ratio": 2,
     "timestamp_images": True,
-}]
-
-h264_writer_subscription_endpoints = [
-    f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-]
-
-h264_writer_subscription_topics = [
-    f"{platform_uuid}_csi-0_{picamv3noirwide}",
-]
+}
 
 
-h264_writer_config = {
-    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+h264_writer_process_config = {
+    "module_name": "h264Writer",
+    "class_name": "h264_writer",
     "write_location": "/home/pi/data/h264_writer/",
+    "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "publish_topic": f"{platform_uuid}_h264_writer",
     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
     "video_duration": 4,
@@ -146,7 +144,10 @@ h264_writer_config = {
     "format": "RGB888",
 }
 
-jpeg_writer_config = {
+
+jpeg_writer_process_config = {
+    "module_name": "jpegWriter",
+    "class_name": "jpeg_writer",
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "write_location": "/home/pi/data/jpeg_writer/",
@@ -155,7 +156,9 @@ jpeg_writer_config = {
     "image_interval_seconds": 16,
 }
 
-yolo_person_detector_config = {
+yolo_person_detector_process_config = {
+    "module_name": "yoloPersonDetector",
+    "class_name": "yolo_person_detector",
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
@@ -166,18 +169,22 @@ yolo_person_detector_config = {
     "interval_seconds": 4,
 }
 
-audio_publisher_config = {
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_publisher.sock",
-    "pub_topic": f"{platform_uuid}_audio_publisher",
+audio_capture_process_config = {
+    "module_name": "audioCapture",
+    "class_name": "audio_capture",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_capture.sock",
+    "pub_topic": f"{platform_uuid}_audio_capture",
     "sample_rate": 16000,
     "channels": 1,
     "hz": 2,
     "dtype": "int16",
 }
 
-audio_writer_config = {
-    "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_publisher.sock",
-    "sub_topic": f"{platform_uuid}_audio_publisher",
+audio_writer_process_config = {
+    "module_name": "audioWriter",
+    "class_name": "audio_writer",
+    "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_capture.sock",
+    "sub_topic": f"{platform_uuid}_audio_capture",
     "write_location": "/home/pi/data/audio_writer/",
     "bitrate": "16k",
     "sample_rate": 16000,
@@ -190,9 +197,11 @@ audio_writer_config = {
     "frame_hz": 2,
 }
 
-detector_based_deleter_config = {
-    "detector_name": f"{platform_uuid}_yolo11m_person_detection",
-    "detector_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+detector_based_deleter_process_config = {
+    "module_name": "detectorBasedDeleter",
+    "class_name": "detector_based_deleter",
+    "detector_names": [f"{platform_uuid}_yolo11m_person_detection"],
+    "detector_endpoints": [f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock"],
     "files_location": "/home/pi/data/h264_writer/",
     "h264_writer_topic": f"{platform_uuid}_h264_writer",
     "h264_writer_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",

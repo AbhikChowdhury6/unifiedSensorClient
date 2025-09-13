@@ -23,7 +23,7 @@ def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def videoController():
+def video_controller():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
@@ -48,7 +48,7 @@ def videoController():
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             topic, obj = ZmqCodec.decode(parts)
             print("video controller message:", topic, obj)
-            if topic == "control" and obj == "exit":
+            if topic == "control" and obj[0] == "exit" and obj[-1] == "exit":
                 print('video controller exiting')
                 break
             if topic == cameras[0]['camera_name']:
