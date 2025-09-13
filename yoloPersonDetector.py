@@ -70,7 +70,7 @@ def yolo_person_detector():
         topic, msg = ZmqCodec.decode(parts)
 
         if topic == "control":
-            if msg == "exit":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "yolo"):
                 print("yolo person detector got control exit")
                 sys.stdout.flush()
                 break

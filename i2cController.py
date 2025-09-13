@@ -68,7 +68,7 @@ def I2C_BUS():
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             _, obj = ZmqCodec.decode(parts)
             print("i2c control message:", obj)
-            if obj == "exit":
+            if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "i2c"):
                 print('i2c exiting')
                 break
         except zmq.Again:

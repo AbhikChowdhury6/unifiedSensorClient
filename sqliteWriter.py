@@ -65,7 +65,7 @@ def sqlite_writer():
         elif isinstance(value, np.generic):
             value = float(value)
         if topic == "control":
-            if msg == "exit":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "sqlite"):
                 print("sqlite writer got control exit")
                 sys.stdout.flush()
                 break

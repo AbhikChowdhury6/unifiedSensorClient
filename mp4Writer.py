@@ -61,9 +61,17 @@ def mp4_writer():
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
         if topic == "control":
-            if msg == "exit":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "mp4"):
                 print("mp4 writer got control exit")
                 sys.stdout.flush()
+                try:
+                    ffmpeg_proc.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    ffmpeg_proc.wait(timeout=3)
+                except Exception:
+                    pass
                 break
             continue
 

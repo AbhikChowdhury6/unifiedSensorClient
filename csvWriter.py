@@ -43,7 +43,7 @@ def csv_writer():
     while True:
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
         if topic == "control":
-            if msg == "exit":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "csv"):
                 print("csv writer got control exit")
                 sys.stdout.flush()
                 break

@@ -65,7 +65,7 @@ def detector_based_deleter():
         #print(f"detector_based_deleter got message: {msg}")
         #sys.stdout.flush()
         if topic == "control":
-            if msg == "exit":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "del"):
                 print("detector_based_deleter got control exit")
                 sys.stdout.flush()
                 break

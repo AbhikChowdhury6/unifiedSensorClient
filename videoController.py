@@ -48,14 +48,9 @@ def video_controller():
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             topic, obj = ZmqCodec.decode(parts)
             print("video controller message:", topic, obj)
-            if topic == "control" and obj[0] == "exit" and obj[-1] == "exit":
+            if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "video")):
                 print('video controller exiting')
                 break
-            if topic == cameras[0]['camera_name']:
-                if obj == "enable":
-                    camera.enable()
-                if obj == "disable":
-                    camera.disable()
         except zmq.Again:
             # No message available
             pass

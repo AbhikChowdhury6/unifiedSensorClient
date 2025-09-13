@@ -49,15 +49,10 @@ def audio_controller():
             try:
                 parts = sub.recv_multipart(flags=zmq.NOBLOCK)
                 topic, obj = ZmqCodec.decode(parts)
-                if topic == "control" and obj == "exit":
+                if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "audio")):
                     print("audio controller exiting")
                     sys.stdout.flush()
                     break
-                if topic == audio_publisher_config['pub_topic']:
-                    if obj == "enable":
-                        cap.enable()
-                    if obj == "disable":
-                        cap.disable()
             except zmq.Again:
                 pass
 

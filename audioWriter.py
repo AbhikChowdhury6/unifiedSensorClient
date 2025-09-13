@@ -85,7 +85,7 @@ def audio_writer():
                 if ff is None:
                     break
 
-            if topic == "control" and obj == "exit":
+            if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "opus")):
                 print("audio writer exiting")
                 sys.stdout.flush()
                 break
