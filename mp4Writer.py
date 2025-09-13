@@ -12,13 +12,13 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
 from config import (
-    h264_writer_config,
+    mp4_writer_config,
     zmq_control_endpoint,
 )
 
 
 
-def h264_writer():
+def mp4_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
 
@@ -27,19 +27,19 @@ def h264_writer():
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
 
     # Subscribe to camera frames
-    camera_topic = cfg_get_or_default(h264_writer_config, "camera_name", "camera")
-    camera_endpoint = cfg_get_or_default(h264_writer_config, "camera_endpoint", "")
-    pub_endpoint = cfg_get_or_default(h264_writer_config, "publish_endpoint", "")
-    pub_topic = cfg_get_or_default(h264_writer_config, "publish_topic", "")
+    camera_topic = cfg_get_or_default(mp4_writer_config, "camera_name", "camera")
+    camera_endpoint = cfg_get_or_default(mp4_writer_config, "camera_endpoint", "")
+    pub_endpoint = cfg_get_or_default(mp4_writer_config, "publish_endpoint", "")
+    pub_topic = cfg_get_or_default(mp4_writer_config, "publish_topic", "")
     sub.connect(camera_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
     pub = ctx.socket(zmq.PUB)
     pub.bind(pub_endpoint)
 
-    write_location = cfg_get_or_default(h264_writer_config, "write_location", "/home/pi/h264_writer/data/")
-    duration_s = int(cfg_get_or_default(h264_writer_config, "video_duration", 4))
+    write_location = cfg_get_or_default(mp4_writer_config, "write_location", "/home/pi/mp4_writer/data/")
+    duration_s = int(cfg_get_or_default(mp4_writer_config, "video_duration", 4))
     # If there's a long gap between frames, start a new file. Default 2 seconds.
-    gap_restart_seconds = float(cfg_get_or_default(h264_writer_config, "frame_gap_restart_seconds", .5))
+    gap_restart_seconds = float(cfg_get_or_default(mp4_writer_config, "frame_gap_restart_seconds", .5))
 
     os.makedirs(write_location, exist_ok=True)
 
@@ -53,8 +53,8 @@ def h264_writer():
     current_out_path = None
 
 
-    print(f"h264 writer subscribed to {camera_topic} at {camera_endpoint}")
-    print(f"h264 writer publishing to {pub_topic} at {pub_endpoint}")
+    print(f"mp4 writer subscribed to {camera_topic} at {camera_endpoint}")
+    print(f"mp4 writer publishing to {pub_topic} at {pub_endpoint}")
     sys.stdout.flush()
 
     while True:
@@ -62,7 +62,7 @@ def h264_writer():
         topic, msg = ZmqCodec.decode(parts)
         if topic == "control":
             if msg == "exit":
-                print("h264 writer got control exit")
+                print("mp4 writer got control exit")
                 sys.stdout.flush()
                 break
             continue
@@ -74,19 +74,19 @@ def h264_writer():
 
         # Ensure frame is a contiguous uint8 array in expected shape
         if not isinstance(frame, np.ndarray):
-            print("h264 writer: frame is not a numpy array")
+            print("mp4 writer: frame is not a numpy array")
             sys.stdout.flush()
             continue
         if frame.ndim != 3 or frame.shape[2] != 3:
-            print(f"h264 writer: invalid frame shape {frame.shape}, expected (H,W,3)")
+            print(f"mp4 writer: invalid frame shape {frame.shape}, expected (H,W,3)")
             sys.stdout.flush() 
             continue
         if not frame.flags["C_CONTIGUOUS"]:
-            print("h264 writer: frame is not C contiguous, making a copy")
+            print("mp4 writer: frame is not C contiguous, making a copy")
             sys.stdout.flush()
             frame = np.ascontiguousarray(frame)
         if frame.dtype != np.uint8:
-            print(f"h264 writer: converting frame from {frame.dtype} to uint8")
+            print(f"mp4 writer: converting frame from {frame.dtype} to uint8")
             sys.stdout.flush()
             frame = frame.astype(np.uint8, copy=False)
 
@@ -112,7 +112,7 @@ def h264_writer():
                 segment_start_dt = None
                 segment_end_dt = None
                 current_out_path = None
-                print(f"h264 writer detected frame gap {(dt_utc.timestamp() - last_ts_seconds):.3f}s, starting new file")
+                print(f"mp4 writer detected frame gap {(dt_utc.timestamp() - last_ts_seconds):.3f}s, starting new file")
                 sys.stdout.flush()
 
         # If current frame is in a newer 4s grid, roll to the next aligned segment
@@ -156,12 +156,12 @@ def h264_writer():
             out_path = os.path.join(out_dir, base_name)
             
             # Determine runtime width/height/pix_fmt/fps
-            fmt = cfg_get_or_default(h264_writer_config, "format", "RGB888")
+            fmt = cfg_get_or_default(mp4_writer_config, "format", "RGB888")
             pix_fmt = "rgb24" if str(fmt).upper() in ("RGB888", "RGB24") else "bgr24"
-            fps = int(cfg_get_or_default(h264_writer_config, "fps", 8))
+            fps = int(cfg_get_or_default(mp4_writer_config, "fps", 8))
             ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, pix_fmt, fps)
             frames_written_in_segment = 0
-            print(f"h264 writer started segment {out_path}")
+            print(f"mp4 writer started segment {out_path}")
             sys.stdout.flush()
             current_out_path = out_path
 
@@ -214,7 +214,7 @@ def h264_writer():
         except Exception:
             pass
 
-    print("h264 writer exiting")
+    print("mp4 writer exiting")
     sys.stdout.flush()
 
 
@@ -222,11 +222,11 @@ def h264_writer():
 
 def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: int):
     # Read settings from config
-    quality = int(cfg_get_or_default(h264_writer_config, "quality", 80))
+    quality = int(cfg_get_or_default(mp4_writer_config, "quality", 80))
     crf = _quality_to_crf(quality)
-    gop_interval_seconds = int(cfg_get_or_default(h264_writer_config, "keyframe_interval_seconds", 1))
+    gop_interval_seconds = int(cfg_get_or_default(mp4_writer_config, "keyframe_interval_seconds", 1))
     gop_frames = max(1, fps * gop_interval_seconds)
-    loglevel = str(cfg_get_or_default(h264_writer_config, "loglevel", "warning"))
+    loglevel = str(cfg_get_or_default(mp4_writer_config, "loglevel", "warning"))
 
     cmd = [
         "ffmpeg",
@@ -266,18 +266,18 @@ def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: 
             stderr=subprocess.PIPE,
             bufsize=0,
         )
-        print("h264: started ffmpeg:", " ".join(cmd))
+        print("mp4: started ffmpeg:", " ".join(cmd))
         sys.stdout.flush()
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
         t.start()
         proc._stderr_thread = t  # attach for lifecycle awareness
         return proc
     except FileNotFoundError:
-        print("h264: ffmpeg not found. Please install ffmpeg.")
+        print("mp4: ffmpeg not found. Please install ffmpeg.")
         sys.stdout.flush()
         return None
     except Exception as e:
-        print(f"h264: failed to start ffmpeg: {e}")
+        print(f"mp4: failed to start ffmpeg: {e}")
         sys.stdout.flush()
         return None
 
@@ -287,13 +287,13 @@ def _stderr_reader(p):
         for raw in iter(p.stderr.readline, b""):
             line = raw.decode(errors="replace").rstrip()
             if line:
-                print(f"h264 ffmpeg stderr: {line}")
+                print(f"mp4 ffmpeg stderr: {line}")
                 sys.stdout.flush()
     except Exception as e:
-        print(f"h264 ffmpeg stderr reader error: {e}")
+        print(f"mp4 ffmpeg stderr reader error: {e}")
         sys.stdout.flush()
     finally:
-        print("h264 ffmpeg stderr: [closed]")
+        print("mp4 ffmpeg stderr: [closed]")
         sys.stdout.flush()
 
 
@@ -317,12 +317,12 @@ def cfg_get_or_default(cfg, key, default):
     except Exception:
         value = None
     if value is None:
-        print(f"h264 writer: config missing '{key}', using default {default}")
+        print(f"mp4 writer: config missing '{key}', using default {default}")
         sys.stdout.flush()
         return default
     return value
 
 if __name__ == "__main__":
-    h264_writer()
+    mp4_writer()
 
 

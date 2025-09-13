@@ -1,94 +1,52 @@
-# start all of the processes
-
 import os
 import sys
 import select
 import time
+import importlib
 import zmq
 import multiprocessing as mp
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from i2cController import I2C_BUS
-from csvWriter import csv_writer
-from sqliteWriter import sqlite_writer
-from h264Writer import h264_writer
-from jpegWriter import jpeg_writer
-from videoController import video_controller
 from config import (
     zmq_control_endpoint,
     init_log_queue,
+    all_process_configs,
 )
 from zmq_codec import ZmqCodec
-from yoloPersonDetector import yolo_person_detector
-from detectorBasedDeleter import detector_based_deleter
-from audioWriter import audio_writer
-from audioController import audio_controller
+
+
+
+def _start_processes_dynamically():
+    processes = {}
+    for name in all_process_configs.keys():
+        cfg = all_process_configs.get(name)
+
+        module_name = cfg.get("module_name")
+        class_name = cfg.get("class_name")
+        module = importlib.import_module(module_name)
+        target = getattr(module, class_name)
+
+        p = mp.Process(target=target)
+        p.start()
+        processes[name] = p
+
+    return processes
+
 
 if __name__ == "__main__":
     ctx = zmq.Context()
     pub = ctx.socket(zmq.PUB)
     pub.bind(zmq_control_endpoint)
 
-
-    # Start subscribers first to avoid slow-joiner drops
-    csv_process = mp.Process(target=csv_writer)
-    csv_process.start()
-
-    sqlite_process = mp.Process(target=sqlite_writer)
-    sqlite_process.start()
-
-    audio_controller_process = mp.Process(target=audio_controller)
-    audio_controller_process.start()
-
-    # Give subscribers a moment to connect and subscribe
-    time.sleep(0.5)
-
-    # Start publisher/producer last
-    i2c_process = mp.Process(target=I2C_BUS)
-    i2c_process.start()
-
-
-    video_process = mp.Process(target=video_controller)
-    video_process.start()
-
-    time.sleep(1)
-
-    h264_process = mp.Process(target=h264_writer)
-    h264_process.start()
-
-    jpeg_process = mp.Process(target=jpeg_writer)
-    jpeg_process.start()
-
-    yolo_person_detector_process = mp.Process(target=yolo_person_detector)
-    yolo_person_detector_process.start()
-
-    audio_writer_process = mp.Process(target=audio_writer)
-    audio_writer_process.start()
-
-    deleter_process = mp.Process(target=detector_based_deleter)
-    deleter_process.start()
-
-    processes = {
-        "i2c": i2c_process,
-        "csv": csv_process,
-        "sqlite": sqlite_process,
-        "audio_controller": audio_controller_process,
-        "h264": h264_process,
-        "video": video_process,
-        "jpeg": jpeg_process,
-        "yolo_person_detector": yolo_person_detector_process,
-        "audio_writer": audio_writer_process,
-        "detector_based_deleter": deleter_process,
-    }
+    processes = _start_processes_dynamically()
 
     while True:
-        if any(not processes[p].is_alive() for p in processes):
+        if processes and any(not processes[p].is_alive() for p in processes):
             for p in processes:
                 print(p, processes[p].is_alive())
             pub.send_multipart(ZmqCodec.encode("control", "exit"))
             break
-
 
         if select.select([sys.stdin], [], [], 0)[0]:
             if sys.stdin.read(1) == 'q':

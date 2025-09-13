@@ -36,6 +36,8 @@ debugLvl = 10
 csv_writer_process_config = {
     "module_name": "csvWriter",
     "class_name": "csv_writer",
+    "short_name": "csv",
+    "time_to_shutdown": .1,
     "write_location": "/home/pi/data/csv_writer/",
     "subscription_endpoints": [
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
@@ -52,6 +54,8 @@ csv_writer_process_config = {
 sqlite_writer_process_config = {
     "module_name": "sqliteWriter",
     "class_name": "sqlite_writer",
+    "short_name": "sqlite",
+    "time_to_shutdown": .1,
     "write_location": "/home/pi/data/sqlite_writer/",
     "subscription_endpoints": [
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
@@ -70,6 +74,10 @@ sqlite_writer_process_config = {
 # note all sensors are floats and are in units standard for the sensor
 
 i2c_controller_process_config = {
+    "module_name": "i2cController",
+    "class_name": "i2c_controller",
+    "short_name": "i2c",
+    "time_to_shutdown": .1,
     "bus_number": 1,
     "devices": [
         {   
@@ -111,6 +119,10 @@ picamv3noir = "picamV3-sony-imx708-noir-80fov-12MP"
 picamv3wide = "picamV3-sony-imx708-120fov-12MP"
 
 video_controller_process_config = {
+    "module_name": "videoController",
+    "class_name": "video_controller",
+    "short_name": "video",
+    "time_to_shutdown": .25,
     "camera_type_module": "piCamera",
     "camera_type_class": "PiCamera",
     "camera_index": 0,
@@ -126,14 +138,16 @@ video_controller_process_config = {
 }
 
 
-h264_writer_process_config = {
-    "module_name": "h264Writer",
-    "class_name": "h264_writer",
-    "write_location": "/home/pi/data/h264_writer/",
+mp4_writer_process_config = {
+    "module_name": "mp4Writer",
+    "class_name": "mp4_writer",
+    "short_name": "mp4",
+    "time_to_shutdown": .1,
+    "write_location": "/home/pi/data/mp4_writer/",
     "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "publish_topic": f"{platform_uuid}_h264_writer",
-    "publish_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
+    "publish_topic": f"{platform_uuid}_mp4_writer",
+    "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
     "video_duration": 4,
     "container_type": "mp4",
     "codec": "h264",
@@ -148,6 +162,8 @@ h264_writer_process_config = {
 jpeg_writer_process_config = {
     "module_name": "jpegWriter",
     "class_name": "jpeg_writer",
+    "short_name": "jpeg",
+    "time_to_shutdown": .1,
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "write_location": "/home/pi/data/jpeg_writer/",
@@ -159,6 +175,8 @@ jpeg_writer_process_config = {
 yolo_person_detector_process_config = {
     "module_name": "yoloPersonDetector",
     "class_name": "yolo_person_detector",
+    "short_name": "yolo",
+    "time_to_shutdown": 3,
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
@@ -169,11 +187,13 @@ yolo_person_detector_process_config = {
     "interval_seconds": 4,
 }
 
-audio_capture_process_config = {
-    "module_name": "audioCapture",
-    "class_name": "audio_capture",
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_capture.sock",
-    "pub_topic": f"{platform_uuid}_audio_capture",
+audio_controller_process_config = {
+    "module_name": "audioController",
+    "class_name": "audio_controller",
+    "short_name": "audio",
+    "time_to_shutdown": .6,
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
+    "pub_topic": f"{platform_uuid}_audio_controller",
     "sample_rate": 16000,
     "channels": 1,
     "hz": 2,
@@ -183,8 +203,10 @@ audio_capture_process_config = {
 audio_writer_process_config = {
     "module_name": "audioWriter",
     "class_name": "audio_writer",
-    "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_capture.sock",
-    "sub_topic": f"{platform_uuid}_audio_capture",
+    "short_name": "opus",
+    "time_to_shutdown": .1,
+    "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
+    "sub_topic": f"{platform_uuid}_audio_controller",
     "write_location": "/home/pi/data/audio_writer/",
     "bitrate": "16k",
     "sample_rate": 16000,
@@ -200,11 +222,26 @@ audio_writer_process_config = {
 detector_based_deleter_process_config = {
     "module_name": "detectorBasedDeleter",
     "class_name": "detector_based_deleter",
+    "short_name": "del",
+    "time_to_shutdown": .1,
     "detector_names": [f"{platform_uuid}_yolo11m_person_detection"],
     "detector_endpoints": [f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock"],
-    "files_location": "/home/pi/data/h264_writer/",
-    "h264_writer_topic": f"{platform_uuid}_h264_writer",
-    "h264_writer_endpoint": f"ipc:///tmp/{platform_uuid}_h264_writer.sock",
+    "files_location": "/home/pi/data/mp4_writer/",
+    "mp4_writer_topic": f"{platform_uuid}_mp4_writer",
+    "mp4_writer_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
     "seconds_after_keep": 20,
     "seconds_before_keep": 10,
+}
+
+all_process_configs = {
+    "csv_writer": csv_writer_process_config,
+    "sqlite_writer": sqlite_writer_process_config,
+    "i2c_controller": i2c_controller_process_config,
+    "video_controller": video_controller_process_config,
+    "mp4_writer": mp4_writer_process_config,
+    "jpeg_writer": jpeg_writer_process_config,
+    "yolo_person_detector": yolo_person_detector_process_config,
+    "audio_controller": audio_controller_process_config,
+    "audio_writer": audio_writer_process_config,
+    "detector_based_deleter": detector_based_deleter_process_config,
 }
