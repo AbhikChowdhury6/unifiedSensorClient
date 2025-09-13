@@ -27,7 +27,7 @@ def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def I2C_BUS():
+def i2c_controller():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
