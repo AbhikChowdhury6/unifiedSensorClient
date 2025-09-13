@@ -11,7 +11,7 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
 from config import (
-    detector_based_deleter_config,
+    detector_based_deleter_process_config,
     zmq_control_endpoint,
 )
 
@@ -37,7 +37,7 @@ def _get_files_in_location(location: str):
 
 
 def detector_based_deleter():
-    config = detector_based_deleter_config
+    config = detector_based_deleter_process_config
     # ZMQ setup
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)

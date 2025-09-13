@@ -13,7 +13,7 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
 from config import (
-    yolo_person_detector_config,
+    yolo_person_detector_process_config,
     zmq_control_endpoint,
 )
 
@@ -23,7 +23,7 @@ def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
 
 
 def yolo_person_detector():
-    cfg = yolo_person_detector_config
+    cfg = yolo_person_detector_process_config
     interval_s = float(cfg.get("interval_seconds", 4))
     conf_thresh = float(cfg.get("confidence_threshold", 0.7))
     nms_thresh = float(cfg.get("nms_threshold", 0.7))

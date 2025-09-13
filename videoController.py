@@ -11,8 +11,9 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 class_loc = repoPath + "unifiedSensorClient/cameraClasses/"
 from zmq_codec import ZmqCodec
 
-from config import cameras, zmq_control_endpoint
+from config import video_controller_process_config, zmq_control_endpoint
 
+config = video_controller_process_config
 def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(module_name, filepath)
@@ -32,11 +33,11 @@ def video_controller():
     sys.stdout.flush()
 
     camera = load_class_and_instantiate(
-        class_loc + cameras[0]['camera_type_module'] + '.py',
-        cameras[0]['camera_type_class'],
-        cameras[0])
+        class_loc + config['camera_type_module'] + '.py',
+        config['camera_type_class'],
+        config)
 
-    hz = cameras[0]['fps']
+    hz = config['fps']
     delay_micros = 1_000_000/hz
     camera.enable()
 

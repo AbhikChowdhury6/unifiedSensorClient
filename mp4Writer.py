@@ -12,13 +12,15 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
 from config import (
-    mp4_writer_config,
+    mp4_writer_process_config,
     zmq_control_endpoint,
 )
 
 
+config = mp4_writer_process_config
 
 def mp4_writer():
+    
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
 
@@ -27,19 +29,19 @@ def mp4_writer():
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
 
     # Subscribe to camera frames
-    camera_topic = cfg_get_or_default(mp4_writer_config, "camera_name", "camera")
-    camera_endpoint = cfg_get_or_default(mp4_writer_config, "camera_endpoint", "")
-    pub_endpoint = cfg_get_or_default(mp4_writer_config, "publish_endpoint", "")
-    pub_topic = cfg_get_or_default(mp4_writer_config, "publish_topic", "")
+    camera_topic = cfg_get_or_default(config, "camera_name", "camera")
+    camera_endpoint = cfg_get_or_default(config, "camera_endpoint", "")
+    pub_endpoint = cfg_get_or_default(config, "publish_endpoint", "")
+    pub_topic = cfg_get_or_default(config, "publish_topic", "")
     sub.connect(camera_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
     pub = ctx.socket(zmq.PUB)
     pub.bind(pub_endpoint)
 
-    write_location = cfg_get_or_default(mp4_writer_config, "write_location", "/home/pi/mp4_writer/data/")
-    duration_s = int(cfg_get_or_default(mp4_writer_config, "video_duration", 4))
+    write_location = cfg_get_or_default(config, "write_location", "/home/pi/mp4_writer/data/")
+    duration_s = int(cfg_get_or_default(config, "video_duration", 4))
     # If there's a long gap between frames, start a new file. Default 2 seconds.
-    gap_restart_seconds = float(cfg_get_or_default(mp4_writer_config, "frame_gap_restart_seconds", .5))
+    gap_restart_seconds = float(cfg_get_or_default(config, "frame_gap_restart_seconds", .5))
 
     os.makedirs(write_location, exist_ok=True)
 
@@ -164,9 +166,9 @@ def mp4_writer():
             out_path = os.path.join(out_dir, base_name)
             
             # Determine runtime width/height/pix_fmt/fps
-            fmt = cfg_get_or_default(mp4_writer_config, "format", "RGB888")
+            fmt = cfg_get_or_default(config, "format", "RGB888")
             pix_fmt = "rgb24" if str(fmt).upper() in ("RGB888", "RGB24") else "bgr24"
-            fps = int(cfg_get_or_default(mp4_writer_config, "fps", 8))
+            fps = int(cfg_get_or_default(config, "fps", 8))
             ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, pix_fmt, fps)
             frames_written_in_segment = 0
             print(f"mp4 writer started segment {out_path}")
@@ -230,11 +232,11 @@ def mp4_writer():
 
 def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: int):
     # Read settings from config
-    quality = int(cfg_get_or_default(mp4_writer_config, "quality", 80))
+    quality = int(cfg_get_or_default(config, "quality", 80))
     crf = _quality_to_crf(quality)
-    gop_interval_seconds = int(cfg_get_or_default(mp4_writer_config, "keyframe_interval_seconds", 1))
+    gop_interval_seconds = int(cfg_get_or_default(config, "keyframe_interval_seconds", 1))
     gop_frames = max(1, fps * gop_interval_seconds)
-    loglevel = str(cfg_get_or_default(mp4_writer_config, "loglevel", "warning"))
+    loglevel = str(cfg_get_or_default(config, "loglevel", "warning"))
 
     cmd = [
         "ffmpeg",

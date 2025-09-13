@@ -8,32 +8,32 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
-from config import csv_writer_subscription_endpoints, zmq_control_endpoint
-from config import csv_writer_subscription_topics, csv_writer_write_location
+from config import csv_writer_process_config, zmq_control_endpoint
+config = csv_writer_process_config
 
 def csv_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
-    for endpoint in csv_writer_subscription_endpoints:
+    for endpoint in config['subscription_endpoints']:
         sub.connect(endpoint)
     print("csv writer connected to subscription endpoint")
     sys.stdout.flush()
 
 
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    for topic in csv_writer_subscription_topics:
+    for topic in config['subscription_topics']:
         sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
         print(f"csv writer subscribed to {topic}")
         sys.stdout.flush()
     print("csv writer subscribed to all topics")
     sys.stdout.flush()
     
-    os.makedirs(csv_writer_write_location, exist_ok=True)
+    os.makedirs(config['write_location'], exist_ok=True)
     #check if the files exist and create directories if needed
-    for topic in csv_writer_subscription_topics:
+    for topic in config['subscription_topics']:
             
-        filepath = os.path.join(csv_writer_write_location, f"{topic}.csv")
+        filepath = os.path.join(config['write_location'], f"{topic}.csv")
         if not os.path.exists(filepath):
             print(f"csv writer creating {filepath}")
             sys.stdout.flush()
@@ -48,7 +48,7 @@ def csv_writer():
                 sys.stdout.flush()
                 break
         # this will write the data to a csv file with the topic name
-        if topic in csv_writer_subscription_topics:
+        if topic in config['subscription_topics']:
             ts, value = msg[0], msg[1]
             # Normalize timestamp to ISO 8601 UTC
             if isinstance(ts, datetime):
@@ -70,7 +70,7 @@ def csv_writer():
             else:
                 value_str = str(value)
 
-            with open(f"{csv_writer_write_location}{topic}.csv", "a") as f:
+            with open(f"{config['write_location']}{topic}.csv", "a") as f:
                 f.write(f"{ts_str},{value_str}\n")
             #print(f"csv writer wrote {msg} to {topic}.csv")
             #sys.stdout.flush()

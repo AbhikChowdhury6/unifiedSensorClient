@@ -14,7 +14,8 @@ class_loc = repoPath + "unifiedSensorClient/sensorClasses/i2c/"
 from zmq_codec import ZmqCodec
 
 #import the config
-from config import i2c_controller_config, zmq_control_endpoint
+from config import i2c_controller_process_config, zmq_control_endpoint
+config = i2c_controller_process_config
 
 def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
@@ -37,7 +38,7 @@ def I2C_BUS():
     I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100000) 
     # compile a list of all of the devices
     devices = []
-    for device in i2c_controller_config['devices']:
+    for device in config['devices']:
         devices.append(load_class_and_instantiate(
             class_loc + device['module_name'] + '.py',
             device['class_name'],

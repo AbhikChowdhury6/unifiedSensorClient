@@ -8,11 +8,11 @@ from datetime import datetime, timezone, timedelta
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from config import audio_writer_config, zmq_control_endpoint, platform_uuid
+from config import audio_writer_process_config, zmq_control_endpoint, platform_uuid
 import zmq
 import numpy as np
 
-
+config = audio_writer_process_config
 def audio_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -20,18 +20,18 @@ def audio_writer():
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     # Subscribe to audio publisher to drive the loop
-    sub.connect(audio_writer_config["sub_endpoint"])
-    sub.setsockopt(zmq.SUBSCRIBE, audio_writer_config["sub_topic"].encode())
+    sub.connect(config["sub_endpoint"])
+    sub.setsockopt(zmq.SUBSCRIBE, config["sub_topic"].encode())
     print("audio writer subscribed to control and audio publisher topics")
     sys.stdout.flush()
 
-    channels = int(cfg_get_or_default(audio_writer_config, "channels", 1))
-    sample_rate = int(cfg_get_or_default(audio_writer_config, "sample_rate", 16000))
-    target_frame_hz = float(cfg_get_or_default(audio_writer_config, "frame_hz", 16))
+    channels = int(cfg_get_or_default(config, "channels", 1))
+    sample_rate = int(cfg_get_or_default(config, "sample_rate", 16000))
+    target_frame_hz = float(cfg_get_or_default(config, "frame_hz", 16))
     expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
-    segment_time_s = int(cfg_get_or_default(audio_writer_config, "segment_time_s", 4))
+    segment_time_s = int(cfg_get_or_default(config, "segment_time_s", 4))
     # Validate frame duration to common Opus values to avoid ffmpeg exit
-    requested_fd = cfg_get_or_default(audio_writer_config, "frame_duration_ms", 20)
+    requested_fd = cfg_get_or_default(config, "frame_duration_ms", 20)
     try:
         requested_fd = float(requested_fd)
     except Exception:
@@ -44,7 +44,7 @@ def audio_writer():
         requested_fd = nearest
 
     # Pre-create current and next hour directories so strftime path exists
-    output_root = cfg_get_or_default(audio_writer_config, "write_location", "/home/pi/audio_writer/data/")
+    output_root = cfg_get_or_default(config, "write_location", "/home/pi/audio_writer/data/")
     now_utc = datetime.now(timezone.utc)
     ensure_hour_dir(output_root, now_utc)
     ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
@@ -91,7 +91,7 @@ def audio_writer():
                 break
 
             # Ignore messages not on the audio topic
-            if topic != audio_writer_config["sub_topic"]:
+            if topic != config["sub_topic"]:
                 continue
 
             # Handle audio message: validate/reshape/resample and write PCM to ffmpeg stdin
@@ -164,14 +164,14 @@ def spawn_ffmpeg_audio_segments_stdin(
     Reads all parameters from audio_writer_config for simplicity.
     Returns a subprocess.Popen handle with stdin PIPE for feeding PCM.
     """
-    channels = int(cfg_get_or_default(audio_writer_config, "channels", 1))
-    sample_rate = int(cfg_get_or_default(audio_writer_config, "sample_rate", 16000))
-    bitrate = str(cfg_get_or_default(audio_writer_config, "bitrate", "16k"))
-    application = str(cfg_get_or_default(audio_writer_config, "application", "audio"))
-    frame_duration_ms = int(cfg_get_or_default(audio_writer_config, "frame_duration_ms", 20))
-    segment_time_s = int(cfg_get_or_default(audio_writer_config, "segment_time_s", 4))
-    output_root = cfg_get_or_default(audio_writer_config, "write_location", "/home/pi/audio_writer/data/")
-    loglevel = str(cfg_get_or_default(audio_writer_config, "loglevel", "warning"))
+    channels = int(cfg_get_or_default(config, "channels", 1))
+    sample_rate = int(cfg_get_or_default(config, "sample_rate", 16000))
+    bitrate = str(cfg_get_or_default(config, "bitrate", "16k"))
+    application = str(cfg_get_or_default(config, "application", "audio"))
+    frame_duration_ms = int(cfg_get_or_default(config, "frame_duration_ms", 20))
+    segment_time_s = int(cfg_get_or_default(config, "segment_time_s", 4))
+    output_root = cfg_get_or_default(config, "write_location", "/home/pi/audio_writer/data/")
+    loglevel = str(cfg_get_or_default(config, "loglevel", "warning"))
     sample_fmt = "s16le"
 
     ensure_base_dir(output_root)
@@ -264,7 +264,7 @@ def stop_ffmpeg(proc) -> None:
 # Start first segment with an explicit file path including milliseconds
 def make_output_path(now_utc: datetime) -> str:
     hourly_subdir = now_utc.strftime("%Y/%m/%d/%H/%M/")
-    out_dir = os.path.join(audio_writer_config["write_location"], hourly_subdir)
+    out_dir = os.path.join(config["write_location"], hourly_subdir)
     os.makedirs(out_dir, exist_ok=True)
     # Match video/jpeg timestamp format: YYYYMMDDTHHMMSSpMSZ
     fname = f"{platform_uuid}_audio_{now_utc.strftime('%Y%m%dT%H%M%S')}p{str(now_utc.microsecond//1000).zfill(3)}Z.opus"

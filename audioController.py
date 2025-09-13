@@ -10,12 +10,12 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 
 from config import (
     zmq_control_endpoint,
-    audio_publisher_config,
+    audio_controller_process_config,
 )
 from zmq_codec import ZmqCodec
 from audioCapture import AudioCapture
 
-
+config = audio_controller_process_config
 def audio_controller():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -26,12 +26,12 @@ def audio_controller():
 
     # Start audio capture publisher
     cap = AudioCapture({
-        "sample_rate": audio_publisher_config["sample_rate"],
-        "channels": audio_publisher_config["channels"],
-        "hz": audio_publisher_config["hz"],
-        "dtype": audio_publisher_config["dtype"],
-        "pub_topic": audio_publisher_config["pub_topic"],
-        "pub_endpoint": audio_publisher_config["pub_endpoint"],
+        "sample_rate": config["sample_rate"],
+        "channels": config["channels"],
+        "hz": config["hz"],
+        "dtype": config["dtype"],
+        "pub_topic": config["pub_topic"],
+        "pub_endpoint": config["pub_endpoint"],
     })
     cap.start()
     cap.enable()

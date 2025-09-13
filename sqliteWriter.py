@@ -10,28 +10,28 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
-from config import sqlite_writer_subscription_endpoints, sqlite_writer_write_location
-from config import sqlite_writer_subscription_topics, zmq_control_endpoint
+from config import sqlite_writer_process_config, zmq_control_endpoint
+config = sqlite_writer_process_config
 
 def sqlite_writer():
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
-    for endpoint in sqlite_writer_subscription_endpoints:
+    for endpoint in config['subscription_endpoints']:
         sub.connect(endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     print("sqlite writer connected to control and subscription topics")
     sys.stdout.flush()
 
-    for topic in sqlite_writer_subscription_topics:
+    for topic in config['subscription_topics']:
         sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
         print(f"sqlite writer subscribed to {topic}")
         sys.stdout.flush()
     print("sqlite writer subscribed to all topics")
     sys.stdout.flush()
     
-    os.makedirs(sqlite_writer_write_location, exist_ok=True)
-    conn = sqlite3.connect(f"{sqlite_writer_write_location}data.db")
+    os.makedirs(config['write_location'], exist_ok=True)
+    conn = sqlite3.connect(f"{config['write_location']}data.db")
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
     conn.execute("""
@@ -69,7 +69,7 @@ def sqlite_writer():
                 print("sqlite writer got control exit")
                 sys.stdout.flush()
                 break
-        if topic in sqlite_writer_subscription_topics:
+        if topic in config['subscription_topics']:
             ins.execute("INSERT OR IGNORE INTO readings(topic, ts, value) " + 
                 "VALUES (?, ?, ?)", (topic, ts, value))
             #print(f"sqlite writer wrote {msg} to {topic}")

@@ -13,10 +13,11 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
 from config import (
-    jpeg_writer_config,
+    jpeg_writer_process_config,
     platform_uuid,
     zmq_control_endpoint,
 )
+config = jpeg_writer_process_config
 
 
 def _format_ts_for_filename(ts: datetime) -> str:
@@ -44,17 +45,17 @@ def jpeg_writer():
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
 
     # Camera frames
-    camera_topic = jpeg_writer_config["camera_name"]
-    camera_endpoint = jpeg_writer_config["camera_endpoint"]
+    camera_topic = config["camera_name"]
+    camera_endpoint = config["camera_endpoint"]
     sub.connect(camera_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
 
-    write_location = jpeg_writer_config["write_location"]
-    image_interval_s = float(jpeg_writer_config.get("image_interval_seconds", 60))
+    write_location = config["write_location"]
+    image_interval_s = float(config.get("image_interval_seconds", 60))
     if 86400 % image_interval_s != 0:
         raise ValueError(f"image_interval_seconds ({image_interval_s}) must evenly divide 86400 for day alignment")
-    quality = int(jpeg_writer_config.get("quality", 80))
-    fmt = jpeg_writer_config.get("format", "RGB888")
+    quality = int(config.get("quality", 80))
+    fmt = config.get("format", "RGB888")
 
     os.makedirs(write_location, exist_ok=True)
 
@@ -64,7 +65,7 @@ def jpeg_writer():
     next_capture = _compute_next_capture_ts(now, image_interval_s)
     print(f"jpeg writer next capture: {next_capture}")
     sys.stdout.flush()
-    capture_tolerance_s = float(jpeg_writer_config.get("capture_tolerance_seconds", 0.25))
+    capture_tolerance_s = float(config.get("capture_tolerance_seconds", 0.25))
 
     print(f"jpeg writer subscribed to {camera_topic} at {camera_endpoint}")
     sys.stdout.flush()
