@@ -234,14 +234,14 @@ detector_based_deleter_process_config = {
 }
 
 all_process_configs = {
-    "csv_writer": csv_writer_process_config,
-    "sqlite_writer": sqlite_writer_process_config,
-    "i2c_controller": i2c_controller_process_config,
-    "video_controller": video_controller_process_config,
-    "mp4_writer": mp4_writer_process_config,
-    "jpeg_writer": jpeg_writer_process_config,
-    "yolo_person_detector": yolo_person_detector_process_config,
-    "audio_controller": audio_controller_process_config,
-    "audio_writer": audio_writer_process_config,
-    "detector_based_deleter": detector_based_deleter_process_config,
+    "csv": csv_writer_process_config,
+    "sqlite": sqlite_writer_process_config,
+    "i2c": i2c_controller_process_config,
+    "video": video_controller_process_config,
+    "mp4": mp4_writer_process_config,
+    "jpeg": jpeg_writer_process_config,
+    "yolo": yolo_person_detector_process_config,
+    "audio": audio_controller_process_config,
+    "opus": audio_writer_process_config,
+    "del": detector_based_deleter_process_config,
 }
