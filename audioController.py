@@ -67,6 +67,6 @@ def audio_controller():
 
 
 if __name__ == "__main__":
-    audioController()
+    audio_controller()
 
 

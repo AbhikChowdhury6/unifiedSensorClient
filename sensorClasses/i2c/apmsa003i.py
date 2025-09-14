@@ -2,13 +2,15 @@ from datetime import datetime, timedelta
 from adafruit_pm25.i2c import PM25_I2C
 import sys
 repoPath = "/home/pi/Documents/"
-sys.path.append(repoPath + "airQualPi/")
+sys.path.append(repoPath + "unifiedSensorClient/")
 from sensor import Sensor
 
+from config import i2c_controller_process_config
+device_config = [d for d in i2c_controller_process_config['devices'] if d['module_name'] == 'apmsa003i'][0]
 
 class aPMSA003I:
-    def __init__(self, bus, descriptor):
-        print('starting a ' + descriptor['deviceName'] + '!')
+    def __init__(self, bus):
+        print('starting a ' + device_config['model'] + '!')
         self.pm25 = PM25_I2C(bus, None)
         
         self.is_ready = lambda: True
@@ -39,7 +41,7 @@ class aPMSA003I:
                             'air-particulate-pm10-ugPerM3': self.get_envpm10um,
                             'air-particulate-particle-count-greaterThan0p3um-per0p1L': self.get_gtpm0p3um}
 
-        sensor_descriptors = descriptor['sensors']
+        sensor_descriptors = device_config['sensors']
         self.sensors = []
         for s in sensor_descriptors:
             sen = Sensor(sensor_descriptors[s], retrieve_datas[s], self.is_ready)
