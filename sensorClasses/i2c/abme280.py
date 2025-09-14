@@ -5,10 +5,10 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from sensor import Sensor
 
 # open the config
-from config import i2c_controller_config
+from config import i2c_controller_process_config
 
 # find the config for this device
-device_config = [d for d in i2c_controller_config['devices'] if d['module_name'] == 'abme280'][0]
+device_config = [d for d in i2c_controller_process_config['devices'] if d['module_name'] == 'abme280'][0]
 
 class aBME280:
     def __init__(self, bus):

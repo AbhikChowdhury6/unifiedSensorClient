@@ -43,9 +43,11 @@ def detector_based_deleter():
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    sub.connect(config["detector_endpoint"])
-    sub.setsockopt(zmq.SUBSCRIBE, config["detector_name"].encode())
-    print(f"detector_based_deleter subscribed to {config['detector_name']} at {config['detector_endpoint']}")
+    for endpoint in config["detector_endpoints"]:
+        sub.connect(endpoint)
+    for name in config["detector_names"]:
+        sub.setsockopt(zmq.SUBSCRIBE, name.encode())
+    print(f"detector_based_deleter subscribed to {config['detector_names']} at {config['detector_endpoints']}")
     sys.stdout.flush()
 
     sub.connect(config["h264_writer_endpoint"])
