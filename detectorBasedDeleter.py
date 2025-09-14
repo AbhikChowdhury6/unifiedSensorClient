@@ -50,9 +50,9 @@ def detector_based_deleter():
     print(f"detector_based_deleter subscribed to {config['detector_names']} at {config['detector_endpoints']}")
     sys.stdout.flush()
 
-    sub.connect(config["h264_writer_endpoint"])
-    sub.setsockopt(zmq.SUBSCRIBE, config["h264_writer_topic"].encode())
-    print(f"detector_based_deleter subscribed to {config['h264_writer_topic']} at {config['h264_writer_endpoint']}")
+    sub.connect(config["mp4_writer_endpoint"])
+    sub.setsockopt(zmq.SUBSCRIBE, config["mp4_writer_topic"].encode())
+    print(f"detector_based_deleter subscribed to {config['mp4_writer_topic']} at {config['mp4_writer_endpoint']}")
     sys.stdout.flush()
     
     #initialize to min datetime
@@ -85,7 +85,7 @@ def detector_based_deleter():
             sys.stdout.flush()
             continue
         
-        if topic == config["h264_writer_topic"]:
+        if topic == config["mp4_writer_topic"]:
             print(f"detector_based_deleter got h264 writer message: {msg}")
             sys.stdout.flush()
             potential_evictions.append(msg)
