@@ -47,6 +47,15 @@ def sqlite_writer():
     last_commit = time.time()
     while True:
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
+        if topic == "control":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "sqlite"):
+                print("sqlite writer got control exit")
+                sys.stdout.flush()
+                break
+            else:
+                print(f"sqlite writer got control message: {msg}")
+                sys.stdout.flush()
+            continue
         ts = msg[0]
         value = msg[1]
         # Normalize timestamp to epoch ns integer
@@ -64,11 +73,7 @@ def sqlite_writer():
                 continue
         elif isinstance(value, np.generic):
             value = float(value)
-        if topic == "control":
-            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "sqlite"):
-                print("sqlite writer got control exit")
-                sys.stdout.flush()
-                break
+        
         if topic in config['subscription_topics']:
             ins.execute("INSERT OR IGNORE INTO readings(topic, ts, value) " + 
                 "VALUES (?, ?, ?)", (topic, ts, value))

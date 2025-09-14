@@ -146,6 +146,8 @@ mp4_writer_process_config = {
     "write_location": "/home/pi/data/mp4_writer/",
     "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "publish_topic": f"{platform_uuid}_mp4_writer",
     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
     "video_duration": 4,
