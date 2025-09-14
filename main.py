@@ -51,11 +51,11 @@ if __name__ == "__main__":
 
         if select.select([sys.stdin], [], [], 0)[0]:
             command = sys.stdin.readline().strip().split(" ")
-            if command == 'q':
+            if command[0] == 'q':
                 print("Got exit command, shutting down...")
                 pub.send_multipart(ZmqCodec.encode("control", ["exit_all"]))
                 break
-            elif command == 'e':
+            elif command[0] == 'e':
                 # check if the process is running
                 if command[1] in processes.keys():
                     print(f"Process {command[1]} is running")
@@ -70,7 +70,7 @@ if __name__ == "__main__":
                     p = mp.Process(target=target)
                     p.start()
                     processes[command[1]] = p
-            elif command == 'd':
+            elif command[0] == 'd':
                 # check if the process is running
                 if command[1] in processes.keys():
                     print(f"Process {command[1]} is running, stopping it")
@@ -82,14 +82,14 @@ if __name__ == "__main__":
                     del processes[command[1]]
                 else:
                     print(f"Process {command[1]} is not running")
-            elif command == 'l':
+            elif command[0] == 'l':
                 print("active processes:")
                 for process in processes.keys():
                     print(process)
                 print("available processes:")
                 for process in all_process_configs.keys():
                     print(process)
-            elif command == 'h':
+            elif command[0] == 'h':
                 print("Available commands:")
                 print("q, quit, exit: Exit the program")
                 print("e: Start a process")
