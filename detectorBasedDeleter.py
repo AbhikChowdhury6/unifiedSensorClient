@@ -74,7 +74,7 @@ def detector_based_deleter():
             continue
         
         last_msg_time = msg[0]
-        if topic == config["detector_name"]:
+        if topic in config["detector_names"]:
             dt_utc, detected = msg
             print(f"detector_based_deleter got detection: {dt_utc}, {detected}")
             sys.stdout.flush()
@@ -86,7 +86,7 @@ def detector_based_deleter():
             continue
         
         if topic == config["mp4_writer_topic"]:
-            print(f"detector_based_deleter got h264 writer message: {msg}")
+            print(f"detector_based_deleter got mp4 writer message: {msg}")
             sys.stdout.flush()
             potential_evictions.append(msg)
             print(f"detector_based_deleter got potential evictions: {len(potential_evictions)}")
