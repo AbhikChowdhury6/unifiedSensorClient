@@ -235,6 +235,19 @@ detector_based_deleter_process_config = {
     "seconds_before_keep": 10,
 }
 
+is_dark_detector_process_config = {
+    "module_name": "isDarkDetector",
+    "class_name": "is_dark_detector",
+    "short_name": "dark",
+    "time_to_shutdown": .1,
+    "pub_topic": f"{platform_uuid}_is_dark_detector",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_is_dark_detector.sock",
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "threshold": 0.5,
+    "interval_seconds": 1,
+}
+
 all_process_configs = {
     "csv": csv_writer_process_config,
     "sqlite": sqlite_writer_process_config,
