@@ -187,6 +187,7 @@ yolo_person_detector_process_config = {
     "confidence_threshold": 0.7,
     "nms_threshold": 0.7,
     "interval_seconds": 4,
+    "verbose": False,
 }
 
 audio_controller_process_config = {

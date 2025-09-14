@@ -23,10 +23,8 @@ def is_dark_detector():
     sys.stdout.flush()
 
     #subscribe to camera topic
-    camera_topic = config["camera_name"]
-    camera_endpoint = config["camera_endpoint"]
-    sub.connect(camera_endpoint)
-    sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
+    sub.connect(config["camera_endpoint"])
+    sub.setsockopt(zmq.SUBSCRIBE, config["camera_name"].encode())
     print("is dark detector connected to camera topic")
     sys.stdout.flush()
 
@@ -35,7 +33,7 @@ def is_dark_detector():
     pub.bind(config["pub_endpoint"])
     print("is dark detector connected to pub topic")
     sys.stdout.flush()
-    pub_topic = config["pub_topic"]
+
     
 
     interval_s = float(config.get("interval_seconds", 1))
@@ -53,7 +51,7 @@ def is_dark_detector():
                 sys.stdout.flush()
                 break
             continue
-        if topic != camera_topic:
+        if topic != config["camera_name"]:
             continue
 
         dt_utc, frame = msg[0], msg[1]
@@ -67,7 +65,7 @@ def is_dark_detector():
         print(f"is dark detector mean brightness: {mean_brightness}")
         sys.stdout.flush()
         is_dark = int(mean_brightness < threshold)
-        pub.send_multipart(ZmqCodec.encode(pub_topic, [dt_utc, is_dark]))
+        pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, is_dark]))
 
 
     pub.close(0)
