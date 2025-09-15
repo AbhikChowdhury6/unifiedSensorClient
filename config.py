@@ -262,6 +262,24 @@ motion_detector_process_config = {
     "interval_seconds": 1,
 }
 
+pigpio_toggle_buttons_process_config = {
+    "module_name": "pigpioButtons",
+    "class_name": "pigpio_buttons",
+    "short_name": "buttons",
+    "time_to_shutdown": .1,
+    "button_sense_pins": [17, 27, 26],
+    "button_high_pins": [24, 25, 26],
+    "default_pull": "down",
+    "button_process_map": {
+        17: [['exit', 'video']],
+        27: [['exit', 'audio']],
+        26: [['exit', 'detectors']],
+    },
+    "button_endpoint": f"ipc:///tmp/control.sock",
+
+}
+
+
 all_process_configs = {
     "csv": csv_writer_process_config,
     "sqlite": sqlite_writer_process_config,

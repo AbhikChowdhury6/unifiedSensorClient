@@ -40,64 +40,118 @@ if __name__ == "__main__":
     pub = ctx.socket(zmq.PUB)
     pub.bind(zmq_control_endpoint)
 
+    sub = ctx.socket(zmq.SUB)
+    sub.connect(zmq_control_endpoint)
+    sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    print("main connected to control topic")
+    sys.stdout.flush()
+
     processes = _start_processes_dynamically()
+
+
+    def _start_process(process_name):
+        if process_name in processes:
+            print(f"Process {process_name} is already running")
+            return
+        cfg = all_process_configs.get(process_name)
+        module_name = cfg.get("module_name")
+        class_name = cfg.get("class_name")
+        module = importlib.import_module(module_name)
+        target = getattr(module, class_name)
+        p = mp.Process(target=target)
+        p.start()
+        processes[process_name] = p
+        return p
+
+    def _stop_process(process_name):
+        if process_name not in all_process_configs:
+            print(f"Process {process_name} is not in the config")
+            return
+        if process_name not in processes:
+            print(f"Process {process_name} is not running")
+            return
+        cfg = all_process_configs.get(process_name)
+        time_to_shutdown = cfg.get("time_to_shutdown")
+        pub.send_multipart(ZmqCodec.encode("control", ["exit", process_name]))
+        print(f"Waiting {time_to_shutdown} seconds for process {process_name} to shut down")
+        time.sleep(time_to_shutdown)
+        del processes[process_name]
+        return
+    
+    def _is_process_running(process_name):
+        if process_name not in all_process_configs:
+            print(f"Process {process_name} is not in the config")
+            pub.send_multipart(ZmqCodec.encode("control", ["status", 0, process_name]))
+            return False
+        if process_name not in processes:
+            pub.send_multipart(ZmqCodec.encode("control", ["status", 0, process_name]))
+            return False
+        pub.send_multipart(ZmqCodec.encode("control", ["status", 1, process_name]))
+        return True
+
+    def _handle_control_message(command):
+        if command[0] == "q":
+            _exit_all()
+            return
+        elif command[0] == "e":
+            _start_process(command[1])
+            return
+        elif command[0] == "d":
+            _stop_process(command[1])
+            return
+        elif command[0] == "l":
+            print("active processes:")
+            for process in processes.keys():
+                print(process)
+            print("available processes:")
+            for process in all_process_configs.keys():
+                print(process)
+            return
+
+        elif command[0] == "s":
+            if _is_process_running(command[1]):
+                print(f"Process {command[1]} is running")
+            else:
+                print(f"Process {command[1]} is not running")
+            return
+
+        elif command[0] == "h":
+            print("Available commands:")
+            print("q, quit, exit: Exit the program")
+            print("e: Start a process")
+            print("l: List active processes and possible processes")
+            print("d: Stop a process")
+            print("h: Show this help message")
+            return
+        else:
+            print(f"Unknown command: {command}")
+            return
+
+
+
+    def _exit_all():
+        for p in processes:
+            pub.send_multipart(ZmqCodec.encode("control", ["exit", p]))
+        return
 
     while True:
         if processes and any(not processes[p].is_alive() for p in processes):
             for p in processes:
                 print(p, processes[p].is_alive())
-            pub.send_multipart(ZmqCodec.encode("control", ["exit_all"]))
+            _exit_all()
             break
+
+        try:
+            parts = sub.recv_multipart(flags=zmq.NOBLOCK)
+            topic, obj = ZmqCodec.decode(parts)
+            print(f"main got control message: {obj}")
+            _handle_control_message(obj)
+        except zmq.Again:
+            pass
 
         if select.select([sys.stdin], [], [], 0)[0]:
             command = sys.stdin.readline().strip().split(" ")
-            if command[0] == 'q':
-                print("Got exit command, shutting down...")
-                pub.send_multipart(ZmqCodec.encode("control", ["exit_all"]))
-                break
-            elif command[0] == 'e':
-                # check if the process is running
-                if command[1] in processes.keys():
-                    print(f"Process {command[1]} is running")
-                else:
-                    print(f"Process {command[1]} is not running, starting it")
-                    # find the module and class name with the short name
-                    cfg = all_process_configs.get(command[1])
-                    module_name = cfg.get("module_name")
-                    class_name = cfg.get("class_name")
-                    module = importlib.import_module(module_name)
-                    target = getattr(module, class_name)
-                    p = mp.Process(target=target)
-                    p.start()
-                    processes[command[1]] = p
-            elif command[0] == 'd':
-                # check if the process is running
-                if command[1] in processes.keys():
-                    print(f"Process {command[1]} is running, stopping it")
-                    cfg = all_process_configs.get(command[1])
-                    time_to_shutdown = cfg.get("time_to_shutdown")
-                    pub.send_multipart(ZmqCodec.encode("control", ["exit", command[1]]))
-                    print(f"Waiting {time_to_shutdown} seconds for process {command[1]} to shut down")
-                    time.sleep(time_to_shutdown)
-                    del processes[command[1]]
-                else:
-                    print(f"Process {command[1]} is not running")
-            elif command[0] == 'l':
-                print("active processes:")
-                for process in processes.keys():
-                    print(process)
-                print("available processes:")
-                for process in all_process_configs.keys():
-                    print(process)
-            elif command[0] == 'h':
-                print("Available commands:")
-                print("q, quit, exit: Exit the program")
-                print("e: Start a process")
-                print("l: List active processes and possible processes")
-                print("d: Stop a process")
-                print("h: Show this help message")
-            else:
-                print(f"Unknown command: {command}")
+            _handle_control_message(command)
     
     
-    time.sleep(1)
+    time.sleep(.1)
