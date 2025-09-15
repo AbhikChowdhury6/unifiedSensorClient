@@ -267,13 +267,18 @@ pigpio_toggle_buttons_process_config = {
     "class_name": "pigpio_buttons",
     "short_name": "buttons",
     "time_to_shutdown": .1,
-    "button_sense_pins": [17, 27, 26],
-    "button_high_pins": [24, 25, 26],
-    "default_pull": "down",
-    "button_process_map": {
-        17: [['exit', 'video']],
-        27: [['exit', 'audio']],
-        26: [['exit', 'detectors']],
+    "button_sense_pins": [[20, "low"], [12, "low"], [7, "high"]],
+    "set_high_pins": [21, 16],
+    "set_low_pins": [],
+    "button_message_map": {
+        17: [[['d', 'video']], [['e', 'video']]],
+        27: [[['d', 'audio']], [['e', 'audio']]],
+        26: [
+            [['e', 'yolo'], ['e', 'del'], ['d', "motion"], ['d', "dark"]], # yolo only
+            [['d', 'yolo'], ['e', 'del'], ['e', 'motion'], ['d', 'dark']], # motion only
+            [['d', 'yolo'], ['e', 'del'], ['d', 'motion'], ['e', 'dark']], # dark only
+            [['d', 'yolo'], ['d', 'del'], ['d', 'motion'], ['d', 'dark']], # off
+        ],
     },
     "button_endpoint": f"ipc:///tmp/control.sock",
 
