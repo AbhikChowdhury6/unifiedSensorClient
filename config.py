@@ -281,19 +281,21 @@ pigpio_toggle_buttons_process_config = {
         ],
     },
     "button_endpoint": f"ipc:///tmp/control.sock",
-
 }
 
 
 all_process_configs = {
-    "csv": csv_writer_process_config,
+#    "csv": csv_writer_process_config,
     "sqlite": sqlite_writer_process_config,
     "i2c": i2c_controller_process_config,
     "video": video_controller_process_config,
     "mp4": mp4_writer_process_config,
     "jpeg": jpeg_writer_process_config,
-    "yolo": yolo_person_detector_process_config,
-    "audio": audio_controller_process_config,
-    "opus": audio_writer_process_config,
+#    "yolo": yolo_person_detector_process_config,
+#    "audio": audio_controller_process_config,
+#    "opus": audio_writer_process_config,
+    "dark": is_dark_detector_process_config,
+    "motion": motion_detector_process_config,
     "del": detector_based_deleter_process_config,
+#    "buttons": pigpio_toggle_buttons_process_config,
 }
