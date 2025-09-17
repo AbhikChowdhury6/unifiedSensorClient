@@ -51,12 +51,14 @@ csv_writer_process_config = {
     ],
 }
 
+sqlite_writer_write_location = "/home/pi/data/sqlite_writer/"
+
 sqlite_writer_process_config = {
     "module_name": "sqliteWriter",
     "class_name": "sqlite_writer",
     "short_name": "sqlite",
     "time_to_shutdown": .1,
-    "write_location": "/home/pi/data/sqlite_writer/",
+    "write_location": sqlite_writer_write_location,
     "subscription_endpoints": [
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
