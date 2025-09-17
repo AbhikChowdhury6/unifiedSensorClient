@@ -283,6 +283,17 @@ pigpio_toggle_buttons_process_config = {
     "button_endpoint": f"ipc:///tmp/control.sock",
 }
 
+connection_check_process_config = {
+    "module_name": "connectionCheck",
+    "class_name": "connection_check",
+    "short_name": "check",
+    "time_to_shutdown": .1,
+    "pub_topic": f"{platform_uuid}_connection_check",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_connection_check.sock",
+    "interval_seconds": 1,
+    "states": ["offline", "hotspot", "home-wifi"],
+    "ssids": {"hotspot": "chowderphone", "home-wifi": "snet24"},
+}
 
 all_process_configs = {
 #    "csv": csv_writer_process_config,
