@@ -303,12 +303,12 @@ led_controller_process_config = {
     "short_name": "led",
     "time_to_shutdown": .1,
     "pub_topic": "control",
-    "states": {0 : {(255, 0, 0): set((1, 'video')), (0, 0, 0): set((0, 'video'))},
-               1 : {(0, 255, 0): set((1, 'audio')), (0, 0, 0): set((0, 'audio'))},
-               2 : {(255, 0, 0): set((1, 'yolo'), (1, 'del'), (0, "motion"), (0, "dark")), # yolo only
-                    (0, 255, 0): set((0, 'yolo'), (1, 'del'), (1, 'motion'), (0, 'dark')), # motion only
-                    (0, 0, 255): set((0, 'yolo'), (1, 'del'), (0, 'motion'), (1, 'dark')), # dark only
-                    (0, 0, 0): set((0, 'yolo'), (0, 'del'), (0, 'motion'), (0, 'dark')), # off
+    "states": {0 : {(255, 0, 0): set([(1, 'video')]), (0, 0, 0): set([(0, 'video')])},
+               1 : {(0, 255, 0): set([(1, 'audio')]), (0, 0, 0): set([(0, 'audio')])},
+               2 : {(255, 0, 0): set([(1, 'yolo'), (1, 'del'), (0, "motion"), (0, "dark")]), # yolo only
+                    (0, 255, 0): set([(0, 'yolo'), (1, 'del'), (1, 'motion'), (0, 'dark')]), # motion only
+                    (0, 0, 255): set([(0, 'yolo'), (1, 'del'), (0, 'motion'), (1, 'dark')]), # dark only
+                    (0, 0, 0): set([(0, 'yolo'), (0, 'del'), (0, 'motion'), (0, 'dark')]), # off
                 },
     },
 }
