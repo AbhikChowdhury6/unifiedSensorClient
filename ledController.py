@@ -22,8 +22,8 @@ def led_controller():
     sys.stdout.flush()
 
     pub = ctx.socket(zmq.PUB)
-    pub.bind(config["pub_endpoint"])
-    print("led controller connected to pub topic")
+    pub.connect(config["pub_endpoint"])
+    print("led controller connected to pub on controltopic")
     sys.stdout.flush()
 
     def _should_exit(obj):
