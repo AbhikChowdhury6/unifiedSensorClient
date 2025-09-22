@@ -297,6 +297,24 @@ connection_check_process_config = {
     "ssids": {"hotspot": "chowderphone", "home-wifi": "snet24"},
 }
 
+led_controller_process_config = {
+    "module_name": "ledController",
+    "class_name": "led_controller",
+    "short_name": "led",
+    "time_to_shutdown": .1,
+    "pub_topic": f"{platform_uuid}_led_controller",
+    "states": {1 : [[(255, 0, 0), ['e', 'video']], [(0, 0, 0), ['d', 'video']]],
+               2 : [[(0, 255, 0), ['e', 'audio']], [(0, 0, 0), ['d', 'audio']]],
+               3 : [
+                    [(255, 0, 0), ['e', 'yolo'], ['e', 'del'], ['d', "motion"], ['d', "dark"]], # yolo only
+                    [(0, 255, 0), ['d', 'yolo'], ['e', 'del'], ['e', 'motion'], ['d', 'dark']], # motion only
+                    [(0, 0, 255), ['d', 'yolo'], ['e', 'del'], ['d', 'motion'], ['e', 'dark']], # dark only
+                    [(0, 0, 0), ['d', 'yolo'], ['d', 'del'], ['d', 'motion'], ['d', 'dark']], # off
+                ],
+    },
+}
+
+
 all_process_configs = {
 #    "csv": csv_writer_process_config,
     "sqlite": sqlite_writer_process_config,
@@ -311,4 +329,5 @@ all_process_configs = {
     "motion": motion_detector_process_config,
     "del": detector_based_deleter_process_config,
 #    "buttons": pigpio_toggle_buttons_process_config,
+#    "led": led_controller_process_config,
 }

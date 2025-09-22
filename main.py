@@ -43,6 +43,8 @@ if __name__ == "__main__":
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    # Wake up at least once per second if no messages arrive
+    sub.setsockopt(zmq.RCVTIMEO, 1000)
     print("main connected to control topic")
     sys.stdout.flush()
 
@@ -142,11 +144,12 @@ if __name__ == "__main__":
             break
 
         try:
-            parts = sub.recv_multipart(flags=zmq.NOBLOCK)
+            parts = sub.recv_multipart()
             topic, obj = ZmqCodec.decode(parts)
             print(f"main got control message: {obj}")
             _handle_control_message(obj)
         except zmq.Again:
+            # timeout after ~1s: fall through to stdin/health checks
             pass
 
         if select.select([sys.stdin], [], [], 0)[0]:
