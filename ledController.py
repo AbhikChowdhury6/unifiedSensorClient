@@ -9,9 +9,9 @@ from config import led_controller_process_config, zmq_control_endpoint
 config = led_controller_process_config
 
 import board
-import neopixel
+import neopixel_spi
 
-pixels = neopixel.NeoPixel(board.D18, 3, auto_write=False)
+pixels = neopixel_spi.NeoPixel_SPI(board.SPI(), 10, auto_write=False)
 
 def led_controller():
     ctx = zmq.Context()
