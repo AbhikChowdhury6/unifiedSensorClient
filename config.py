@@ -28,14 +28,29 @@ def get_log_queue():
         raise RuntimeError("Log queue not initialized. Call init_log_queue() first.")
     return log_queue
 
-allowed_loggers = []
-allowed_funcs = []
-debugLvl = 10
+#a reminder about levels and numbers
+#- trace (not built in) (5)
+#- debug (10)
+#- info (20)
+#- warning (30)
+#- error (40)
+#- critical (50)
+
+logging_process_config = {
+    "module_name": "loggingProcess",
+    "func_name": "logging_process",
+    "short_name": "logging",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "logfile_path": "/home/pi/unifiedSensorClient.log",
+    "allowed_loggers": [],
+    "allowed_funcs": [],
+}
 
 
 csv_writer_process_config = {
+    "func_name": "csv_writer",
     "module_name": "csvWriter",
-    "class_name": "csv_writer",
     "short_name": "csv",
     "time_to_shutdown": .1,
     "write_location": "/home/pi/data/csv_writer/",
@@ -55,9 +70,10 @@ sqlite_writer_write_location = "/home/pi/data/sqlite_writer/"
 
 sqlite_writer_process_config = {
     "module_name": "sqliteWriter",
-    "class_name": "sqlite_writer",
+    "func_name": "sqlite_writer",
     "short_name": "sqlite",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "write_location": sqlite_writer_write_location,
     "subscription_endpoints": [
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
@@ -77,10 +93,11 @@ sqlite_writer_process_config = {
 
 i2c_controller_process_config = {
     "module_name": "i2cController",
-    "class_name": "i2c_controller",
+    "func_name": "i2c_controller",
     "short_name": "i2c",
     "time_to_shutdown": .1,
     "bus_number": 1,
+    "debug_lvl": 20,
     "devices": [
         {   
             "module_name": "abme280",
@@ -122,9 +139,10 @@ picamv3wide = "picamV3-sony-imx708-120fov-12MP"
 
 video_controller_process_config = {
     "module_name": "videoController",
-    "class_name": "video_controller",
+    "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
+    "debug_lvl": 20,
     "camera_type_module": "piCamera",
     "camera_type_class": "PiCamera",
     "camera_index": 0,
@@ -142,9 +160,10 @@ video_controller_process_config = {
 
 mp4_writer_process_config = {
     "module_name": "mp4Writer",
-    "class_name": "mp4_writer",
+    "func_name": "mp4_writer",
     "short_name": "mp4",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "write_location": "/home/pi/data/mp4_writer/",
     "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
@@ -165,11 +184,12 @@ mp4_writer_process_config = {
 
 jpeg_writer_process_config = {
     "module_name": "jpegWriter",
-    "class_name": "jpeg_writer",
+    "func_name": "jpeg_writer",
     "short_name": "jpeg",
     "time_to_shutdown": .1,
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "debug_lvl": 20,
     "write_location": "/home/pi/data/jpeg_writer/",
     "capture_tolerance_seconds": 0.25,
     "quality": 90,
@@ -178,9 +198,10 @@ jpeg_writer_process_config = {
 
 yolo_person_detector_process_config = {
     "module_name": "yoloPersonDetector",
-    "class_name": "yolo_person_detector",
+    "func_name": "yolo_person_detector",
     "short_name": "yolo",
     "time_to_shutdown": 3,
+    "debug_lvl": 20,
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
@@ -194,9 +215,10 @@ yolo_person_detector_process_config = {
 
 audio_controller_process_config = {
     "module_name": "audioController",
-    "class_name": "audio_controller",
+    "func_name": "audio_controller",
     "short_name": "audio",
     "time_to_shutdown": .6,
+    "debug_lvl": 20,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "pub_topic": f"{platform_uuid}_audio_controller",
     "sample_rate": 16000,
@@ -207,9 +229,10 @@ audio_controller_process_config = {
 
 audio_writer_process_config = {
     "module_name": "audioWriter",
-    "class_name": "audio_writer",
+    "func_name": "audio_writer",
     "short_name": "opus",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "sub_topic": f"{platform_uuid}_audio_controller",
     "write_location": "/home/pi/data/audio_writer/",
@@ -226,9 +249,10 @@ audio_writer_process_config = {
 
 detector_based_deleter_process_config = {
     "module_name": "detectorBasedDeleter",
-    "class_name": "detector_based_deleter",
+    "func_name": "detector_based_deleter",
     "short_name": "del",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "detector_names": [f"{platform_uuid}_yolo11m_person_detection"],
     "detector_endpoints": [f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock"],
     "files_location": "/home/pi/data/mp4_writer/",
@@ -240,9 +264,10 @@ detector_based_deleter_process_config = {
 
 is_dark_detector_process_config = {
     "module_name": "isDarkDetector",
-    "class_name": "is_dark_detector",
+    "func_name": "is_dark_detector",
     "short_name": "dark",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "pub_topic": f"{platform_uuid}_is_dark_detector",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_is_dark_detector.sock",
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
@@ -253,9 +278,10 @@ is_dark_detector_process_config = {
 
 motion_detector_process_config = {
     "module_name": "motionDetector",
-    "class_name": "motion_detector",
+    "func_name": "motion_detector",
     "short_name": "motion",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "pub_topic": f"{platform_uuid}_motion_detector",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_motion_detector.sock",
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
@@ -266,9 +292,10 @@ motion_detector_process_config = {
 
 pigpio_toggle_buttons_process_config = {
     "module_name": "pigpioButtons",
-    "class_name": "pigpio_buttons",
+    "func_name": "pigpio_buttons",
     "short_name": "buttons",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "button_sense_pins": [[20, "low"], [12, "low"], [7, "high"]],
     "set_high_pins": [21, 16],
     "set_low_pins": [],
@@ -287,9 +314,10 @@ pigpio_toggle_buttons_process_config = {
 
 connection_check_process_config = {
     "module_name": "connectionCheck",
-    "class_name": "connection_check",
+    "func_name": "connection_check",
     "short_name": "check",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "pub_topic": f"{platform_uuid}_connection_check",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_connection_check.sock",
     "interval_seconds": 1,
@@ -299,9 +327,10 @@ connection_check_process_config = {
 
 led_controller_process_config = {
     "module_name": "ledController",
-    "class_name": "led_controller",
+    "func_name": "led_controller",
     "short_name": "led",
     "time_to_shutdown": .1,
+    "debug_lvl": 20,
     "pub_topic": "control",
     "pub_endpoint": zmq_control_endpoint,
     "states": {0 : {(255, 0, 0): set([(1, 'video')]), (0, 0, 0): set([(0, 'video')])},

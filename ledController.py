@@ -5,15 +5,22 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 
-from config import led_controller_process_config, zmq_control_endpoint
+from config import led_controller_process_config, zmq_control_endpoint, log_queue
 config = led_controller_process_config
 
 import board
 import neopixel_spi
+import logging
+from logUtils import worker_configurer
 
 pixels = neopixel_spi.NeoPixel_SPI(board.SPI(), 10, auto_write=False)
 
 def led_controller():
+    worker_configurer(log_queue)
+    logger = logging.getLogger("ledController")
+    logger.info("led controller starting")
+    sys.stdout.flush()
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
