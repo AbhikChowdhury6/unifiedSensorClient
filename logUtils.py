@@ -1,7 +1,7 @@
 import logging
 import logging.handlers
 import colorlog
-
+import sys
 
 # define custom TRACE level (5) and helper methods
 TRACE_LEVEL_NUM = 5
@@ -100,3 +100,148 @@ def logging_listener(queue, logfile_path, level=logging.INFO, allowed_loggers=No
             break
         logger = logging.getLogger(record.name)
         logger.handle(record)
+
+LEVELS = {
+    "trace": logging.TRACE,
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
+
+def parse_level(v):
+    if isinstance(v, str):
+        return LEVELS[v.lower()]
+    return int(v)
+
+def set_process_log_level(level):
+    logging.getLogger().setLevel(parse_level(level))
+
+def check_apply_level(obj, process_name, logger_name=None):
+    # obj shape: ["loglevel", <target|all>, <level>]
+    if logger_name is None:
+        logger_name = process_name
+    if not obj or obj[0] != "loglevel":
+        return False
+    target = obj[1] if len(obj) > 1 else None
+    level = obj[2] if len(obj) > 2 else None
+    if target in ("all", process_name) and level is not None:
+        set_process_log_level(level)
+        if logger_name:
+            logging.getLogger(logger_name).info(f"set log level to {parse_level(level)} for {process_name}")
+        return True
+    return False
+
+def check_exit(obj, process_name, logger_name=None):
+    # obj shape: ["exit", <target|all>]
+    if logger_name is None:
+        logger_name = process_name
+    if not obj or obj[0] != "exit":
+        return False
+    target = obj[1] if len(obj) > 1 else None
+    if target in ("all", process_name):
+        if logger_name:
+            logging.getLogger(logger_name).info(f"got exit from control for {process_name}")
+        return True
+    return False
+
+
+
+#### reference notes
+class NameAndFunctionFilter(logging.Filter):
+    def __init__(self, passthrough_min_level=logging.INFO, state=None):
+        super().__init__()
+        self.passthrough_min_level = passthrough_min_level
+        self.state = state  # Manager dict (schema below)
+
+    def _min_level(self):
+        if self.state and "min_level" in self.state:
+            try:
+                return int(self.state["min_level"])
+            except Exception:
+                pass
+        return self.passthrough_min_level
+
+    @staticmethod
+    def _func_ok(allowed_funcs, func):
+        if not allowed_funcs:
+            return False
+        return func in allowed_funcs or "*" in allowed_funcs
+
+    def filter(self, record):
+        # always allow at/above min level
+        if record.levelno >= self._min_level():
+            return True
+
+        proc = getattr(record, "processName", None)
+        logger_name = record.name
+        func = record.funcName
+        s = self.state or {}
+
+        # 1) per (process -> logger -> [funcs])
+        by_pl = (s.get("by_proc_logger") or {}).get(proc, {})
+        funcs = by_pl.get(logger_name)
+        if self._func_ok(funcs, func):
+            return True
+
+        # 2) per-logger funcs
+        by_l = (s.get("by_logger") or {}).get(logger_name)
+        if self._func_ok(by_l, func):
+            return True
+
+        # 3) per-process funcs
+        by_p = (s.get("by_process") or {}).get(proc)
+        if self._func_ok(by_p, func):
+            return True
+
+        # 4) global lists
+        allowed_loggers = set(s.get("allowed_loggers") or [])
+        allowed_funcs = set(s.get("allowed_funcs") or [])
+        if allowed_loggers and allowed_funcs:
+            return (logger_name in allowed_loggers) and (func in allowed_funcs or "*" in allowed_funcs)
+        if allowed_loggers:
+            return logger_name in allowed_loggers
+        if allowed_funcs:
+            return func in allowed_funcs or "*" in allowed_funcs
+
+        # default deny if below min level
+        return False
+
+def add_proc_logger_funcs(state, process, logger, funcs):
+    m = dict(state.get("by_proc_logger") or {})
+    pl = dict(m.get(process) or {})
+    cur = set(pl.get(logger) or [])
+    cur |= set(funcs)
+    pl[logger] = list(cur)
+    m[process] = pl
+    state["by_proc_logger"] = m
+
+def add_logger_funcs(state, logger, funcs):
+    m = dict(state.get("by_logger") or {})
+    cur = set(m.get(logger) or [])
+    cur |= set(funcs)
+    m[logger] = list(cur)
+    state["by_logger"] = m
+
+def add_process_funcs(state, process, funcs):
+    m = dict(state.get("by_process") or {})
+    cur = set(m.get(process) or [])
+    cur |= set(funcs)
+    m[process] = list(cur)
+    state["by_process"] = m
+
+
+# in listener_configurer(...)
+file_handler.addFilter(NameAndFunctionFilter(passthrough_min_level=level, state=filter_state))
+stream_handler.addFilter(NameAndFunctionFilter(passthrough_min_level=level, state=filter_state))
+
+# when starting workers in main.py
+p = mp.Process(target=target, name=cfg.get("short_name"))
+
+# examples
+add_proc_logger_funcs(filter_state, process="yolo", logger="yoloPersonDetector", funcs=["inference_step"])
+add_logger_funcs(filter_state, logger="sqliteWriter", funcs=["write_row"])
+add_process_funcs(filter_state, process="video", funcs=["_capture_frame"])
+# optionally tighten or relax global min level
+filter_state["min_level"] = 20  # INFO

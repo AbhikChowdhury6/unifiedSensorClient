@@ -117,6 +117,13 @@ if __name__ == "__main__":
                 print(f"Process {command[1]} is not running")
             return
 
+        elif command[0] in ("log", "loglevel"):
+            # usage: log <process|all> <level>  e.g., "log led debug" or "log all 5"
+            target = command[1]
+            level = command[2]
+            pub.send_multipart(ZmqCodec.encode("control", ["set_loglevel", target, level]))
+            return
+
         elif command[0] == "h":
             print("Available commands:")
             print("q, quit, exit: Exit the program")
