@@ -1,3 +1,6 @@
+- copy iso to proxmox
+    - scp /home/chowder/Downloads/ubuntu-22.04.5-live-server-amd64.iso root@192.168.20.137:/var/lib/vz/template/iso
+
 make a vm with 
 - 2+ cpus
 - 8 gigs of ram
