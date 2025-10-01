@@ -43,6 +43,82 @@ def sqlite_writer():
     )
     """)
     ins = conn.cursor()
+
+    # Helpers for dynamic per-topic tables
+    def _qident(name: str) -> str:
+        return '"' + name.replace('"', '""') + '"'
+
+    def _to_sql_type(value) -> str:
+        # Map Python/numpy types to SQLite column types
+        if isinstance(value, datetime):
+            return "INTEGER"  # store epoch ns
+        if isinstance(value, (bool, np.bool_)):
+            return "INTEGER"
+        if isinstance(value, (int, np.integer)):
+            return "INTEGER"
+        if isinstance(value, (float, np.floating)):
+            return "REAL"
+        if isinstance(value, (bytes, bytearray, memoryview)):
+            return "BLOB"
+        if isinstance(value, np.ndarray):
+            if value.ndim == 0:
+                # Will normalize to scalar; choose based on dtype kind
+                kind = value.dtype.kind
+                if kind in ("i", "u", "b"):
+                    return "INTEGER"
+                if kind in ("f",):
+                    return "REAL"
+                return "BLOB"
+            # non-scalar arrays unsupported for sqlite columns here
+            return "BLOB"
+        # Fallback to TEXT
+        return "TEXT"
+
+    def _normalize_value(value):
+        # Convert values into SQLite-storable Python types
+        if isinstance(value, datetime):
+            # ensure tz-aware, then epoch ns
+            dt = value
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return int(dt.timestamp() * 1_000_000_000)
+        if isinstance(value, np.ndarray):
+            if value.ndim == 0:
+                value = value.item()
+            else:
+                # unsupported; signal by returning a sentinel
+                return None
+        if isinstance(value, np.generic):
+            return value.item()
+        if isinstance(value, bool):
+            return int(value)
+        return value
+
+    prepared_statements = {}  # topic -> (insert_sql, num_cols)
+
+    def _table_exists(topic: str) -> bool:
+        cur = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (topic,))
+        return cur.fetchone() is not None
+
+    def _get_table_ncols(topic: str) -> int:
+        cur = conn.execute("PRAGMA table_info(" + _qident(topic) + ")")
+        cols = cur.fetchall()
+        return len(cols)
+
+    def _ensure_table_for_message(topic: str, msg_list):
+        # Create a table named after the topic with columns c0..c{n-1}
+        if _table_exists(topic):
+            return _get_table_ncols(topic)
+        col_types = []
+        for v in msg_list:
+            col_types.append(_to_sql_type(v))
+        col_defs = []
+        for i, t in enumerate(col_types):
+            col_defs.append(f"c{i} {t}")
+        sql = f"CREATE TABLE IF NOT EXISTS {_qident(topic)} (" + ", ".join(col_defs) + ")"
+        conn.execute(sql)
+        conn.commit()  # commit DDL immediately
+        return len(col_types)
     
     last_commit = time.time()
     while True:
@@ -56,30 +132,57 @@ def sqlite_writer():
                 print(f"sqlite writer got control message: {msg}")
                 sys.stdout.flush()
             continue
-        ts = msg[0]
-        value = msg[1]
-        # Normalize timestamp to epoch ns integer
-        if isinstance(ts, datetime):
-            if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
-            ts = int(ts.timestamp() * 1_000_000_000)
-        # Normalize value to float for scalar sensors
-        if isinstance(value, np.ndarray):
-            if value.ndim == 0:
-                value = float(value)
-            else:
-                print(f"sqlite writer skipping non-scalar value for {topic}: shape={value.shape}")
+        # Expect messages to be a list/tuple; wrap scalars as single-element list
+        payload = msg if isinstance(msg, (list, tuple)) else [msg]
+
+        # Skip messages containing non-scalar ndarrays
+        non_scalar_array = any(isinstance(v, np.ndarray) and getattr(v, 'ndim', 1) > 0 for v in payload)
+        if non_scalar_array:
+            print(f"sqlite writer skipping non-scalar array payload for {topic}")
+            sys.stdout.flush()
+            continue
+
+        if topic in config['subscription_topics']:
+            # Ensure table exists and matches payload length
+            try:
+                ncols = _ensure_table_for_message(topic, payload)
+            except Exception as e:
+                print(f"sqlite writer failed ensuring table for {topic}: {e}")
                 sys.stdout.flush()
                 continue
-        elif isinstance(value, np.generic):
-            value = float(value)
-        
-        if topic in config['subscription_topics']:
-            ins.execute("INSERT OR IGNORE INTO readings(topic, ts, value) " + 
-                "VALUES (?, ?, ?)", (topic, ts, value))
-            #print(f"sqlite writer wrote {msg} to {topic}")
-            #sys.stdout.flush()
-            
+
+            if len(payload) != ncols:
+                print(f"sqlite writer payload length mismatch for {topic}: got {len(payload)}, expected {ncols}")
+                sys.stdout.flush()
+                continue
+
+            # Prepare insert statement if needed
+            if topic not in prepared_statements:
+                placeholders = ",".join(["?"] * ncols)
+                colnames = ",".join([f"c{i}" for i in range(ncols)])
+                insert_sql = f"INSERT INTO {_qident(topic)}(" + colnames + ") VALUES (" + placeholders + ")"
+                prepared_statements[topic] = (insert_sql, ncols)
+
+            insert_sql, _ = prepared_statements[topic]
+            values = []
+            for v in payload:
+                nv = _normalize_value(v)
+                if nv is None:
+                    print(f"sqlite writer skipping due to unsupported value in payload for {topic}")
+                    sys.stdout.flush()
+                    values = None
+                    break
+                values.append(nv)
+            if values is None:
+                continue
+
+            try:
+                ins.execute(insert_sql, tuple(values))
+            except Exception as e:
+                print(f"sqlite writer insert failed for {topic}: {e}")
+                sys.stdout.flush()
+                continue
+
             # Commit every second
             current_time = time.time()
             if current_time - last_commit >= 1.0:

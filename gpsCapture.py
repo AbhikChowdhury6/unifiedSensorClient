@@ -40,8 +40,12 @@ def gps_capture():
     print("gps capture connected to control topic")
     sys.stdout.flush()
 
-    pub = ctx.socket(zmq.PUB)
-    pub.bind(config["pub_endpoint"])
+    pub3dFix = ctx.socket(zmq.PUB)
+    pub3dFix.bind(config["pub_endpoint_3dFix"]) #3d fix
+    pubSpeed = ctx.socket(zmq.PUB)
+    pubSpeed.bind(config["pub_endpoint_speed"]) #speed in km/h
+    pubEPEP = ctx.socket(zmq.PUB)
+    pubEPEP.bind(config["pub_endpoint_epe"]) #EPEP
     print(f"gps capture publishing to {config['pub_topic']} at {config['pub_endpoint']}")
     sys.stdout.flush()
 
@@ -60,16 +64,16 @@ def gps_capture():
             continue
         
         #send 3d fix
-        pub.send_multipart(ZmqCodec.encode("gps3dFix", [gps.latitude, gps.longitude, gps.altitude]))
+        pub3dFix.send_multipart(ZmqCodec.encode(config["pub_topic_3dFix"], [gps.latitude, gps.longitude, gps.altitude]))
         print(gps.latitude, gps.longitude, gps.altitude)
         sys.stdout.flush()
         
         #send speed in km/h
-        pub.send_multipart(ZmqCodec.encode("gpsSpeed", [gps.speed]))
+        pubSpeed.send_multipart(ZmqCodec.encode(config["pub_topic_speed"], [gps.speed]))
 
 
         #send EPX, EPY, EPV, EPS
-        pub.send_multipart(ZmqCodec.encode("gpsEPEP", [gps.epx, gps.epy, gps.epv, gps.eps]))
+        pubEPEP.send_multipart(ZmqCodec.encode(config["pub_topic_epe"], [gps.epx, gps.epy, gps.epv, gps.eps]))
 
         time.sleep(0.5)
     
