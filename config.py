@@ -80,12 +80,18 @@ sqlite_writer_process_config = {
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
         f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix.sock",
+        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
+        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
     ],
     "subscription_topics": [
         f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
         f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
         f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
         f"{platform_uuid}_yolo11m_person_detection",
+        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
+        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
+        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
     ],
 }
 
@@ -341,6 +347,24 @@ led_controller_process_config = {
                     (0, 0, 0): set([(0, 'yolo'), (0, 'del'), (0, 'motion'), (0, 'dark')]), # off
                 },
     },
+}
+
+gps_capture_process_config = {
+    "module_name": "gpsCapture",
+    "func_name": "gps_capture",
+    "short_name": "gps",
+    "time_to_shutdown": 1,
+    "debug_lvl": 20,
+    "baudrate": 9600,
+    "timeout": 10,
+    "update_hz": 1,
+    "serial_port": "ttyUSB0",
+    "pub_topic_3dFix": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
+    "pub_endpoint_3dFix": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_adafruit_PA1616S_gps3dFix.sock",
+    "pub_topic_speed": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
+    "pub_endpoint_speed": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
+    "pub_topic_epe": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
+    "pub_endpoint_epe": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
 }
 
 
