@@ -1,6 +1,7 @@
 import sys
 import zmq
 import time
+from datetime import datetime
 
 import board
 import busio
@@ -49,6 +50,9 @@ def gps_capture():
     print(f"gps capture publishing to {config['pub_topic']} at {config['pub_endpoint']}")
     sys.stdout.flush()
 
+
+    delay_micros = 1_000_000/config["update_hz"]
+    time.sleep(1 - datetime.now().microsecond/1_000_000)
     while True:
         parts = sub.recv_multipart(flags=zmq.NOBLOCK)
         topic, obj = ZmqCodec.decode(parts)
@@ -75,6 +79,7 @@ def gps_capture():
         #send EPX, EPY, EPV, EPS
         pubEPEP.send_multipart(ZmqCodec.encode(config["pub_topic_epe"], [gps.epx, gps.epy, gps.epv, gps.eps]))
 
-        time.sleep(0.5)
+        micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
+        time.sleep(micros_to_delay/1_000_000)
     
     
