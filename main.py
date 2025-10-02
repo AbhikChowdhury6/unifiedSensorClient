@@ -119,9 +119,19 @@ if __name__ == "__main__":
 
         elif command[0] in ("log", "loglevel"):
             # usage: log <process|all> <level>  e.g., "log led debug" or "log all 5"
-            target = command[1]
-            level = command[2]
-            pub.send_multipart(ZmqCodec.encode("control", ["set_loglevel", target, level]))
+            log_cmd = command[1]
+            if log_cmd == "s":
+                target_process = command[2]
+                level = command[3]
+                pub.send_multipart(ZmqCodec.encode("control", ["log", target_process, level]))
+            elif log_cmd == "e":
+                target_process = command[2]
+                target_method = command[3]
+                pub.send_multipart(ZmqCodec.encode("control", ["log", "e",target_process, target_method]))
+            elif log_cmd == "d":
+                target_process = command[2]
+                target_method = command[3]
+                pub.send_multipart(ZmqCodec.encode("control", ["log", "d",target_process, target_method]))
             return
 
         elif command[0] == "h":

@@ -5,6 +5,8 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import zmq
+from zmq_codec import ZmqCodec
 from config import all_process_configs, logging_process_config
 
 #a reminder about levels and numbers
@@ -54,7 +56,7 @@ def check_apply_level(obj, process_name, logger_name=None):
     # obj shape: ["loglevel", <target|all>, <level>]
     if logger_name is None:
         logger_name = process_name
-    if not obj or obj[0] != "loglevel":
+    if not obj or obj[0] != "log":
         return False
     target = obj[1] if len(obj) > 1 else None
     level = obj[2] if len(obj) > 2 else None
@@ -64,3 +66,40 @@ def check_apply_level(obj, process_name, logger_name=None):
             logging.getLogger(logger_name).info(f"set log level to {parse_level(level)} for {process_name}")
         return True
     return False
+
+# define the filter
+class NameAndFunctionFilter(logging.Filter):
+    def __init__(self, allow_dict, deny_dict):
+        super().__init__()
+        self.allow_dict = allow_dict
+        self.deny_dict = deny_dict
+
+    def filter(self, record):
+        if record.name not in self.allow_dict:
+            return False
+        if record.name in self.deny_dict and \
+            record.funcName in self.deny_dict[record.name]:
+            return False
+        if self.allow_dict[record.name] == "all" or \
+            record.funcName in self.allow_dict[record.name]:
+            return True
+        return False
+
+def logging_process():
+    config = logging_process_config
+    ctx = zmq.Context()
+    sub = ctx.socket(zmq.SUB)
+    sub.connect(config["pub_endpoint"])
+    sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    print("logging process connected to control topic")
+    sys.stdout.flush()
+    
+    while True:
+        parts = sub.recv_multipart()
+        topic, obj = ZmqCodec.decode(parts)
+        if topic == "control" and obj[0] == "log":
+            log_cmd = obj[1]
+            target_process = obj[2]
+            target_method = obj[3]
+            if log_cmd == "e":
+                logging.getLogger(target_process).error(f"error in {target_method}")
