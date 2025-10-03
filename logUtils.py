@@ -67,6 +67,15 @@ def check_apply_level(obj, process_name, logger_name=None):
         return True
     return False
 
+def worker_configurer(queue, level=logging.INFO):
+    handler = logging.handlers.QueueHandler(queue)
+    root = logging.getLogger()
+    root.handlers = []  # remove defaults in the worker
+    root.addHandler(handler)
+    root.setLevel(level)  # this is per-process
+
+
+
 # define the filter
 class NameAndFunctionFilter(logging.Filter):
     def __init__(self, allow_dict, deny_dict):
@@ -85,7 +94,42 @@ class NameAndFunctionFilter(logging.Filter):
             return True
         return False
 
+
+def listener_configurer(config, allow_dict, deny_dict):
+    fmt = '[%(asctime)s] [%(name)s] [%(funcName)s] [%(levelname)s] %(message)s'
+    formatter = logging.Formatter(fmt)
+
+    # File handler
+    file_handler = logging.FileHandler(config["logfile_path"])
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(TRACE_LEVEL_NUM)
+    file_handler.addFilter(NameAndFunctionFilter(allow_dict, deny_dict))
+
+    # Stream handler (stdout)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(colorlog.ColoredFormatter(
+        '%(log_color)s' + fmt,
+        log_colors={
+            'TRACE':    'white',
+            'DEBUG':    'cyan',
+            'INFO':     'green',
+            'WARNING':  'yellow',
+            'ERROR':    'red',
+            'CRITICAL': 'bold_red',
+        }
+    ))
+    stream_handler.setLevel(TRACE_LEVEL_NUM)
+    stream_handler.addFilter(NameAndFunctionFilter(allow_dict, deny_dict))
+
+    root = logging.getLogger()
+    root.handlers = []  # reset in listener
+    root.addHandler(file_handler)
+    root.addHandler(stream_handler)
+    root.setLevel(TRACE_LEVEL_NUM)  # allow all; filtering done by handlers/filters
+
+
 def logging_process():
+    listener_configurer()
     config = logging_process_config
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
