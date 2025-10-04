@@ -10,11 +10,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import (
     zmq_control_endpoint,
-    init_log_queue,
     all_process_configs,
 )
 from zmq_codec import ZmqCodec
-
+from logUtils import logging_process
+mgr = mp.Manager()
+allow_dict = mgr.dict()
+deny_dict = mgr.dict()
+q = mgr.Queue()
 
 def _start_processes_dynamically():
     processes = {}
@@ -26,7 +29,7 @@ def _start_processes_dynamically():
         module = importlib.import_module(module_name)
         target = getattr(module, class_name)
 
-        p = mp.Process(target=target)
+        p = mp.Process(target=target, args=(q,))
         p.start()
 
         short_name = cfg.get("short_name")
@@ -48,6 +51,11 @@ if __name__ == "__main__":
     print("main connected to control topic")
     sys.stdout.flush()
 
+    listener_process = mp.Process(target=logging_process, args=(q,allow_dict, deny_dict))
+    listener_process.start()
+    listener_process.is_alive()
+
+
     processes = _start_processes_dynamically()
 
 
@@ -60,7 +68,7 @@ if __name__ == "__main__":
         class_name = cfg.get("class_name")
         module = importlib.import_module(module_name)
         target = getattr(module, class_name)
-        p = mp.Process(target=target)
+        p = mp.Process(target=target, args=(q,))
         p.start()
         processes[process_name] = p
         return p

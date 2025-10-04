@@ -53,7 +53,7 @@ def set_process_log_level(level):
     logging.getLogger().setLevel(parse_level(level))
 
 def check_apply_level(obj, process_name, logger_name=None):
-    # obj shape: ["loglevel", <target|all>, <level>]
+    # obj shape: ["log", "s", <process>, <level>]
     if logger_name is None:
         logger_name = process_name
     if not obj or obj[0] != "log":
@@ -84,12 +84,15 @@ class NameAndFunctionFilter(logging.Filter):
         self.deny_dict = deny_dict
 
     def filter(self, record):
+        # if we're not logging this process, return False
         if record.name not in self.allow_dict:
             return False
+        # if we're denying this method, return False
         if record.name in self.deny_dict and \
             record.funcName in self.deny_dict[record.name]:
             return False
-        if self.allow_dict[record.name] == "all" or \
+        # if we're allowing this method, return True
+        if self.allow_dict[record.name][0] == "all" or \
             record.funcName in self.allow_dict[record.name]:
             return True
         return False
@@ -128,9 +131,9 @@ def listener_configurer(config, allow_dict, deny_dict):
     root.setLevel(TRACE_LEVEL_NUM)  # allow all; filtering done by handlers/filters
 
 
-def logging_process():
-    listener_configurer()
+def logging_process(q, allow_dict, deny_dict):
     config = logging_process_config
+    listener_configurer(config, allow_dict, deny_dict)
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(config["pub_endpoint"])
@@ -141,9 +144,36 @@ def logging_process():
     while True:
         parts = sub.recv_multipart()
         topic, obj = ZmqCodec.decode(parts)
-        if topic == "control" and obj[0] == "log":
-            log_cmd = obj[1]
-            target_process = obj[2]
+        if not (topic == "control" and obj[0] == "log"):
+            continue
+
+        log_cmd = obj[1]
+        target_process = obj[2]
+
+        if log_cmd == "e":
             target_method = obj[3]
-            if log_cmd == "e":
-                logging.getLogger(target_process).error(f"error in {target_method}")
+            if target_process not in allow_dict:
+                allow_dict[target_process] = []
+            allow_dict[target_process].append(target_method)
+            
+            # update the deny dict
+            if target_process in deny_dict:
+                if target_method == "all":
+                    del deny_dict[target_process]
+                else:
+                    deny_dict[target_process].remove(target_method)
+            
+            
+        elif log_cmd == "d":           
+            target_method = obj[3]
+            if target_process not in deny_dict:
+                deny_dict[target_process] = []
+            deny_dict[target_process].append(target_method)
+
+            # update the allow dict
+            if target_process in allow_dict:
+                if target_method == "all":
+                    del allow_dict[target_process]
+                else:
+                    if "all" not in allow_dict[target_process]:
+                        allow_dict[target_process].remove(target_method)
