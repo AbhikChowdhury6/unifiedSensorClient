@@ -10,7 +10,8 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 class_loc = repoPath + "unifiedSensorClient/cameraClasses/"
 from zmq_codec import ZmqCodec
-
+import logging
+from logUtils import worker_configurer, check_apply_level
 from config import video_controller_process_config, zmq_control_endpoint
 
 config = video_controller_process_config
@@ -24,13 +25,16 @@ def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def video_controller():
+def video_controller(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " controller starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("video controller connected to control topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " controller connected to control topic")
 
     camera = load_class_and_instantiate(
         class_loc + config['camera_type_module'] + '.py',
@@ -48,9 +52,12 @@ def video_controller():
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             topic, obj = ZmqCodec.decode(parts)
-            print("video controller message:", topic, obj)
+            if check_apply_level(obj, config["short_name"]):
+                continue
+
+            l.info("video controller message: " + str(topic) + " " + str(obj))
             if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "video")):
-                print('video controller exiting')
+                l.info('video controller exiting')
                 break
         except zmq.Again:
             # No message available
@@ -60,5 +67,4 @@ def video_controller():
         micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
         time.sleep(micros_to_delay/1_000_000)
 
-    print("video controller exiting")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " controller exiting")

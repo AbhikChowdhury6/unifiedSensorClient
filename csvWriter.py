@@ -7,27 +7,30 @@ import numpy as np
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
+import logging
+from logUtils import worker_configurer, check_apply_level
 
 from config import csv_writer_process_config, zmq_control_endpoint
 config = csv_writer_process_config
 
-def csv_writer():
+def csv_writer(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " writer starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     for endpoint in config['subscription_endpoints']:
         sub.connect(endpoint)
-    print("csv writer connected to subscription endpoint")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " writer connected to subscription endpoint")
 
 
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     for topic in config['subscription_topics']:
         sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
-        print(f"csv writer subscribed to {topic}")
-        sys.stdout.flush()
-    print("csv writer subscribed to all topics")
-    sys.stdout.flush()
+        l.info(config["short_name"] + " writer subscribed to " + topic)
+    l.info(config["short_name"] + " writer subscribed to all topics")
     
     os.makedirs(config['write_location'], exist_ok=True)
     #check if the files exist and create directories if needed
@@ -35,8 +38,7 @@ def csv_writer():
             
         filepath = os.path.join(config['write_location'], f"{topic}.csv")
         if not os.path.exists(filepath):
-            print(f"csv writer creating {filepath}")
-            sys.stdout.flush()
+            l.debug(config["short_name"] + " writer creating " + filepath)
             with open(filepath, "w") as f:
                 f.write("time,data\n")
 
@@ -44,9 +46,10 @@ def csv_writer():
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "csv"):
-                print("csv writer got control exit")
-                sys.stdout.flush()
+                l.info(config["short_name"] + " writer got control exit")
                 break
+            if check_apply_level(msg, config["short_name"]):
+                continue
         # this will write the data to a csv file with the topic name
         if topic in config['subscription_topics']:
             ts, value = msg[0], msg[1]
@@ -72,9 +75,7 @@ def csv_writer():
 
             with open(f"{config['write_location']}{topic}.csv", "a") as f:
                 f.write(f"{ts_str},{value_str}\n")
-            #print(f"csv writer wrote {msg} to {topic}.csv")
-            #sys.stdout.flush()
+            l.debug(config["short_name"] + " writer wrote " + str(msg) + " to " + topic + ".csv")
         else: 
-            print(f"csv writer got unknown topic {topic}")
-            sys.stdout.flush()
-    print("csv writer exiting")
+            l.error("csv writer got unknown topic " + topic)
+    l.info(config["short_name"] + " writer exiting")

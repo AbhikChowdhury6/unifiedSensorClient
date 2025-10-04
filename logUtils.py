@@ -54,18 +54,24 @@ def set_process_log_level(level):
 
 def check_apply_level(obj, process_name, logger_name=None):
     # obj shape: ["log", "s", <process>, <level>]
-    if logger_name is None:
-        logger_name = process_name
     if not obj or obj[0] != "log":
         return False
-    target = obj[1] if len(obj) > 1 else None
-    level = obj[2] if len(obj) > 2 else None
-    if target in ("all", process_name) and level is not None:
+    if obj[1] != "s":
+        return False
+    
+    if logger_name is None:
+        logger_name = process_name
+    if obj[2] != process_name:
+        return False
+    
+    level = obj[3] if len(obj) > 3 else None
+    if level is not None:
         set_process_log_level(level)
-        if logger_name:
-            logging.getLogger(logger_name).info(f"set log level to {parse_level(level)} for {process_name}")
+        logging.getLogger(logger_name).info(f"set log level to {parse_level(level)} for {process_name}")
         return True
-    return False
+    else:
+        logging.getLogger(logger_name).error(f"log level not given for {process_name}")
+        return False
 
 def worker_configurer(queue, level=logging.INFO):
     handler = logging.handlers.QueueHandler(queue)
