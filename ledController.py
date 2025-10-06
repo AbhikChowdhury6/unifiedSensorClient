@@ -57,9 +57,12 @@ def led_controller(log_queue):
                     if check_apply_level(obj, config["short_name"]):
                         continue
 
-                    if topic == "control" and obj[0] == "status" and obj[1] == process:
-                        current_states.add((obj[2], process))
-                        break
+                    # Expect response shape: ["status", <0|1>, <process_name>]
+                    if topic == "control" and obj[0] == "status" and len(obj) >= 3:
+                        status_val, proc_name = obj[1], obj[2]
+                        if proc_name == process:
+                            current_states.add((status_val, process))
+                            break
                     
                     if topic == "control" and _should_exit(obj):
                         l.info(config["short_name"] + " controller got exit for " + str(process))

@@ -7,6 +7,8 @@ testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
 platform_uuid = testpi5UUID
 
 zmq_control_endpoint = f"ipc:///tmp/{platform_uuid}_control.sock"
+# separate inbound requests endpoint (workers PUB -> main SUB)
+zmq_control_requests_endpoint = f"ipc:///tmp/{platform_uuid}_control_requests.sock"
 
 # this is the platform name
 platform_name = "raspberry_pi_5"
@@ -21,6 +23,7 @@ responsible_party = "Abhik"
 #- warning (30)
 #- error (40)
 #- critical (50)
+main_debug_lvl = 10
 
 logging_process_config = {
     "module_name": "logUtils",
@@ -330,7 +333,8 @@ led_controller_process_config = {
     "time_to_shutdown": .1,
     "debug_lvl": 5,
     "pub_topic": "control",
-    "pub_endpoint": zmq_control_endpoint,
+    # for requests to main, publish to the dedicated requests endpoint
+    "pub_endpoint": zmq_control_requests_endpoint,
     "states": {0 : {(255, 0, 0): set([(1, 'video')]), (0, 0, 0): set([(0, 'video')])},
                1 : {(0, 255, 0): set([(1, 'audio')]), (0, 0, 0): set([(0, 'audio')])},
                2 : {(255, 0, 0): set([(1, 'yolo'), (1, 'del'), (0, "motion"), (0, "dark")]), # yolo only

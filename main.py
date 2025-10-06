@@ -6,15 +6,17 @@ import importlib
 import zmq
 import multiprocessing as mp
 import inspect
-
+import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import (
     zmq_control_endpoint,
+    zmq_control_requests_endpoint,
     all_process_configs,
+    main_debug_lvl,
 )
 from zmq_codec import ZmqCodec
-from logUtils import logging_process
+from logUtils import logging_process, worker_configurer
 allow_dict = {s: ["all"] for s in all_process_configs.keys()}
 deny_dict = {}
 q = mp.Queue()
@@ -57,11 +59,22 @@ if __name__ == "__main__":
     # Wake up at least once per second if no messages arrive
     sub.setsockopt(zmq.RCVTIMEO, 1000)
     print("main connected to control topic")
+    # Dedicated SUB for inbound requests from workers (e.g., led controller)
+    req_sub = ctx.socket(zmq.SUB)
+    req_sub.bind(zmq_control_requests_endpoint)
+    req_sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    req_sub.setsockopt(zmq.RCVTIMEO, 10)
+    print("main bound requests endpoint")
+    sys.stdout.flush()
     sys.stdout.flush()
 
     listener_process = mp.Process(target=logging_process, args=(q,allow_dict, deny_dict))
     listener_process.start()
     listener_process.is_alive()
+
+    worker_configurer(q, main_debug_lvl)
+    l=logging.getLogger("main")
+    l.setLevel(main_debug_lvl)
 
     max_time_to_shutdown = max(p.get("time_to_shutdown") for p in all_process_configs.values())
 
@@ -106,12 +119,14 @@ if __name__ == "__main__":
     
     def _is_process_running(process_name):
         if process_name not in all_process_configs:
-            print(f"Process {process_name} is not in the config")
+            l.debug(f"Process {process_name} is not in the config")
             pub.send_multipart(ZmqCodec.encode("control", ["status", 0, process_name]))
             return False
         if process_name not in processes:
+            l.debug(f"Process {process_name} is not running")
             pub.send_multipart(ZmqCodec.encode("control", ["status", 0, process_name]))
             return False
+        l.debug(f"Process {process_name} is running")
         pub.send_multipart(ZmqCodec.encode("control", ["status", 1, process_name]))
         return True
 
@@ -183,14 +198,26 @@ if __name__ == "__main__":
     while True:
         if processes and any(not processes[p].is_alive() for p in processes):
             for p in processes:
-                print(p, processes[p].is_alive())
+                l.error(f"main process {p} is alive: {processes[p].is_alive()}")
             _exit_all()
             break
 
         try:
+            # 1) Drain requests from workers and respond
+            try:
+                parts = req_sub.recv_multipart()
+                topic, obj = ZmqCodec.decode(parts)
+                l.debug(f"main got request: {obj}")
+                # Only handle status requests here and reply via control PUB
+                if topic == "control" and obj and obj[0] == "status" and len(obj) >= 2:
+                    _is_process_running(obj[1])
+            except zmq.Again:
+                pass
+
+            # 2) Handle commands on the shared control bus
             parts = sub.recv_multipart()
             topic, obj = ZmqCodec.decode(parts)
-            print(f"main got control message: {obj}")
+            l.debug(f"main got control message: {obj}")
             _handle_control_message(obj)
         except zmq.Again:
             # timeout after ~1s: fall through to stdin/health checks
