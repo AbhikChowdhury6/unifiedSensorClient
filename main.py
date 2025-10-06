@@ -171,8 +171,7 @@ if __name__ == "__main__":
 
 
     def _exit_all():
-        for p in processes:
-            pub.send_multipart(ZmqCodec.encode("control", ["exit", p]))
+        pub.send_multipart(ZmqCodec.encode("control", ["exit_all"]))
         return
 
     while True:
