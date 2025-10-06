@@ -5,7 +5,7 @@ import os
 import sys
 import colorlog
 from queue import Empty
-
+from datetime import datetime, timezone, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import zmq
@@ -161,8 +161,12 @@ def logging_process(q, allow_dict, deny_dict):
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     sub.setsockopt(zmq.RCVTIMEO, 50)
     l.info(config["short_name"] + " process connected to control topic")
+    exit_time = datetime.min.replace(tzinfo=timezone.utc)
     
     while True:
+        if datetime.now(timezone.utc) > exit_time:
+            l.info(config["short_name"] + " process exiting")
+            break
         # Drain log queue first (non-blocking)
         while True:
             try:
@@ -180,6 +184,12 @@ def logging_process(q, allow_dict, deny_dict):
             topic, obj = ZmqCodec.decode(parts)
         except zmq.Again:
             continue
+        
+        if topic == "control" and obj[0] == "exit_all":
+            l.info(config["short_name"] + " process got control exit exiting in 5 seconds")
+            exit_time = datetime.now(timezone.utc) + timedelta(seconds=5)
+            continue
+        
         if not (topic == "control" and obj[0] == "log"):
             continue
 
