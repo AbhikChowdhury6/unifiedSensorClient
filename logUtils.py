@@ -12,7 +12,7 @@ import zmq
 from zmq_codec import ZmqCodec
 from config import logging_process_config, zmq_control_endpoint, all_process_configs
 
-max_time_to_shutdown = max(p.get("time_to_shutdown") for p in all_process_configs.values())
+max_time_to_shutdown = max(v[1].get("time_to_shutdown") for v in all_process_configs.values())
 
 
 #a reminder about levels and numbers

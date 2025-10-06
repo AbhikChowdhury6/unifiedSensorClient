@@ -28,8 +28,8 @@ q = mp.Queue()
 
 def _start_processes_dynamically():
     processes = {}
-    for name in all_process_configs.keys():
-        cfg = all_process_configs.get(name)
+    for name, value in all_process_configs.items():
+        desired_state, cfg = value[0], value[1]
 
         module_name = cfg.get("module_name")
         func_name = cfg.get("func_name")
@@ -44,11 +44,10 @@ def _start_processes_dynamically():
         except (ValueError, TypeError):
             args = ()
 
-        p = mp.Process(target=target, name=cfg.get("short_name"), args=args)
-        p.start()
-
-        short_name = cfg.get("short_name")
-        processes[short_name] = p
+        if desired_state == 1:
+            p = mp.Process(target=target, name=cfg.get("short_name"), args=args)
+            p.start()
+            processes[name] = p
 
     return processes
 
@@ -81,7 +80,7 @@ if __name__ == "__main__":
     l=logging.getLogger("main")
     l.setLevel(main_debug_lvl)
 
-    max_time_to_shutdown = max(p.get("time_to_shutdown") for p in all_process_configs.values())
+    max_time_to_shutdown = max(v[1].get("time_to_shutdown") for v in all_process_configs.values())
 
 
     processes = _start_processes_dynamically()
@@ -91,7 +90,7 @@ if __name__ == "__main__":
         if process_name in processes:
             print(f"Process {process_name} is already running")
             return
-        cfg = all_process_configs.get(process_name)
+        cfg = all_process_configs.get(process_name)[1]
         module_name = cfg.get("module_name")
         func_name = cfg.get("func_name")
         module = importlib.import_module(module_name)
@@ -114,8 +113,8 @@ if __name__ == "__main__":
         if process_name not in processes:
             print(f"Process {process_name} is not running")
             return
-        cfg = all_process_configs.get(process_name)
-        time_to_shutdown = cfg.get("time_to_shutdown")
+        cfg_list = all_process_configs.get(process_name)
+        time_to_shutdown = cfg_list[1].get("time_to_shutdown")
         pub.send_multipart(ZmqCodec.encode("control", ["exit", process_name]))
         print(f"Waiting {time_to_shutdown} seconds for process {process_name} to shut down")
         time.sleep(time_to_shutdown)
