@@ -4,10 +4,12 @@ import math
 from ultralytics import YOLO
 
 import zmq
+import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
+from logUtils import worker_configurer
 
 from config import (
     yolo_person_detector_process_config,
@@ -19,26 +21,29 @@ def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
     return int(math.ceil(now_ts / interval_s) * interval_s)
 
 
-def yolo_person_detector():
+def yolo_person_detector(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " process starting")
+
     #subscribe to control topic
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("yolo person detector connected to control topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to control topic")
+
 
     #subscribe to camera topic
     sub.connect(config["camera_endpoint"])
     sub.setsockopt(zmq.SUBSCRIBE, config["camera_name"].encode())
-    print("yolo person detector connected to camera topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to camera topic")
+
 
     #connect to pub endpoint
     pub = ctx.socket(zmq.PUB)
     pub.bind(config["pub_endpoint"])
-    print("yolo person detector connected to pub topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to pub topic")
 
 
     interval_s = float(config.get("interval_seconds", 4))
@@ -47,8 +52,7 @@ def yolo_person_detector():
 
     model_name = config.get("model", "yolo11m")
     model = YOLO(model_name)
-    print(f"loaded YOLO model {model_name}")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " loaded YOLO model " + model_name)
 
 
     next_capture = _compute_next_capture_ts(time.time(), interval_s)
@@ -58,8 +62,7 @@ def yolo_person_detector():
 
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "yolo"):
-                print("yolo person detector got control exit")
-                sys.stdout.flush()
+                l.info(config["short_name"] + " got control exit")
                 break
             continue
         if topic != config["camera_name"]:
@@ -89,14 +92,12 @@ def yolo_person_detector():
 
         detected = 1 if person_confidence >= conf_thresh else 0
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, detected]))
-        print(f"yolo person detector published {detected} (person_conf={person_confidence:.3f})")
-        sys.stdout.flush()
+        l.debug(config["short_name"] + " published " + str(detected) + " (person_conf=" + str(person_confidence) + ")")
 
-    print("yolo person detector exiting")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " exiting")
 
 
 if __name__ == "__main__":
-    yolo_person_detector()
+    yolo_person_detector(None)
 
 

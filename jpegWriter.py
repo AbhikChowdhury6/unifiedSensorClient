@@ -7,14 +7,14 @@ from datetime import datetime, timezone
 import zmq
 import numpy as np
 import cv2
+import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-
+from logUtils import worker_configurer
 from config import (
     jpeg_writer_process_config,
-    platform_uuid,
     zmq_control_endpoint,
 )
 config = jpeg_writer_process_config
@@ -33,7 +33,11 @@ def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
     return int(math.ceil(now_ts / interval_s) * interval_s)
 
 
-def jpeg_writer():
+def jpeg_writer(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.setLevel(config["debug_lvl"])
+    l.info(config["short_name"] + " writer starting")
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
 
@@ -49,6 +53,7 @@ def jpeg_writer():
     camera_endpoint = config["camera_endpoint"]
     sub.connect(camera_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, camera_topic.encode())
+    l.info(config["short_name"] + " subscribed to " + camera_topic + " at " + camera_endpoint)
 
     write_location = config["write_location"]
     image_interval_s = float(config.get("image_interval_seconds", 60))
@@ -63,12 +68,9 @@ def jpeg_writer():
     latest_ts = None
     now = time.time()
     next_capture = _compute_next_capture_ts(now, image_interval_s)
-    print(f"jpeg writer next capture: {next_capture}")
-    sys.stdout.flush()
+    l.debug(config["short_name"] + " next capture: " + str(next_capture))
     capture_tolerance_s = float(config.get("capture_tolerance_seconds", 0.25))
 
-    print(f"jpeg writer subscribed to {camera_topic} at {camera_endpoint}")
-    sys.stdout.flush()
 
     while True:
         parts = sub.recv_multipart()
@@ -76,8 +78,7 @@ def jpeg_writer():
 
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "jpeg"):
-                print("jpeg writer got control exit")
-                sys.stdout.flush()
+                l.info(config["short_name"] + " got control exit")
                 break
             continue
         
@@ -85,8 +86,7 @@ def jpeg_writer():
             continue
 
         ts, frame = msg[0], msg[1]
-        #print(f"jpeg writer got frame: {ts}")
-        #sys.stdout.flush()
+        l.debug(config["short_name"] + " got frame: " + str(ts))
 
         # Keep raw latest; process only if we will write
         latest_frame = frame
@@ -98,19 +98,17 @@ def jpeg_writer():
 
         # Work in seconds for comparisons
         frame_ts_seconds = latest_ts.timestamp()
-        #print(f"jpeg writer frame ts seconds: {frame_ts_seconds}, next capture: {next_capture}, latest ts: {latest_ts}")
-        #sys.stdout.flush()
+        l.debug(config["short_name"] + " frame ts seconds: " + str(frame_ts_seconds) + ", next capture: " + str(next_capture) + ", latest ts: " + str(latest_ts))
+        
         if frame_ts_seconds >= next_capture:
             # Reschedule to the aligned time closest to the frame timestamp
             next_capture = _compute_next_capture_ts(frame_ts_seconds, image_interval_s)
-            print(f"jpeg writer next capture: {next_capture}")
-            sys.stdout.flush()
+            l.debug(config["short_name"] + " next capture: " + str(next_capture))
             should_write = False
             ts_diff = abs(frame_ts_seconds - (next_capture - image_interval_s))
             if ts_diff <= capture_tolerance_s:
                 should_write = True
-            #print(f"jpeg writer should write: {should_write}")
-            #sys.stdout.flush()
+            l.debug(config["short_name"] + " should write: " + str(should_write))
             if should_write:
                 # Validate and convert only now
                 frame_to_write = latest_frame
@@ -133,18 +131,14 @@ def jpeg_writer():
                     filepath = os.path.join(out_dir, filename)
                     try:
                         cv2.imwrite(filepath, frame_to_write, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
-                        print(f"jpeg writer saved {filepath}")
-                        sys.stdout.flush()
+                        l.debug(config["short_name"] + " saved " + filepath)
                     except Exception as e:
-                        print(f"jpeg writer failed to save {filepath}: {e}")
-                        sys.stdout.flush()
+                        l.error(config["short_name"] + " failed to save " + filepath + ": " + str(e))
 
-            sys.stdout.flush() 
-    print("jpeg writer exiting")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " exiting")
 
 
 if __name__ == "__main__":
-    jpeg_writer()
+    jpeg_writer(None)
 
 

@@ -4,11 +4,11 @@ import zmq
 import numpy as np
 
 import sys
-from icecream import ic
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
+import logging
 
 
 
@@ -17,8 +17,9 @@ def secs_since_midnight(dt):
 
 class Sensor:
     def __init__(self, config, retrieve_data, is_ready):
-        print('starting sensor!')
-        sys.stdout.flush()
+        self.l = logging.getLogger(config["short_name"])
+        self.l.setLevel(config["debug_lvl"])
+        self.l.info(config["topic"] + " starting")
         self.hz = config['update_hz']
         self.delay_micros = int(1_000_000/self.hz)
         self.rounding_bits = config['rounding_bits']
@@ -32,11 +33,12 @@ class Sensor:
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.endpoint)
+        self.l.info(config["topic"] + " connected to " + self.endpoint)
         time.sleep(.25)
 
         self.is_ready = is_ready
         while not self.is_ready():
-            print("Waiting for data...")
+            self.l.info(config["topic"] + " waiting for data...")
             time.sleep(self.delay_micros/1_000_000)
         _ = self.retrieve_data() # a warmup reading
     

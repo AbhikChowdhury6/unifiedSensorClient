@@ -4,10 +4,11 @@ import time
 from datetime import datetime, timezone
 
 import zmq
+import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-
+from logUtils import worker_configurer
 from config import (
     zmq_control_endpoint,
     audio_controller_process_config,
@@ -16,13 +17,17 @@ from zmq_codec import ZmqCodec
 from audioCapture import AudioCapture
 
 config = audio_controller_process_config
-def audio_controller():
+def audio_controller(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " controller starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("audio controller connected to control topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " controller connected to control topic")
+    
 
     # Start audio capture publisher
     cap = AudioCapture({
@@ -50,8 +55,7 @@ def audio_controller():
                 parts = sub.recv_multipart(flags=zmq.NOBLOCK)
                 topic, obj = ZmqCodec.decode(parts)
                 if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "audio")):
-                    print("audio controller exiting")
-                    sys.stdout.flush()
+                    l.info(config["short_name"] + " controller exiting")
                     break
             except zmq.Again:
                 pass
@@ -67,6 +71,6 @@ def audio_controller():
 
 
 if __name__ == "__main__":
-    audio_controller()
+    audio_controller(None)
 
 

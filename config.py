@@ -26,7 +26,7 @@ logging_process_config = {
     "module_name": "logUtils",
     "func_name": "logging_process",
     "short_name": "logging",
-    "time_to_shutdown": .1,
+    "time_to_shutdown": 5,
     "debug_lvl": 20,
     "logfile_path": "/home/pi/unifiedSensorClient.log",
 }
@@ -164,6 +164,7 @@ mp4_writer_process_config = {
     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
     "video_duration": 4,
     "container_type": "mp4",
+    "loglevel": "warning",
     "codec": "h264",
     "quality": 80,
     "keyframe_interval_seconds": 2,

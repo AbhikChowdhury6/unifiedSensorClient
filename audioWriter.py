@@ -10,10 +10,16 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 from config import audio_writer_process_config, zmq_control_endpoint, platform_uuid
 import zmq
+import logging
 import numpy as np
+from logUtils import worker_configurer
 
 config = audio_writer_process_config
-def audio_writer():
+l = logging.getLogger(config["short_name"])
+def audio_writer(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l.info(config["short_name"] + " writer starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     # Subscribe to control
@@ -22,8 +28,8 @@ def audio_writer():
     # Subscribe to audio publisher to drive the loop
     sub.connect(config["sub_endpoint"])
     sub.setsockopt(zmq.SUBSCRIBE, config["sub_topic"].encode())
-    print("audio writer subscribed to control and audio publisher topics")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " writer subscribed to control and audio publisher topics")
+    
 
     channels = int(cfg_get_or_default(config, "channels", 1))
     sample_rate = int(cfg_get_or_default(config, "sample_rate", 16000))
@@ -39,8 +45,8 @@ def audio_writer():
     valid_fd = [10.0, 20.0, 40.0, 60.0]  # common safe values
     if requested_fd not in valid_fd:
         nearest = min(valid_fd, key=lambda v: abs(v - requested_fd))
-        print(f"audio writer: frame_duration_ms {requested_fd} not supported, using {nearest}")
-        sys.stdout.flush()
+        l.warning(config["short_name"] + " writer: frame_duration_ms " + str(requested_fd) + " not supported, using " + str(nearest))
+        
         requested_fd = nearest
 
     # Pre-create current and next hour directories so strftime path exists
@@ -58,8 +64,7 @@ def audio_writer():
     ff = spawn_ffmpeg_audio_segments_stdin(make_output_path(segment_start))
 
     if ff is None:
-        print("audio writer failed to start ffmpeg; exiting")
-        sys.stdout.flush()
+        l.error(config["short_name"] + " writer failed to start ffmpeg; exiting")
         return
 
     # Track last ensured hour to avoid redundant mkdirs
@@ -75,8 +80,8 @@ def audio_writer():
 
             # Check ffmpeg health early in the loop
             if ff.poll() is not None:
-                print("audio writer: ffmpeg exited with code", ff.returncode)
-                sys.stdout.flush()
+                l.error(config["short_name"] + " writer: ffmpeg exited with code " + str(ff.returncode))
+                
                 now_utc = datetime.now(timezone.utc)
                 aligned_epoch = int(now_utc.timestamp()) - (int(now_utc.timestamp()) % segment_time_s)
                 segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
@@ -86,8 +91,8 @@ def audio_writer():
                     break
 
             if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "opus")):
-                print("audio writer exiting")
-                sys.stdout.flush()
+                l.info(config["short_name"] + " writer exiting")
+                
                 break
 
             # Ignore messages not on the audio topic
@@ -135,8 +140,8 @@ def audio_writer():
                 try:
                     ff.stdin.write(chunk.tobytes())
                 except BrokenPipeError:
-                    print("audio writer: ffmpeg pipe closed")
-                    sys.stdout.flush()
+                    l.error(config["short_name"] + " writer: ffmpeg pipe closed")
+                    
                     # Attempt restart into a new aligned file
                     now_utc = datetime.now(timezone.utc)
                     aligned_epoch = int(now_utc.timestamp()) - (int(now_utc.timestamp()) % segment_time_s)
@@ -146,8 +151,7 @@ def audio_writer():
                     if ff is None:
                         break
             except Exception as e:
-                print(f"audio writer failed to write chunk: {e}")
-                sys.stdout.flush()
+                l.error(config["short_name"] + " writer failed to write chunk: " + str(e))
     finally:
         stop_ffmpeg(ff)
         try:
@@ -216,8 +220,7 @@ def spawn_ffmpeg_audio_segments_stdin(
             cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
             bufsize=0, env=env
         )
-        print("audio: started ffmpeg:", " ".join(cmd))
-        sys.stdout.flush()
+        l.info(config["short_name"] + " writer: started ffmpeg: " + " ".join(cmd))
 
         # Start a background stderr reader for diagnostics
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
@@ -225,12 +228,10 @@ def spawn_ffmpeg_audio_segments_stdin(
         proc._stderr_thread = t  # attach for lifecycle awareness
         return proc
     except FileNotFoundError:
-        print("audio: ffmpeg not found. Please install ffmpeg.")
-        sys.stdout.flush()
+        l.error(config["short_name"] + " writer: ffmpeg not found. Please install ffmpeg.")
         return None
     except Exception as e:
-        print(f"audio: failed to start ffmpeg: {e}")
-        sys.stdout.flush()
+        l.error(config["short_name"] + " writer: failed to start ffmpeg: " + str(e))
         return None
 
 def _stderr_reader(p):
@@ -238,14 +239,11 @@ def _stderr_reader(p):
         for raw in iter(p.stderr.readline, b""):
             line = raw.decode(errors="replace").rstrip()
             if line:
-                print(f"audio ffmpeg stderr: {line}")
-                sys.stdout.flush()
+                l.debug(config["short_name"] + " writer: ffmpeg stderr: " + line)
     except Exception as e:
-        print(f"audio ffmpeg stderr reader error: {e}")
-        sys.stdout.flush()
+        l.error(config["short_name"] + " writer: ffmpeg stderr reader error: " + str(e))
     finally:
-        print("audio ffmpeg stderr: [closed]")
-        sys.stdout.flush()
+        l.info(config["short_name"] + " writer: ffmpeg stderr: [closed]")
 
 
 def stop_ffmpeg(proc) -> None:
@@ -275,7 +273,7 @@ def ensure_base_dir(path: str) -> None:
     try:
         os.makedirs(path, exist_ok=True)
     except Exception as e:
-        print(f"audio: failed to create base dir {path}: {e}")
+        l.error(config["short_name"] + " writer: failed to create base dir " + path + ": " + str(e))
         sys.stdout.flush()
 
 
@@ -284,7 +282,7 @@ def ensure_hour_dir(root: str, dt_utc: datetime) -> None:
         hour_dir = os.path.join(root, dt_utc.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/"))
         os.makedirs(hour_dir, exist_ok=True)
     except Exception as e:
-        print(f"audio: failed to create hour dir {root}: {e}")
+        l.error(config["short_name"] + " writer: failed to create hour dir " + root + ": " + str(e))
         sys.stdout.flush()
 
 
@@ -335,7 +333,7 @@ def cfg_get_or_default(cfg, key, default):
     except Exception:
         value = None
     if value is None:
-        print(f"audio writer: config missing '{key}', using default {default}")
+        l.warning(config["short_name"] + " writer: config missing '" + key + "', using default " + str(default))
         sys.stdout.flush()
         return default
     return value
@@ -343,5 +341,5 @@ def cfg_get_or_default(cfg, key, default):
 
 
 if __name__ == "__main__":
-    audio_writer()
+    audio_writer(None)
 

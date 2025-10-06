@@ -117,7 +117,7 @@ class NameAndFunctionFilter(logging.Filter):
 
 
 def listener_configurer(config, allow_dict, deny_dict):
-    fmt = '[%(asctime)s] [%(name)s] [%(funcName)s] [%(levelname)s] %(message)s'
+    fmt = '[%(asctime)s] [%(name)s] [%(funcName)s] [%(levelname)s] [%(lineno)d] %(message)s'
     formatter = logging.Formatter(fmt)
 
     # File handler

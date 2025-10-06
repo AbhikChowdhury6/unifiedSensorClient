@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import numpy as np
 import sounddevice as sd
 import zmq
-
+import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -14,6 +14,9 @@ from zmq_codec import ZmqCodec
 
 class AudioCapture:
     def __init__(self, config: dict):
+        self.l = logging.getLogger(config["short_name"])
+        self.l.setLevel(config["debug_lvl"])
+        self.l.debug("audio capture class initializing")
         self.config = config
 
         self.sample_rate = int(config.get("sample_rate", 16000))
@@ -29,7 +32,7 @@ class AudioCapture:
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.endpoint)
-        print(f"audio capture publishing to {self.topic} at {self.endpoint}")
+        self.l.info(f"audio capture publishing to {self.topic} at {self.endpoint}")
         sys.stdout.flush()
 
         self._queue: queue.Queue = queue.Queue(maxsize=8)
@@ -52,8 +55,7 @@ class AudioCapture:
         if not self._enabled:
             return
         if status:
-            print(f"audio callback status: {status}")
-            sys.stdout.flush()
+            self.l.debug(f"audio callback status: {status}")
         # Prefer PortAudio-provided ADC time for drift-free timestamps
         try:
             if self._pa_epoch_utc_base is None and time_info is not None:
@@ -92,8 +94,7 @@ class AudioCapture:
             raise RuntimeError("audio: no supported sample rate found for the selected device")
 
         if chosen_sr != self.sample_rate:
-            print(f"audio: requested {self.sample_rate} Hz not supported, using {chosen_sr} Hz")
-            sys.stdout.flush()
+            self.l.warning(f"audio: requested {self.sample_rate} Hz not supported, using {chosen_sr} Hz")
             self.sample_rate = chosen_sr
             self.blocksize = max(1, int(round(self.sample_rate / self.frame_hz)))
 
@@ -106,10 +107,9 @@ class AudioCapture:
             callback=self._callback,
         )
         self._stream.start()
-        print(
-            f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, dtype {self.dtype}"
+        self.l.info(
+            "audio stream started: " + str(self.sample_rate) + " Hz, " + str(self.channels) + " ch, blocksize " + str(self.blocksize) + ", dtype " + str(self.dtype)
         )
-        sys.stdout.flush()
         # Reset PortAudio epoch mapping on start
         self._pa_epoch_utc_base = None
 
@@ -121,7 +121,7 @@ class AudioCapture:
             self._stream.close()
         finally:
             self._stream = None
-            print("audio stream stopped")
+            self.l.info("audio stream stopped")
             sys.stdout.flush()
 
     def publish_pending(self):
