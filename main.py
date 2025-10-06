@@ -18,6 +18,8 @@ from config import (
 from zmq_codec import ZmqCodec
 from logUtils import logging_process, worker_configurer
 allow_dict = {s: ["all"] for s in all_process_configs.keys()}
+allow_dict["main"] = ["all"]
+allow_dict["logging"] = ["all"]
 deny_dict = {}
 q = mp.Queue()
 
@@ -132,15 +134,19 @@ if __name__ == "__main__":
 
     def _handle_control_message(command):
         if command[0] == "q":
+            l.info(f"main got exit command")
             _exit_all()
             return
         elif command[0] == "e":
+            l.info(f"main got start command for {command[1]}")
             _start_process(command[1])
             return
         elif command[0] == "d":
+            l.info(f"main got stop command for {command[1]}")
             _stop_process(command[1])
             return
         elif command[0] == "l":
+            l.info(f"main got list command")
             print("active processes:")
             for process in processes.keys():
                 print(process)
@@ -150,10 +156,12 @@ if __name__ == "__main__":
             return
 
         elif command[0] == "status":
+            l.info(f"main got status command for {command[1]}")
             _is_process_running(command[1])
             return
 
         elif command[0] == "s":
+            l.info(f"main got start command for {command[1]}")
             if _is_process_running(command[1]):
                 print(f"Process {command[1]} is running")
             else:
@@ -162,6 +170,7 @@ if __name__ == "__main__":
 
         elif command[0] in ("log", "loglevel"):
             # usage: log <process|all> <level>  e.g., "log led debug" or "log all 5"
+            l.info(f"main got log command for {command[1]}")
             log_cmd = command[1]
             if log_cmd == "s":
                 target_process = command[2]
@@ -178,6 +187,7 @@ if __name__ == "__main__":
             return
 
         elif command[0] == "h":
+            l.info(f"main got help command")
             print("Available commands:")
             print("q, quit, exit: Exit the program")
             print("e: Start a process")
@@ -186,6 +196,7 @@ if __name__ == "__main__":
             print("h: Show this help message")
             return
         else:
+            l.error(f"Unknown command: {command}")
             print(f"Unknown command: {command}")
             return
 
