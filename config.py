@@ -328,7 +328,7 @@ led_controller_process_config = {
     "func_name": "led_controller",
     "short_name": "led",
     "time_to_shutdown": .1,
-    "debug_lvl": 20,
+    "debug_lvl": 10,
     "pub_topic": "control",
     "pub_endpoint": zmq_control_endpoint,
     "states": {0 : {(255, 0, 0): set([(1, 'video')]), (0, 0, 0): set([(0, 'video')])},
