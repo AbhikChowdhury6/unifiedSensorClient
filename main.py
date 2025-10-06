@@ -30,21 +30,20 @@ def _start_processes_dynamically():
     processes = {}
     for name, value in all_process_configs.items():
         desired_state, cfg = value[0], value[1]
-
-        module_name = cfg.get("module_name")
-        func_name = cfg.get("func_name")
-        module = importlib.import_module(module_name)
-
-        target = getattr(module, func_name)
-
-        # pass log queue only if target expects at least one positional param
-        try:
-            params = inspect.signature(target).parameters
-            args = (q,) if len(params) >= 1 else ()
-        except (ValueError, TypeError):
-            args = ()
-
         if desired_state == 1:
+            module_name = cfg.get("module_name")
+            func_name = cfg.get("func_name")
+            module = importlib.import_module(module_name)
+
+            target = getattr(module, func_name)
+
+            # pass log queue only if target expects at least one positional param
+            try:
+                params = inspect.signature(target).parameters
+                args = (q,) if len(params) >= 1 else ()
+            except (ValueError, TypeError):
+                args = ()
+
             p = mp.Process(target=target, name=cfg.get("short_name"), args=args)
             p.start()
             processes[name] = p
