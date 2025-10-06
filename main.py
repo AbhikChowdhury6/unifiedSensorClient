@@ -15,7 +15,7 @@ from config import (
 )
 from zmq_codec import ZmqCodec
 from logUtils import logging_process
-allow_dict = {}
+allow_dict = {s: ["all"] for s in all_process_configs.keys()}
 deny_dict = {}
 q = mp.Queue()
 
