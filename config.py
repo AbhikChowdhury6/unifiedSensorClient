@@ -357,6 +357,7 @@ gps_capture_process_config = {
 
 all_process_configs = {
 #    "csv": csv_writer_process_config,
+    "logging": logging_process_config,
     "sqlite": sqlite_writer_process_config,
     "i2c": i2c_controller_process_config,
     "video": video_controller_process_config,
