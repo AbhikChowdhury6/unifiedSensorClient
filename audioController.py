@@ -31,6 +31,8 @@ def audio_controller(log_queue):
 
     # Start audio capture publisher
     cap = AudioCapture({
+        "short_name": config["short_name"],
+        "debug_lvl": config["debug_lvl"],
         "sample_rate": config["sample_rate"],
         "channels": config["channels"],
         "hz": config["hz"],
