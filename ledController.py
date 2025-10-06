@@ -24,11 +24,14 @@ def led_controller(log_queue):
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    sub.setsockopt(zmq.RCVTIMEO, 100)
     l.info(config["short_name"] + " controller connected to control topic")
 
     pub = ctx.socket(zmq.PUB)
     pub.connect(config["pub_endpoint"])
     l.info(config["short_name"] + " controller connected to pub on control topic")
+    # Give PUB-SUB time to exchange subscriptions to avoid initial drops
+    time.sleep(0.05)
 
     def _should_exit(obj):
         return obj[0] == "exit_all" or (obj[0] == "exit" and obj[1] == process)
@@ -38,10 +41,10 @@ def led_controller(log_queue):
         #for each led, send the status requests and wait for a response
         for led in config["states"]:
             relevant_states = config["states"][led]
-            l.trace(str(led) + " relevant states: " + str(relevant_states))
+            l.trace("led: " + str(led) + " relevant states: " + str(relevant_states))
             # Extract unique process short names from the sets of (status, process) tuples
             relevant_processes = list({proc for state_set in relevant_states.values() for _, proc in state_set})
-            l.trace(str(led) + " relevant processes: " + str(relevant_processes))
+            l.trace("led: " + str(led) + " relevant processes: " + str(relevant_processes))
             
             current_states = set()
             for process in relevant_processes:
@@ -52,7 +55,13 @@ def led_controller(log_queue):
                 #wait for a response
                 start_time = time.time()
                 while True:
-                    topic, obj = ZmqCodec.decode(sub.recv_multipart())
+                    try:
+                        topic, obj = ZmqCodec.decode(sub.recv_multipart())
+                    except zmq.Again:
+                        if time.time() - start_time > 1:
+                            l.error(config["short_name"] + " controller timed out waiting for " + str(process) + " status")
+                            break
+                        continue
                     l.debug(config["short_name"] + " controller received status response for " + str(process))
                     if check_apply_level(obj, config["short_name"]):
                         continue
@@ -68,9 +77,7 @@ def led_controller(log_queue):
                         l.info(config["short_name"] + " controller got exit for " + str(process))
                         break
 
-                    if time.time() - start_time > 1:
-                        l.error(config["short_name"] + " controller timed out waiting for " + str(process) + " status")
-                        break
+                    # fall through to timeout handler above if no message
             
                 if _should_exit(obj):
                     break
