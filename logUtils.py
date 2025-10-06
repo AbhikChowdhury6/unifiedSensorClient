@@ -89,22 +89,31 @@ def worker_configurer(queue, level=logging.INFO):
 class NameAndFunctionFilter(logging.Filter):
     def __init__(self, allow_dict, deny_dict):
         super().__init__()
-        self.allow_dict = allow_dict
-        self.deny_dict = deny_dict
+        self.allow_dict = allow_dict   # { processName: [func patterns] }
+        self.deny_dict = deny_dict     # { processName: [func patterns] }
+
+    @staticmethod
+    def _match_any(value, patterns):
+        for pat in (patterns or []):
+            if pat in ("all", "*"):
+                return True
+            if value == pat or (pat in value) or fnmatch.fnmatch(value, pat):
+                return True
+        return False
 
     def filter(self, record):
-        # if we're not logging this process, return False
-        if record.name not in self.allow_dict:
+        proc = getattr(record, "processName", None)
+        func = record.funcName
+
+        allowed = self.allow_dict.get(proc, [])
+        if not allowed:
             return False
-        # if we're denying this method, return False
-        if record.name in self.deny_dict and \
-            record.funcName in self.deny_dict[record.name]:
+
+        denied = self.deny_dict.get(proc, [])
+        if self._match_any(func, denied):
             return False
-        # if we're allowing this method, return True
-        if self.allow_dict[record.name][0] == "all" or \
-            record.funcName in self.allow_dict[record.name]:
-            return True
-        return False
+
+        return self._match_any(func, allowed)
 
 
 def listener_configurer(config, allow_dict, deny_dict):
@@ -150,11 +159,27 @@ def logging_process(q, allow_dict, deny_dict):
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    sub.setsockopt(zmq.RCVTIMEO, 50)
     l.info(config["short_name"] + " process connected to control topic")
     
     while True:
-        parts = sub.recv_multipart()
-        topic, obj = ZmqCodec.decode(parts)
+        # Drain log queue first (non-blocking)
+        while True:
+            try:
+                record = q.get_nowait()
+            except Empty:
+                break
+            if record is None:
+                return
+            logger = logging.getLogger(record.name)
+            logger.handle(record)
+
+        # Then handle control messages (non-blocking via timeout)
+        try:
+            parts = sub.recv_multipart()
+            topic, obj = ZmqCodec.decode(parts)
+        except zmq.Again:
+            continue
         if not (topic == "control" and obj[0] == "log"):
             continue
 
