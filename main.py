@@ -159,8 +159,12 @@ if __name__ == "__main__":
             return
 
         elif command[0] == "status":
-            l.info(f"main got status command for {command[1]}")
-            _is_process_running(command[1])
+            # Only accept status commands of shape: ["status", <process_name>]
+            if len(command) == 2 and isinstance(command[1], str):
+                l.info(f"main got status command for {command[1]}")
+                _is_process_running(command[1])
+            else:
+                l.debug(f"ignoring malformed status command: {command}")
             return
 
         elif command[0] == "s":
@@ -231,6 +235,9 @@ if __name__ == "__main__":
             # 2) Handle commands on the shared control bus
             parts = sub.recv_multipart()
             topic, obj = ZmqCodec.decode(parts)
+            # Ignore status RESPONSE messages on the shared bus to avoid loops
+            if topic == "control" and obj and obj[0] == "status" and len(obj) >= 3:
+                continue
             l.debug(f"main got control message: {obj}")
             _handle_control_message(obj)
         except zmq.Again:
