@@ -14,20 +14,6 @@ platform_name = "raspberry_pi_5"
 # this is the responsible party
 responsible_party = "Abhik"
 
-log_queue = None
-
-def init_log_queue():
-    global log_queue
-    if log_queue is None:
-        log_queue = mp.Queue()
-    return log_queue
-
-def get_log_queue():
-    global log_queue
-    if log_queue is None:
-        raise RuntimeError("Log queue not initialized. Call init_log_queue() first.")
-    return log_queue
-
 #a reminder about levels and numbers
 #- trace (not built in) (5)
 #- debug (10)
@@ -37,14 +23,12 @@ def get_log_queue():
 #- critical (50)
 
 logging_process_config = {
-    "module_name": "loggingProcess",
+    "module_name": "logUtils",
     "func_name": "logging_process",
     "short_name": "logging",
     "time_to_shutdown": .1,
     "debug_lvl": 20,
     "logfile_path": "/home/pi/unifiedSensorClient.log",
-    "allowed_loggers": [],
-    "allowed_funcs": [],
 }
 
 

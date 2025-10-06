@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import zmq
 from zmq_codec import ZmqCodec
-from config import all_process_configs, logging_process_config
+from config import logging_process_config, zmq_control_endpoint
 
 #a reminder about levels and numbers
 #- trace (not built in) (5)
@@ -142,12 +142,14 @@ def listener_configurer(config, allow_dict, deny_dict):
 def logging_process(q, allow_dict, deny_dict):
     config = logging_process_config
     listener_configurer(config, allow_dict, deny_dict)
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " process starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
-    sub.connect(config["pub_endpoint"])
+    sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("logging process connected to control topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to control topic")
     
     while True:
         parts = sub.recv_multipart()
