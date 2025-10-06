@@ -10,7 +10,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import zmq
 from zmq_codec import ZmqCodec
-from config import logging_process_config, zmq_control_endpoint
+from config import logging_process_config, zmq_control_endpoint, all_process_configs
+
+max_time_to_shutdown = max(p.get("time_to_shutdown") for p in all_process_configs.values())
+
 
 #a reminder about levels and numbers
 #- trace (not built in) (5)
@@ -186,8 +189,8 @@ def logging_process(q, allow_dict, deny_dict):
             continue
         
         if topic == "control" and obj[0] == "exit_all":
-            l.info(config["short_name"] + " process got control exit exiting in 5 seconds")
-            exit_time = datetime.now(timezone.utc) + timedelta(seconds=5)
+            l.info(config["short_name"] + " process got control exit exiting in " + str(max_time_to_shutdown + .5) + " seconds")
+            exit_time = datetime.now(timezone.utc) + timedelta(seconds=max_time_to_shutdown + .5)
             continue
         
         if not (topic == "control" and obj[0] == "log"):
@@ -223,3 +226,5 @@ def logging_process(q, allow_dict, deny_dict):
                 else:
                     if "all" not in allow_dict[target_process]:
                         allow_dict[target_process].remove(target_method)
+    print("logUtils: logging process exiting")
+    sys.stdout.flush()

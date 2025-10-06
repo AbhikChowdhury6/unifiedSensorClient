@@ -63,6 +63,8 @@ if __name__ == "__main__":
     listener_process.start()
     listener_process.is_alive()
 
+    max_time_to_shutdown = max(p.get("time_to_shutdown") for p in all_process_configs.values())
+
 
     processes = _start_processes_dynamically()
 
@@ -195,4 +197,6 @@ if __name__ == "__main__":
             _handle_control_message(command)
     
     
-    time.sleep(.1)
+    time.sleep(max_time_to_shutdown + 1)
+    print("main exiting")
+    sys.stdout.flush()
