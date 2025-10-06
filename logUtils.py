@@ -31,11 +31,15 @@ logging.TRACE = TRACE_LEVEL_NUM
 
 def _logger_trace(self, message, *args, **kwargs):
     if self.isEnabledFor(TRACE_LEVEL_NUM):
+        # ensure the caller is reported, not this wrapper
+        kwargs["stacklevel"] = kwargs.get("stacklevel", 2)
         self._log(TRACE_LEVEL_NUM, message, args, **kwargs)
 
 logging.Logger.trace = _logger_trace
 
 def trace(message, *args, **kwargs):
+    # ensure the caller is reported, not this wrapper
+    kwargs["stacklevel"] = kwargs.get("stacklevel", 2)
     logging.log(TRACE_LEVEL_NUM, message, *args, **kwargs)
 
 logging.trace = trace
