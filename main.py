@@ -14,11 +14,14 @@ from config import (
     zmq_control_requests_endpoint,
     all_process_configs,
     main_debug_lvl,
+    logging_process_config,
 )
 from zmq_codec import ZmqCodec
 from logUtils import logging_process, worker_configurer
 allow_dict = {s: ["all"] for s in all_process_configs.keys()}
-allow_dict["main"] = ["all"]
+# Ensure logs from this process (typically "MainProcess") are allowed
+allow_dict[mp.current_process().name] = ["all"]
+# Ensure logs produced inside the logging process are allowed (we name it below)
 allow_dict["logging"] = ["all"]
 deny_dict = {}
 q = mp.Queue()
@@ -70,7 +73,7 @@ if __name__ == "__main__":
     sys.stdout.flush()
     sys.stdout.flush()
 
-    listener_process = mp.Process(target=logging_process, args=(q,allow_dict, deny_dict))
+    listener_process = mp.Process(target=logging_process, name=logging_process_config.get("short_name", "logging"), args=(q,allow_dict, deny_dict))
     listener_process.start()
     listener_process.is_alive()
 
