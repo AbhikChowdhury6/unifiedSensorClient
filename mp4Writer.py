@@ -17,13 +17,10 @@ from config import (
     zmq_control_endpoint,
 )
 
-
 config = mp4_writer_process_config
-
+l = logging.getLogger(config["short_name"])
 def mp4_writer(log_queue):
     worker_configurer(log_queue, config["debug_lvl"])
-    l = logging.getLogger(config["short_name"])
-    l.setLevel(config["debug_lvl"])
     l.info(config["short_name"] + " process starting")
 
     ctx = zmq.Context()
@@ -70,7 +67,6 @@ def mp4_writer(log_queue):
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "mp4"):
                 l.info(config["short_name"] + " got control exit")
-                sys.stdout.flush()
                 try:
                     ffmpeg_proc.stdin.close()
                 except Exception:
@@ -125,8 +121,7 @@ def mp4_writer(log_queue):
                 segment_start_dt = None
                 segment_end_dt = None
                 current_out_path = None
-                print(f"mp4 writer detected frame gap {(dt_utc.timestamp() - last_ts_seconds):.3f}s, starting new file")
-                sys.stdout.flush()
+                l.debug(config["short_name"] + " detected frame gap " + str(dt_utc.timestamp() - last_ts_seconds) + "s, starting new file")
 
         # If current frame is in a newer 4s grid, roll to the next aligned segment
         if ffmpeg_proc is not None and segment_end_dt is not None and isinstance(dt_utc, datetime):
@@ -174,8 +169,7 @@ def mp4_writer(log_queue):
             fps = int(cfg_get_or_default(config, "fps", 8))
             ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, pix_fmt, fps)
             frames_written_in_segment = 0
-            print(f"mp4 writer started segment {out_path}")
-            sys.stdout.flush()
+            l.debug(config["short_name"] + " started segment " + out_path)
             current_out_path = out_path
 
         # Write frame to ffmpeg stdin
@@ -233,7 +227,6 @@ def mp4_writer(log_queue):
 
 
 def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: int):
-    l = logging.getLogger(config["short_name"])
     # Read settings from config
     quality = int(cfg_get_or_default(config, "quality", 80))
     crf = _quality_to_crf(quality)
@@ -280,18 +273,15 @@ def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: 
             bufsize=0,
         )
         l.debug(config["short_name"] + " started ffmpeg: " + " ".join(cmd))
-        sys.stdout.flush()
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
         t.start()
         proc._stderr_thread = t  # attach for lifecycle awareness
         return proc
     except FileNotFoundError:
         l.error(config["short_name"] + " ffmpeg not found. Please install ffmpeg.")
-        sys.stdout.flush()
         return None
     except Exception as e:
         l.error(config["short_name"] + " failed to start ffmpeg: " + str(e))
-        sys.stdout.flush()
         return None
 
 
@@ -300,14 +290,11 @@ def _stderr_reader(p):
         for raw in iter(p.stderr.readline, b""):
             line = raw.decode(errors="replace").rstrip()
             if line:
-                print(f"mp4 ffmpeg stderr: {line}")
-                sys.stdout.flush()
+                l.debug(config["short_name"] + " ffmpeg stderr: " + line)
     except Exception as e:
-        print(f"mp4 ffmpeg stderr reader error: {e}")
-        sys.stdout.flush()
+        l.error(config["short_name"] + " ffmpeg stderr reader error: " + str(e))
     finally:
-        print("mp4 ffmpeg stderr: [closed]")
-        sys.stdout.flush()
+        l.debug(config["short_name"] + " ffmpeg stderr: [closed]")
 
 
 
@@ -325,7 +312,6 @@ def _quality_to_crf(quality_0_100: int) -> int:
     return int(round(51 - (q / 100.0) * 35))
 
 def cfg_get_or_default(cfg, key, default):
-    l = logging.getLogger(config["short_name"])
     try:
         value = cfg.get(key)
     except Exception:

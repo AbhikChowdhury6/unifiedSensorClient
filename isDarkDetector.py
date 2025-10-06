@@ -2,37 +2,39 @@ import sys
 import time
 import math
 import zmq
+import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-
+from logUtils import worker_configurer
 from config import (
     is_dark_detector_process_config,
     zmq_control_endpoint,
 )
-
 config = is_dark_detector_process_config
-def is_dark_detector():
+l = logging.getLogger(config["short_name"])
+
+def is_dark_detector(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l.info(config["short_name"] + " process starting")
+
     #subscribe to control topic
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("is dark detector connected to control topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to control topic")
 
     #subscribe to camera topic
     sub.connect(config["camera_endpoint"])
     sub.setsockopt(zmq.SUBSCRIBE, config["camera_name"].encode())
-    print("is dark detector connected to camera topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to camera topic")
 
     #connect to pub endpoint
     pub = ctx.socket(zmq.PUB)
     pub.bind(config["pub_endpoint"])
-    print("is dark detector connected to pub topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " process connected to pub topic")
 
 
     interval_s = float(config.get("interval_seconds", 1))
@@ -45,8 +47,7 @@ def is_dark_detector():
 
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "dark"):
-                print("is dark detector got control exit")
-                sys.stdout.flush()
+                l.info(config["short_name"] + " process got control exit")
                 break
             continue
         if topic != config["camera_name"]:
@@ -60,8 +61,7 @@ def is_dark_detector():
         next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
 
         mean_brightness = frame.mean()
-        print(f"is dark detector mean brightness: {mean_brightness}")
-        sys.stdout.flush()
+        l.debug(config["short_name"] + " process mean brightness: " + str(mean_brightness))
         is_dark = int(mean_brightness < threshold)
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, is_dark]))
 
@@ -69,6 +69,6 @@ def is_dark_detector():
     pub.close(0)
     sub.close(0)
     ctx.term()
-    
+    l.info(config["short_name"] + " process exiting")
 def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
     return int(math.ceil(now_ts / interval_s) * interval_s)

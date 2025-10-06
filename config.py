@@ -26,7 +26,7 @@ logging_process_config = {
     "module_name": "logUtils",
     "func_name": "logging_process",
     "short_name": "logging",
-    "time_to_shutdown": 5,
+    "time_to_shutdown": .1,
     "debug_lvl": 20,
     "logfile_path": "/home/pi/unifiedSensorClient.log",
 }
