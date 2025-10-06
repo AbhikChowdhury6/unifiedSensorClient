@@ -161,8 +161,8 @@ def logging_process(q, allow_dict, deny_dict):
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     sub.setsockopt(zmq.RCVTIMEO, 50)
     l.info(config["short_name"] + " process connected to control topic")
-    exit_time = datetime.min.replace(tzinfo=timezone.utc)
-    
+    exit_time = datetime.max.replace(tzinfo=timezone.utc)
+
     while True:
         if datetime.now(timezone.utc) > exit_time:
             l.info(config["short_name"] + " process exiting")
