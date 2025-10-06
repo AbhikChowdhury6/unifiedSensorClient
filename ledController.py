@@ -44,13 +44,13 @@ def led_controller(log_queue):
             for process in relevant_processes:
                 #send a status request and wait for a response
                 pub.send_multipart(ZmqCodec.encode(config["pub_topic"], ["status", process]))
-                l.debug(config["short_name"] + " controller sent status request for " + process)
+                l.debug(config["short_name"] + " controller sent status request for " + str(process))
                 
                 #wait for a response
                 start_time = time.time()
                 while True:
                     topic, obj = ZmqCodec.decode(sub.recv_multipart())
-                    l.debug(config["short_name"] + " controller received status response for " + process)
+                    l.debug(config["short_name"] + " controller received status response for " + str(process))
                     if check_apply_level(obj, config["short_name"]):
                         continue
 
