@@ -38,7 +38,9 @@ def led_controller(log_queue):
         #for each led, send the status requests and wait for a response
         for led in config["states"]:
             relevant_states = config["states"][led]
+            l.trace(str(led) + "relevant states: " + str(relevant_states))
             relevant_processes = list(set([state[1] for state in relevant_states]))
+            l.trace(str(led) + " relevant processes: " + str(relevant_processes))
             
             current_states = set()
             for process in relevant_processes:
