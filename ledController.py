@@ -13,7 +13,8 @@ l = logging.getLogger(config["short_name"])
 import board
 import neopixel_spi
 
-pixels = neopixel_spi.NeoPixel_SPI(board.SPI(), 10, auto_write=False)
+num_leds = len(config["states"])
+pixels = neopixel_spi.NeoPixel_SPI(board.SPI(), num_leds, auto_write=False)
 
 def led_controller(log_queue):
     worker_configurer(log_queue, config["debug_lvl"])
@@ -85,6 +86,7 @@ def led_controller(log_queue):
             if _should_exit(obj):
                 break
 
+            l.debug(config["short_name"] + " controller current states: " + str(current_states))
             led_vals = [k for k, v in relevant_states.items() if v == current_states]
             if led_vals:
                 pixels[led] = led_vals[0]
