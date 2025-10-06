@@ -59,11 +59,11 @@ def led_controller(log_queue):
                         break
                     
                     if topic == "control" and _should_exit(obj):
-                        l.info("led controller got exit for " + process)
+                        l.info("led controller got exit for " + str(process))
                         break
 
                     if time.time() - start_time > 1:
-                        l.error("led controller timed out waiting for " + process + " status")
+                        l.error("led controller timed out waiting for " + str(process) + " status")
                         break
             
                 if _should_exit(obj):

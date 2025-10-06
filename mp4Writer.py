@@ -6,11 +6,12 @@ import threading
 from datetime import datetime, timezone, timedelta
 import math
 import numpy as np
+import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-
+from logUtils import worker_configurer, check_apply_level
 from config import (
     mp4_writer_process_config,
     zmq_control_endpoint,
@@ -19,14 +20,19 @@ from config import (
 
 config = mp4_writer_process_config
 
-def mp4_writer():
-    
+def mp4_writer(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.setLevel(config["debug_lvl"])
+    l.info(config["short_name"] + " process starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
 
     # Control channel for graceful exit
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    l.info(config["short_name"] + " process connected to control topic")
 
     # Subscribe to camera frames
     camera_topic = cfg_get_or_default(config, "camera_name", "camera")
@@ -55,16 +61,15 @@ def mp4_writer():
     current_out_path = None
 
 
-    print(f"mp4 writer subscribed to {camera_topic} at {camera_endpoint}")
-    print(f"mp4 writer publishing to {pub_topic} at {pub_endpoint}")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " subscribed to " + camera_topic + " at " + camera_endpoint)
+    l.info(config["short_name"] + " publishing to " + pub_topic + " at " + pub_endpoint)
 
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "mp4"):
-                print("mp4 writer got control exit")
+                l.info(config["short_name"] + " got control exit")
                 sys.stdout.flush()
                 try:
                     ffmpeg_proc.stdin.close()
@@ -75,6 +80,8 @@ def mp4_writer():
                 except Exception:
                     pass
                 break
+            if check_apply_level(msg, config["short_name"]):
+                continue
             continue
 
         if topic != camera_topic:
@@ -84,20 +91,16 @@ def mp4_writer():
 
         # Ensure frame is a contiguous uint8 array in expected shape
         if not isinstance(frame, np.ndarray):
-            print("mp4 writer: frame is not a numpy array")
-            sys.stdout.flush()
+            l.error(config["short_name"] + " frame is not a numpy array")
             continue
         if frame.ndim != 3 or frame.shape[2] != 3:
-            print(f"mp4 writer: invalid frame shape {frame.shape}, expected (H,W,3)")
-            sys.stdout.flush() 
+            l.error(config["short_name"] + " invalid frame shape " + str(frame.shape) + ", expected (H,W,3)")
             continue
         if not frame.flags["C_CONTIGUOUS"]:
-            print("mp4 writer: frame is not C contiguous, making a copy")
-            sys.stdout.flush()
+            l.error(config["short_name"] + " frame is not C contiguous, making a copy")
             frame = np.ascontiguousarray(frame)
         if frame.dtype != np.uint8:
-            print(f"mp4 writer: converting frame from {frame.dtype} to uint8")
-            sys.stdout.flush()
+            l.error(config["short_name"] + " converting frame from " + str(frame.dtype) + " to uint8")
             frame = frame.astype(np.uint8, copy=False)
 
         # If there's a large break in frames, close current segment
@@ -224,13 +227,13 @@ def mp4_writer():
         except Exception:
             pass
 
-    print("mp4 writer exiting")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " exiting")
 
 
 
 
 def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: int):
+    l = logging.getLogger(config["short_name"])
     # Read settings from config
     quality = int(cfg_get_or_default(config, "quality", 80))
     crf = _quality_to_crf(quality)
@@ -276,18 +279,18 @@ def _spawn_ffmpeg(output_path: str, width: int, height: int, pix_fmt: str, fps: 
             stderr=subprocess.PIPE,
             bufsize=0,
         )
-        print("mp4: started ffmpeg:", " ".join(cmd))
+        l.debug(config["short_name"] + " started ffmpeg: " + " ".join(cmd))
         sys.stdout.flush()
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
         t.start()
         proc._stderr_thread = t  # attach for lifecycle awareness
         return proc
     except FileNotFoundError:
-        print("mp4: ffmpeg not found. Please install ffmpeg.")
+        l.error(config["short_name"] + " ffmpeg not found. Please install ffmpeg.")
         sys.stdout.flush()
         return None
     except Exception as e:
-        print(f"mp4: failed to start ffmpeg: {e}")
+        l.error(config["short_name"] + " failed to start ffmpeg: " + str(e))
         sys.stdout.flush()
         return None
 
@@ -322,17 +325,17 @@ def _quality_to_crf(quality_0_100: int) -> int:
     return int(round(51 - (q / 100.0) * 35))
 
 def cfg_get_or_default(cfg, key, default):
+    l = logging.getLogger(config["short_name"])
     try:
         value = cfg.get(key)
     except Exception:
         value = None
     if value is None:
-        print(f"mp4 writer: config missing '{key}', using default {default}")
-        sys.stdout.flush()
+        l.error(config["short_name"] + " config missing '" + key + "', using default " + str(default))
         return default
     return value
 
 if __name__ == "__main__":
-    mp4_writer()
+    mp4_writer(None)
 
 
