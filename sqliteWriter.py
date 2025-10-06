@@ -9,26 +9,30 @@ import numpy as np
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
+import logging
+from logUtils import worker_configurer, check_apply_level
 
 from config import sqlite_writer_process_config, zmq_control_endpoint
 config = sqlite_writer_process_config
 
-def sqlite_writer():
+def sqlite_writer(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " writer starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     for endpoint in config['subscription_endpoints']:
         sub.connect(endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("sqlite writer connected to control and subscription topics")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " writer connected to control and subscription topics")
 
     for topic in config['subscription_topics']:
         sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
-        print(f"sqlite writer subscribed to {topic}")
-        sys.stdout.flush()
+        l.info(config["short_name"] + " writer subscribed to " + topic)
     print("sqlite writer subscribed to all topics")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " writer subscribed to all topics")
     
     os.makedirs(config['write_location'], exist_ok=True)
     conn = sqlite3.connect(f"{config['write_location']}data.db")
@@ -125,21 +129,20 @@ def sqlite_writer():
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "sqlite"):
-                print("sqlite writer got control exit")
-                sys.stdout.flush()
+                l.info(config["short_name"] + " writer got control exit")
                 break
-            else:
-                print(f"sqlite writer got control message: {msg}")
-                sys.stdout.flush()
+            
+            check_apply_level(msg, config["short_name"])
             continue
+
+
         # Expect messages to be a list/tuple; wrap scalars as single-element list
         payload = msg if isinstance(msg, (list, tuple)) else [msg]
 
         # Skip messages containing non-scalar ndarrays
         non_scalar_array = any(isinstance(v, np.ndarray) and getattr(v, 'ndim', 1) > 0 for v in payload)
         if non_scalar_array:
-            print(f"sqlite writer skipping non-scalar array payload for {topic}")
-            sys.stdout.flush()
+            l.error(config["short_name"] + " writer skipping non-scalar array payload for " + topic)
             continue
 
         if topic in config['subscription_topics']:
@@ -147,13 +150,11 @@ def sqlite_writer():
             try:
                 ncols = _ensure_table_for_message(topic, payload)
             except Exception as e:
-                print(f"sqlite writer failed ensuring table for {topic}: {e}")
-                sys.stdout.flush()
+                l.error(config["short_name"] + " writer failed ensuring table for " + topic + ": " + str(e))
                 continue
 
             if len(payload) != ncols:
-                print(f"sqlite writer payload length mismatch for {topic}: got {len(payload)}, expected {ncols}")
-                sys.stdout.flush()
+                l.error(config["short_name"] + " writer payload length mismatch for " + topic + ": got " + str(len(payload)) + ", expected " + str(ncols))
                 continue
 
             # Prepare insert statement if needed
@@ -168,8 +169,7 @@ def sqlite_writer():
             for v in payload:
                 nv = _normalize_value(v)
                 if nv is None:
-                    print(f"sqlite writer skipping due to unsupported value in payload for {topic}")
-                    sys.stdout.flush()
+                    l.error(config["short_name"] + " writer skipping due to unsupported value in payload for " + topic)
                     values = None
                     break
                 values.append(nv)
@@ -179,8 +179,7 @@ def sqlite_writer():
             try:
                 ins.execute(insert_sql, tuple(values))
             except Exception as e:
-                print(f"sqlite writer insert failed for {topic}: {e}")
-                sys.stdout.flush()
+                l.error(config["short_name"] + " writer insert failed for " + topic + ": " + str(e))
                 continue
 
             # Commit every second
@@ -189,7 +188,5 @@ def sqlite_writer():
                 conn.commit()
                 last_commit = current_time
         else:
-            print(f"sqlite writer got unknown topic {topic}")
-            sys.stdout.flush()
-    print("sqlite writer exiting")
-    sys.stdout.flush()
+            l.error(config["short_name"] + " writer got unknown topic " + topic)
+    l.info(config["short_name"] + " writer exiting")

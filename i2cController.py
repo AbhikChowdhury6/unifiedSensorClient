@@ -12,7 +12,8 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 class_loc = repoPath + "unifiedSensorClient/sensorClasses/i2c/"
 from zmq_codec import ZmqCodec
-
+import logging
+from logUtils import worker_configurer, check_apply_level
 #import the config
 from config import i2c_controller_process_config, zmq_control_endpoint
 config = i2c_controller_process_config
@@ -27,13 +28,16 @@ def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def i2c_controller():
+def i2c_controller(log_queue):
+    worker_configurer(log_queue, config["debug_lvl"])
+    l = logging.getLogger(config["short_name"])
+    l.info(config["short_name"] + " controller starting")
+
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    print("i2c controller connected to control topic")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " controller connected to control topic")
     # init a bus using smbus2
     I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100000) 
     # compile a list of all of the devices
@@ -51,8 +55,7 @@ def i2c_controller():
         sensors.extend(device.sensors)
 
     max_hz = max(s.hz for s in sensors)
-    print(f"max hz: {max_hz}")
-    sys.stdout.flush()
+    l.info(config["short_name"] + " controller max hz: " + str(max_hz))
     # works perfectly up to 64 hz
     delay_micros = 1_000_000/max_hz
 
@@ -68,9 +71,9 @@ def i2c_controller():
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             _, obj = ZmqCodec.decode(parts)
-            print("i2c control message:", obj)
+            l.info(config["short_name"] + " controller control message: " + str(obj))
             if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "i2c"):
-                print('i2c exiting')
+                l.info(config["short_name"] + " controller exiting")
                 break
         except zmq.Again:
             # No message available
@@ -79,4 +82,4 @@ def i2c_controller():
         micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
         time.sleep(micros_to_delay/1_000_000)
         
-    print('i2c exiting')  
+    l.info(config["short_name"] + " controller exiting")  

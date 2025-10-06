@@ -11,16 +11,19 @@ import gc
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
+import logging
 
 
 class PiCamera:
     def __init__(self, camera_config):
+        self.l = logging.getLogger(camera_config["short_name"])
+        self.l.setLevel(camera_config['debug_lvl'])
         self.camera_config = camera_config
         self._enabled = False
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.camera_config['camera_endpoint'])
-        print(f"camera {self.camera_config['camera_name']} connected to {self.camera_config['camera_endpoint']}")
+        self.l.info(f"camera {self.camera_config['camera_name']} connected to {self.camera_config['camera_endpoint']}")
         sys.stdout.flush()
 
         self.topic = self.camera_config['camera_name']
@@ -32,16 +35,15 @@ class PiCamera:
             "format": self.camera_config['format']})
         self.camera.configure(self.video_config)
         self.camera.start()
-        print("Camera initialized in %s", str(datetime.now()  - st))
+        self.l.info("Camera initialized in %s", str(datetime.now()  - st))
         st = datetime.now()
         frame = self.camera.capture_array()
-        print("The first Frame took %s to capture", str(datetime.now()  - st))
+        self.l.info("The first Frame took %s to capture", str(datetime.now()  - st))
         st = datetime.now()
         frame = self.camera.capture_array()
-        print("The second Frame took %s to capture", str(datetime.now()  - st))
+        self.l.info("The second Frame took %s to capture", str(datetime.now()  - st))
         del frame
         gc.collect()
-        sys.stdout.flush()
 
         self.subsample_ratio = self.camera_config['subsample_ratio']
         self.timestamp_images = self.camera_config['timestamp_images']
