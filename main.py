@@ -134,6 +134,10 @@ if __name__ == "__main__":
                 print(process)
             return
 
+        elif command[0] == "status":
+            _is_process_running(command[1])
+            return
+
         elif command[0] == "s":
             if _is_process_running(command[1]):
                 print(f"Process {command[1]} is running")
