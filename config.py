@@ -35,6 +35,28 @@ logging_process_config = {
 }
 
 
+file_uploader_process_config = {
+    "module_name": "fileUploader",
+    "func_name": "file_uploader",
+    "short_name": "file-up",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "upload_url": "http://192.168.20.155:8000/upload",
+    "upload_retry_interval": 10,
+    "subscription_endpoints": [
+        f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
+        f"ipc:///tmp/{platform_uuid}_audio_writer.sock",
+    ],
+    "subscription_topics": [
+        f"{platform_uuid}_mp4_writer",
+        f"{platform_uuid}_audio_writer",
+    ],
+    "time_till_ready": 5,
+    "data_dir": "/home/pi/data/",
+
+
+}
+
 csv_writer_process_config = {
     "func_name": "csv_writer",
     "module_name": "csvWriter",
@@ -53,7 +75,7 @@ csv_writer_process_config = {
     ],
 }
 
-sqlite_writer_write_location = "/home/pi/data/sqlite_writer/"
+sqlite_writer_write_location = "/home/pi/sqlite_writer/"
 
 sqlite_writer_process_config = {
     "module_name": "sqliteWriter",
@@ -153,7 +175,7 @@ video_controller_process_config = {
     "camera_height": 1080,
     "format": "RGB888",
     "fps": 8,
-    "subsample_ratio": 2,
+    "subsample_ratio": 1,
     "timestamp_images": True,
 }
 
@@ -171,7 +193,7 @@ mp4_writer_process_config = {
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "publish_topic": f"{platform_uuid}_mp4_writer",
     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
-    "video_duration": 4,
+    "duration_s": 4,
     "container_type": "mp4",
     "loglevel": "warning",
     "codec": "h264",
@@ -242,7 +264,7 @@ audio_writer_process_config = {
     "channels": 1,
     "application": "audio",
     "frame_duration_ms": 40,
-    "segment_time_s": 4,
+    "duration_s": 4,
     "loglevel": "warning",
     "alsa_device": "plughw:CARD=MICTEST,DEV=0",
     "frame_hz": 2,

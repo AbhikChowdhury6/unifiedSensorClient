@@ -42,7 +42,7 @@ def mp4_writer(log_queue):
     pub.bind(pub_endpoint)
 
     write_location = cfg_get_or_default(config, "write_location", "/home/pi/mp4_writer/data/")
-    duration_s = int(cfg_get_or_default(config, "video_duration", 4))
+    duration_s = int(cfg_get_or_default(config, "duration_s", 4))
     # If there's a long gap between frames, start a new file. Default 2 seconds.
     gap_restart_seconds = float(cfg_get_or_default(config, "frame_gap_restart_seconds", .5))
 

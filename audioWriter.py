@@ -35,7 +35,7 @@ def audio_writer(log_queue):
     sample_rate = int(cfg_get_or_default(config, "sample_rate", 16000))
     target_frame_hz = float(cfg_get_or_default(config, "frame_hz", 16))
     expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
-    segment_time_s = int(cfg_get_or_default(config, "segment_time_s", 4))
+    segment_time_s = int(cfg_get_or_default(config, "duration_s", 4))
     # Validate frame duration to common Opus values to avoid ffmpeg exit
     requested_fd = cfg_get_or_default(config, "frame_duration_ms", 20)
     try:
@@ -173,7 +173,7 @@ def spawn_ffmpeg_audio_segments_stdin(
     bitrate = str(cfg_get_or_default(config, "bitrate", "16k"))
     application = str(cfg_get_or_default(config, "application", "audio"))
     frame_duration_ms = int(cfg_get_or_default(config, "frame_duration_ms", 20))
-    segment_time_s = int(cfg_get_or_default(config, "segment_time_s", 4))
+    segment_time_s = int(cfg_get_or_default(config, "duration_s", 4))
     output_root = cfg_get_or_default(config, "write_location", "/home/pi/audio_writer/data/")
     loglevel = str(cfg_get_or_default(config, "loglevel", "warning"))
     sample_fmt = "s16le"

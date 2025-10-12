@@ -101,6 +101,8 @@ def led_controller(log_queue):
         pixels.show()
         time.sleep(1)
     
+    pixels.fill((0, 0, 0))
+    pixels.show()
     l.info(config["short_name"] + " controller exiting")
     pub.close(0)
     sub.close(0)
