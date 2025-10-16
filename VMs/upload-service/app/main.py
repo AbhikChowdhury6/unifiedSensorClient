@@ -20,13 +20,13 @@ def _get_env(name: str, default: str = "") -> str:
 
 
 _S3_ENDPOINT_URL = _get_env("S3_ENDPOINT_URL", "http://minio:9000")
-_S3_BUCKET = _get_env("S3_BUCKET", "mybucket")
+_S3_BUCKET = _get_env("S3_BUCKET", "data")
 
 _s3 = boto3.client(
     "s3",
     endpoint_url=_S3_ENDPOINT_URL,
-    aws_access_key_id=_get_env("AWS_ACCESS_KEY_ID", "minio"),
-    aws_secret_access_key=_get_env("AWS_SECRET_ACCESS_KEY", "minio123"),
+    aws_access_key_id=_get_env("AWS_ACCESS_KEY_ID", "minioadmin"),
+    aws_secret_access_key=_get_env("AWS_SECRET_ACCESS_KEY", "mySuperSecret"),
 )
 
 
