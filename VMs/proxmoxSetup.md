@@ -5,15 +5,8 @@ install with full disk encryption
 #set up ip stuff
 ip -br link
 
-##temp network setup
-ip addr flush dev enp1s0
-ip addr add 192.168.10.34/24 dev enp1s0
-ip link set enp1s0 up
-ip route replace default via 192.168.10.1
-printf 'nameserver 192.168.10.1\nnameserver 1.1.1.1\n' > /etc/resolv.conf
 
-
-##rest of network setup
+## network setup
 
 ip addr flush dev enp1s0
 ip addr add 192.168.10.34/24 dev enp1s0
