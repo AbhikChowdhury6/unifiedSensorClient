@@ -71,7 +71,7 @@ def i2c_controller(log_queue):
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             _, obj = ZmqCodec.decode(parts)
-            l.info(config["short_name"] + " controller control message: " + str(obj))
+            l.debug(config["short_name"] + " controller control message: " + str(obj))
             if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "i2c"):
                 l.info(config["short_name"] + " controller exiting")
                 break

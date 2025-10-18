@@ -49,9 +49,12 @@ def _parse_name_parts(filename: str):
     Returns (prefix, dt_utc, name_root) where name_root is the baseline
     timestamp string without extension.
     """
+    print(f"filename: {filename}", flush=True)
     base = os.path.basename(filename)
+    print(f"base: {base}", flush=True)
     name, _ext = os.path.splitext(base)
     parts = name.split("_")
+    print(f"parts: {parts}", flush=True)
     if len(parts) < 2:
         return None, None, None
     # prefix could include multiple underscores except the last time part

@@ -353,7 +353,7 @@ led_controller_process_config = {
     "func_name": "led_controller",
     "short_name": "led",
     "time_to_shutdown": .1,
-    "debug_lvl": 5,
+    "debug_lvl": 20,
     "pub_topic": "control",
     # for requests to main, publish to the dedicated requests endpoint
     "pub_endpoint": zmq_control_requests_endpoint,

@@ -55,7 +55,7 @@ def video_controller(log_queue):
             if check_apply_level(obj, config["short_name"]):
                 continue
 
-            l.info("video controller message: " + str(topic) + " " + str(obj))
+            l.debug("video controller message: " + str(topic) + " " + str(obj))
             if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "video")):
                 l.info('video controller exiting')
                 break
