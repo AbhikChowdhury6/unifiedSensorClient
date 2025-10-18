@@ -66,6 +66,8 @@ def _upload_files_in_backlog(time_till_ready: int):
             candidates.append((ts, full_path))
 
     candidates.sort(key=lambda x: x[0])
+    l.debug(config["short_name"] + " process found " + str(len(candidates)) + " files in backlog")
+    l.trace(config["short_name"] + " process candidates: " + str(candidates))
     for _, full_path in candidates:
         l.debug(config["short_name"] + " process uploading file: " + full_path)
         _upload_file(full_path)

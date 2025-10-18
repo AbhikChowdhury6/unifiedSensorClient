@@ -23,7 +23,7 @@ responsible_party = "Abhik"
 #- warning (30)
 #- error (40)
 #- critical (50)
-main_debug_lvl = 10
+main_debug_lvl = 20
 
 logging_process_config = {
     "module_name": "logUtils",
@@ -51,7 +51,7 @@ file_uploader_process_config = {
         f"{platform_uuid}_mp4_writer",
         f"{platform_uuid}_audio_writer",
     ],
-    "time_till_ready": 5,
+    "time_till_ready": 13, # this has to be longer than the delete process time before
     "data_dir": "/home/pi/data/",
 
 
