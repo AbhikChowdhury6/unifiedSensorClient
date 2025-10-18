@@ -29,7 +29,9 @@ def _parse_ts_from_filename(path: str):
             string_time = string_time[:-1]
         string_time = string_time.replace("p", ".")
         l.trace(path + " parsed string time: " + string_time)
-        timestamp = datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").timestamp()
+        # Parse as UTC to avoid naive-local conversions
+        dt_utc = datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").replace(tzinfo=timezone.utc)
+        timestamp = dt_utc.timestamp()
         l.trace(path + " parsed timestamp: " + str(timestamp))
         return timestamp
     except Exception:
