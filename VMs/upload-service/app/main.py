@@ -93,7 +93,9 @@ async def upload_file(file: UploadFile = File(...)):
 
         # Build key: {prefix}/YYYY/MM/DD/HH/MM/{name_root}
         key_prefix = f"{prefix}/" + dt_utc.strftime("%Y/%m/%d/%H/%M/")
-        object_key = key_prefix + name_root
+        # Preserve original file extension
+        _base, _ext = os.path.splitext(os.path.basename(file.filename))
+        object_key = key_prefix + name_root + _ext
 
         # Stream to S3
         _s3.upload_fileobj(file.file, _S3_BUCKET, object_key)
