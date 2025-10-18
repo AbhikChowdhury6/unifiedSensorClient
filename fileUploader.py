@@ -28,8 +28,10 @@ def _parse_ts_from_filename(path: str):
         if string_time.endswith("Z"):
             string_time = string_time[:-1]
         string_time = string_time.replace("p", ".")
-        l.trace(path + " parsed timestamp: " + string_time)
-        return datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").timestamp()
+        l.trace(path + " parsed string time: " + string_time)
+        timestamp = datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").timestamp()
+        l.trace(path + " parsed timestamp: " + str(timestamp))
+        return timestamp
     except Exception:
         l.error(path + " failed to parse timestamp")
         l.error(traceback.format_exc())
@@ -76,6 +78,7 @@ def _upload_files_in_backlog(time_till_ready: int):
         if ts < now_cutoff:
             candidates.append((ts, full_path))
         else:
+            l.trace("file is too new: " + full_path + " ts: " + str(ts) + " now_cutoff: " + str(now_cutoff))
             l.trace("file is too new: " + full_path)
             continue
     candidates.sort(key=lambda x: x[0])
