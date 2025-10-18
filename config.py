@@ -51,7 +51,7 @@ file_uploader_process_config = {
         f"{platform_uuid}_mp4_writer",
         f"{platform_uuid}_audio_writer",
     ],
-    "time_till_ready": 13, # this has to be longer than the delete process time before
+    "time_till_ready": 20, # this has to be longer than the delete process time before
     "data_dir": "/home/pi/data/",
 
 
@@ -275,7 +275,7 @@ detector_based_deleter_process_config = {
     "func_name": "detector_based_deleter",
     "short_name": "del",
     "time_to_shutdown": .1,
-    "debug_lvl": 10,
+    "debug_lvl": 5,
     "detector_names": [f"{platform_uuid}_yolo11m_person_detection"],
     "detector_endpoints": [f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock"],
     "files_location": "/home/pi/data/mp4_writer/",

@@ -81,7 +81,6 @@ def _upload_files_in_backlog(time_till_ready: int):
             candidates.append((ts, full_path))
         else:
             l.trace("file is too new: " + full_path + " ts: " + str(ts) + " now_cutoff: " + str(now_cutoff))
-            l.trace("file is too new: " + full_path)
             continue
     candidates.sort(key=lambda x: x[0])
     l.debug(config["short_name"] + " process found " + str(len(candidates)) + " relevant files in backlog")
