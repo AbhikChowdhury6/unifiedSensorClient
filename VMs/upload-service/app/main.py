@@ -63,7 +63,10 @@ def _parse_name_parts(filename: str):
     prefix = "_".join(parts[:-1])
     # Allow optional trailing 'Z' in original name root
     raw = time_part
-    # Convert pMS to .MS and strip optional Z previously removed by splitext
+    # Strip trailing 'Z' (Zulu) if present; Postman/uploads may include it in the base name
+    if raw.endswith("Z"):
+        raw = raw[:-1]
+    # Convert pMS to .MS
     raw = raw.replace("p", ".")
     try:
         dt = datetime.strptime(raw, "%Y%m%dT%H%M%S.%f").replace(tzinfo=timezone.utc)
