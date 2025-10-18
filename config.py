@@ -40,8 +40,8 @@ file_uploader_process_config = {
     "func_name": "file_uploader",
     "short_name": "file-up",
     "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "upload_url": "http://192.168.20.155:8000/upload",
+    "debug_lvl": 5,
+    "upload_url": "http://192.168.10.36:/upload",
     "upload_retry_interval": 10,
     "subscription_endpoints": [
         f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
@@ -401,4 +401,5 @@ all_process_configs = {
     "del": [1, detector_based_deleter_process_config],
 #    "buttons": pigpio_toggle_buttons_process_config,
     "led": [1, led_controller_process_config],
+    "file-up": [1, file_uploader_process_config],
 }
