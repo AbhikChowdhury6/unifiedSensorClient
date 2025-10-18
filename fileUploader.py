@@ -24,6 +24,8 @@ def _parse_ts_from_filename(path: str):
     try:
         base = os.path.basename(path)
         string_time = base.split("_")[-1].split(".")[0]
+        if string_time.endswith("Z"):
+            string_time = string_time[:-1]
         string_time = string_time.replace("p", ".")
         return datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").timestamp()
     except Exception:
@@ -100,12 +102,18 @@ def file_uploader(log_queue):
     l.info(config["short_name"] + " process subscribed to " + str(config["subscription_topics"]) + " at " + str(config["subscription_endpoints"]))
 
     while True:
-        parts = sub.recv_multipart()
+        try:
+            parts = sub.recv_multipart()
+        except zmq.error.Again:
+            # idle tick: check backlog then continue listening
+            _upload_files_in_backlog(config["time_till_ready"])
+            continue
+
         topic, msg = ZmqCodec.decode(parts)
 
-        _upload_files_in_backlog(config["time_till_ready"])
-        # if there's no message, continue
+        # No payload: treat as idle tick; check backlog then continue
         if msg is None:
+            _upload_files_in_backlog(config["time_till_ready"])
             continue
         if check_apply_level(msg, config["short_name"]):
             continue
@@ -115,10 +123,22 @@ def file_uploader(log_queue):
                 break
             continue
         if topic in config["subscription_topics"]:
-            completed_file_name = msg
-            _upload_file(completed_file_name)
-            _remove_empty_dirs(config["data_dir"])
-            l.debug(config["short_name"] + " process uploaded file: " + completed_file_name)
+            # Writers publish [segment_start_dt, path]; accept either structure
+            completed_path = None
+            try:
+                # msg expected like [dt, path]
+                if isinstance(msg, (list, tuple)) and len(msg) >= 2:
+                    completed_path = msg[1]
+                elif isinstance(msg, str):
+                    completed_path = msg
+            except Exception:
+                completed_path = None
+            if isinstance(completed_path, str) and os.path.isfile(completed_path):
+                _upload_file(completed_path)
+                _remove_empty_dirs(config["data_dir"])
+                l.debug(config["short_name"] + " process uploaded file: " + completed_path)
+            else:
+                l.debug(config["short_name"] + " process got message without valid path: " + str(msg))
     
     l.info(config["short_name"] + " process exiting")
 
