@@ -4,6 +4,7 @@ import zmq
 from datetime import datetime, timezone
 import numpy as np
 import requests
+import traceback
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -27,8 +28,11 @@ def _parse_ts_from_filename(path: str):
         if string_time.endswith("Z"):
             string_time = string_time[:-1]
         string_time = string_time.replace("p", ".")
+        l.trace(path + " parsed timestamp: " + string_time)
         return datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").timestamp()
     except Exception:
+        l.error(path + " failed to parse timestamp")
+        l.error(traceback.format_exc())
         return None
 
 
@@ -63,13 +67,17 @@ def _upload_files_in_backlog(time_till_ready: int):
     
     for full_path in all_candidates:
         if not os.path.isfile(full_path):
+            l.trace("not a file: " + full_path)
             continue
         ts = _parse_ts_from_filename(full_path)
         if ts is None:
+            l.trace("failed to parse timestamp: " + full_path)
             continue
         if ts < now_cutoff:
             candidates.append((ts, full_path))
-
+        else:
+            l.trace("file is too new: " + full_path)
+            continue
     candidates.sort(key=lambda x: x[0])
     l.debug(config["short_name"] + " process found " + str(len(candidates)) + " relevant files in backlog")
     l.trace(config["short_name"] + " process candidates: " + str(candidates))
