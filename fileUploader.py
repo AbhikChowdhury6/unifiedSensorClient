@@ -136,9 +136,17 @@ def file_uploader(log_queue):
             except Exception:
                 completed_path = None
             if isinstance(completed_path, str) and os.path.isfile(completed_path):
-                _upload_file(completed_path)
-                _remove_empty_dirs(config["data_dir"])
-                l.debug(config["short_name"] + " process uploaded file: " + completed_path)
+                # Enforce readiness window for live-published files too
+                cutoff = datetime.now(timezone.utc).timestamp() - config["time_till_ready"]
+                ts = _parse_ts_from_filename(completed_path)
+                if ts is None:
+                    l.debug(config["short_name"] + " process skipping file with unparsable timestamp: " + completed_path)
+                elif ts < cutoff:
+                    _upload_file(completed_path)
+                    _remove_empty_dirs(config["data_dir"])
+                    l.debug(config["short_name"] + " process uploaded file: " + completed_path)
+                else:
+                    l.debug(config["short_name"] + " process deferring upload (within ready window): " + completed_path)
             else:
                 l.debug(config["short_name"] + " process got message without valid path: " + str(msg))
     
