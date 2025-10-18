@@ -37,6 +37,31 @@ def _get_files_in_location(location: str):
     return [f for f in os.listdir(location) if os.path.isfile(os.path.join(location, f))]
 
 
+def _remove_empty_dirs(root_dir: str, min_age_seconds: int = 300):
+    """Remove empty directories under root_dir (bottom-up), but not root_dir itself.
+
+    Only removes directories whose mtime is older than min_age_seconds to avoid
+    racing with active writers.
+    """
+    now_ts = datetime.now(timezone.utc).timestamp()
+    for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
+        if dirpath == root_dir:
+            continue
+        try:
+            if dirnames or filenames:
+                continue
+            try:
+                st = os.stat(dirpath)
+                if (now_ts - st.st_mtime) < min_age_seconds:
+                    continue
+            except Exception:
+                continue
+            os.rmdir(dirpath)
+            l.debug(config["short_name"] + " deleter removed empty directory: " + dirpath)
+        except Exception as e:
+            l.warning(config["short_name"] + " deleter failed to remove directory " + dirpath + ": " + str(e))
+
+
 def detector_based_deleter(log_queue):
     worker_configurer(log_queue, config["debug_lvl"])
     l.info(config["short_name"] + " deleter starting")
@@ -104,6 +129,9 @@ def detector_based_deleter(log_queue):
                         if os.path.exists(eviction[1]):
                             os.remove(eviction[1])
                             l.debug(config["short_name"] + " deleter deleted " + str(eviction[1]))
+                            # After deleting, prune older empty directories under files_location
+                            base_root = config.get("files_location", "/home/pi/data/mp4_writer/")
+                            _remove_empty_dirs(base_root, min_age_seconds=300)
                         else:
                             l.warning(config["short_name"] + " deleter file not found when deleting: " + str(eviction[1]))
                     except Exception as e:

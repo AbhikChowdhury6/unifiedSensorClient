@@ -47,15 +47,30 @@ def _iter_files_recursive(root_dir: str):
             yield os.path.join(dirpath, fname)
 
 
-def _remove_empty_dirs(root_dir: str):
-    """Remove empty directories under root_dir (bottom-up), but not root_dir itself."""
+def _remove_empty_dirs(root_dir: str, min_age_seconds: int = 300):
+    """Remove empty directories under root_dir (bottom-up), but not root_dir itself.
+
+    Only removes directories whose mtime is older than min_age_seconds to avoid
+    racing with active writers that are about to populate the directory.
+    """
+    now_ts = datetime.now(timezone.utc).timestamp()
     for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
         if dirpath == root_dir:
             continue
         try:
-            if not dirnames and not filenames:
-                os.rmdir(dirpath)
-                l.debug(config["short_name"] + " process removed empty directory: " + dirpath)
+            # skip non-empty directories
+            if dirnames or filenames:
+                continue
+            # age-gate empty directories
+            try:
+                st = os.stat(dirpath)
+                if (now_ts - st.st_mtime) < min_age_seconds:
+                    continue
+            except Exception:
+                # if stat fails, skip removal
+                continue
+            os.rmdir(dirpath)
+            l.debug(config["short_name"] + " process removed empty directory: " + dirpath)
         except Exception as e:
             l.warning(config["short_name"] + " process failed to remove directory " + dirpath + ": " + str(e))
 
@@ -89,7 +104,7 @@ def _upload_files_in_backlog(time_till_ready: int):
         l.debug(config["short_name"] + " process uploading file: " + full_path)
         _upload_file(full_path)
     num_uploaded += len(candidates)
-    _remove_empty_dirs(data_root)
+    _remove_empty_dirs(data_root, min_age_seconds=300)
     l.debug(config["short_name"] + " process uploaded files in backlog: " + str(num_uploaded))
     return
 
@@ -160,7 +175,7 @@ def file_uploader(log_queue):
                     l.debug(config["short_name"] + " process skipping file with unparsable timestamp: " + completed_path)
                 elif ts < cutoff:
                     _upload_file(completed_path)
-                    _remove_empty_dirs(config["data_dir"])
+                    _remove_empty_dirs(config["data_dir"], min_age_seconds=300)
                     l.debug(config["short_name"] + " process uploaded file: " + completed_path)
                 else:
                     l.debug(config["short_name"] + " process deferring upload (within ready window): " + completed_path)
