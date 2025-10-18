@@ -100,8 +100,14 @@ def detector_based_deleter(log_queue):
                 l.debug(config["short_name"] + " deleter eviction timestamp: " + str(eviction[0]))
                 l.debug(config["short_name"] + " deleter the truth is: " + str(eviction[0] <= grace_period_start))
                 if eviction[0] <= grace_period_start:
-                    os.remove(eviction[1])
-                    l.debug(config["short_name"] + " deleter deleted " + str(eviction[1]))
+                    try:
+                        if os.path.exists(eviction[1]):
+                            os.remove(eviction[1])
+                            l.debug(config["short_name"] + " deleter deleted " + str(eviction[1]))
+                        else:
+                            l.warning(config["short_name"] + " deleter file not found when deleting: " + str(eviction[1]))
+                    except Exception as e:
+                        l.error(config["short_name"] + " deleter failed to delete " + str(eviction[1]) + ": " + str(e))
                     continue
                 l.debug(config["short_name"] + " deleter skipping eviction: " + str(eviction))
                 new_potential_evictions.append(eviction)
