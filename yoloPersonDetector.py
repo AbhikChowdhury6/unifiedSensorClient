@@ -59,7 +59,6 @@ def yolo_person_detector(log_queue):
 
 
     next_capture = _compute_next_capture_ts(time.time(), interval_s)
-    iter_count = 0
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -118,16 +117,11 @@ def yolo_person_detector(log_queue):
         l.debug(config["short_name"] + " published " + str(detected) + " (person_conf=" + str(person_confidence) + ")")
 
         # Proactively drop references and occasionally run GC to curb growth
-        try:
-            del results
-        except Exception:
-            pass
-        iter_count += 1
-        if (iter_count % int(config.get("gc_interval", 256))) == 0:
-            try:
-                gc.collect()
-            except Exception:
-                pass
+        del results
+        del frame
+
+        gc.collect()
+
 
     l.info(config["short_name"] + " exiting")
 
