@@ -9,7 +9,7 @@ import zmq
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from logUtils import worker_configurer
+from logUtils import worker_configurer, set_process_title
 from config import (
     detector_based_deleter_process_config,
     zmq_control_endpoint,
@@ -63,6 +63,7 @@ def _remove_empty_dirs(root_dir: str, min_age_seconds: int = 300):
 
 
 def detector_based_deleter(log_queue):
+    set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l.info(config["short_name"] + " deleter starting")
 

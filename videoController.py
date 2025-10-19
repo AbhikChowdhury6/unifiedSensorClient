@@ -11,7 +11,7 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 class_loc = repoPath + "unifiedSensorClient/cameraClasses/"
 from zmq_codec import ZmqCodec
 import logging
-from logUtils import worker_configurer, check_apply_level
+from logUtils import worker_configurer, check_apply_level, set_process_title
 from config import video_controller_process_config, zmq_control_endpoint
 
 config = video_controller_process_config
@@ -26,6 +26,7 @@ def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     return instance
 
 def video_controller(log_queue):
+    set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " controller starting")

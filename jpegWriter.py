@@ -12,7 +12,7 @@ import logging
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from logUtils import worker_configurer
+from logUtils import worker_configurer, set_process_title
 from config import (
     jpeg_writer_process_config,
     zmq_control_endpoint,
@@ -34,6 +34,7 @@ def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
 
 
 def jpeg_writer(log_queue):
+    set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.setLevel(config["debug_lvl"])

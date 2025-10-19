@@ -1,6 +1,7 @@
 conda install zeromq pyzmq
 conda install msgpack-python
 conda install python-sounddevice
+conda install setproctitle
 
 pip3 install adafruit-circuitpython-scd4x
 pip3 install adafruit-circuitpython-pm25

@@ -11,7 +11,7 @@ import logging
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from logUtils import worker_configurer
+from logUtils import worker_configurer, set_process_title
 
 from config import (
     yolo_person_detector_process_config,
@@ -24,6 +24,7 @@ def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
 
 
 def yolo_person_detector(log_queue):
+    set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " process starting")

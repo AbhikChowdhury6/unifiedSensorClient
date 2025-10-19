@@ -5,6 +5,8 @@ import os
 import sys
 import colorlog
 from queue import Empty
+import ctypes
+import ctypes.util
 from datetime import datetime, timezone, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -43,6 +45,23 @@ def trace(message, *args, **kwargs):
     logging.log(TRACE_LEVEL_NUM, message, *args, **kwargs)
 
 logging.trace = trace
+
+def set_process_title(short_name: str):
+    try:
+        import setproctitle
+        setproctitle.setproctitle(f"usc:{short_name}:{os.getpid()}")
+        return
+    except Exception:
+        pass
+    # Fallback: set PR_SET_NAME (15 chars limit)
+    try:
+        libc = ctypes.CDLL(ctypes.util.find_library("c"))
+        PR_SET_NAME = 15
+        name = f"usc:{short_name}"[:15].encode()
+        libc.prctl(PR_SET_NAME, ctypes.c_char_p(name), 0, 0, 0)
+    except Exception:
+        # Ignore if not supported
+        pass
 
 #### helpers for configuring logging from control ####
 LEVELS = {
@@ -158,6 +177,12 @@ def listener_configurer(config, allow_dict, deny_dict):
 
 def logging_process(q, allow_dict, deny_dict):
     config = logging_process_config
+    # set process title for the logging listener
+    try:
+        from config import logging_process_config as _cfg
+        set_process_title(_cfg["short_name"])
+    except Exception:
+        pass
     listener_configurer(config, allow_dict, deny_dict)
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " process starting")

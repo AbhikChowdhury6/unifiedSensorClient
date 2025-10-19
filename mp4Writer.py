@@ -11,7 +11,7 @@ import logging
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from logUtils import worker_configurer, check_apply_level
+from logUtils import worker_configurer, check_apply_level, set_process_title
 from config import (
     mp4_writer_process_config,
     zmq_control_endpoint,
@@ -20,6 +20,7 @@ from config import (
 config = mp4_writer_process_config
 l = logging.getLogger(config["short_name"])
 def mp4_writer(log_queue):
+    set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l.info(config["short_name"] + " process starting")
 

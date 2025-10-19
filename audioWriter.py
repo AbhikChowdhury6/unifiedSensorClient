@@ -12,11 +12,12 @@ from config import audio_writer_process_config, zmq_control_endpoint, platform_u
 import zmq
 import logging
 import numpy as np
-from logUtils import worker_configurer
+from logUtils import worker_configurer, set_process_title
 
 config = audio_writer_process_config
 l = logging.getLogger(config["short_name"])
 def audio_writer(log_queue):
+    set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l.info(config["short_name"] + " writer starting")
 
