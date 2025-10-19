@@ -136,22 +136,27 @@ def yolo_person_detector(log_queue):
             continue
 
         dt_utc, frame = msg[0], msg[1]
-
+        l.trace(config["short_name"] + " got frame: " + str(dt_utc))
         if dt_utc.timestamp() < next_capture:
+            l.trace(config["short_name"] + " frame is too early, skipping")
             continue
 
         next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
-
+        l.trace(config["short_name"] + " next capture: " + str(next_capture))
         # Ensure contiguous uint8 input to avoid internal copies
         try:
             if hasattr(frame, "flags") and not frame.flags.get("C_CONTIGUOUS", True):
+                l.trace(config["short_name"] + " frame is not C contiguous, making a copy")
                 frame = frame.copy()
             if getattr(frame, "dtype", None) is not None and str(frame.dtype) != "uint8":
+                l.trace(config["short_name"] + " frame is not uint8, converting")
                 frame = frame.astype("uint8", copy=False)
         except Exception:
+            l.trace(config["short_name"] + " failed to convert frame")
             pass
 
         # No-grad inference to avoid autograd graph allocations
+        l.trace(config["short_name"] + " starting inference")
         with torch.inference_mode():
             results = model.predict(
                 source=frame,
@@ -162,7 +167,7 @@ def yolo_person_detector(log_queue):
                 save=False,
                 device=config.get("device", "cpu"),
             )
-
+        l.trace(config["short_name"] + " inference completed")
         person_confidence = 0.0
         # Iterate over detections to find 'person' class
         for r in results:
