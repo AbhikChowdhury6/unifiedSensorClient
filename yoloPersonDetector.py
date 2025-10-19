@@ -6,6 +6,12 @@ import tracemalloc
 from collections import Counter
 from ultralytics import YOLO
 import torch
+import os
+try:
+    import psutil
+    _PSUTIL = True
+except Exception:
+    _PSUTIL = False
 
 import zmq
 import logging
@@ -41,41 +47,52 @@ def memdiag_start(max_frames: int = 25):
 def memdiag_log(logger, tag: str = "", top_n: int = 15):
     global _last_snapshot
     try:
-        # Force GC first to reduce noise
-        gc.collect()
-
-        # Object type counts
+        # Cheap metrics first (avoid OOM): process RSS and GC counters
+        rss_mb = None
+        if _PSUTIL:
+            try:
+                proc = psutil.Process(os.getpid())
+                rss_mb = proc.memory_info().rss / (1024 * 1024)
+            except Exception:
+                rss_mb = None
+        gen_counts = gc.get_count()
+        msg = f"[memdiag] {tag} rss_mb={rss_mb:.1f} gens={gen_counts}" if rss_mb is not None else f"[memdiag] {tag} gens={gen_counts}"
+        # Optional CUDA stats
         try:
-            objs = gc.get_objects()
-            type_counts = Counter(type(o).__name__ for o in objs)
-            top_types = type_counts.most_common(top_n)
-            logger.info(f"[memdiag] {tag} top types by count: " + ", ".join(f"{t}:{c}" for t, c in top_types))
-            logger.info(f"[memdiag] {tag} total_tracked_objects={len(objs)}")
+            if torch.cuda.is_available():
+                alloc = torch.cuda.memory_allocated() / 1e6
+                reserv = torch.cuda.memory_reserved() / 1e6
+                msg += f" cuda_alloc_mb={alloc:.1f} cuda_resv_mb={reserv:.1f}"
         except Exception:
             pass
+        logger.info(msg)
 
-        # Tracemalloc diff since last snapshot
-        if _last_snapshot is None:
-            _last_snapshot = tracemalloc.take_snapshot()
-        snap_now = tracemalloc.take_snapshot()
-        stats = snap_now.compare_to(_last_snapshot, 'lineno')
-        _last_snapshot = snap_now
-        lines = []
-        for st in stats[:top_n]:
-            size_kb = st.size_diff / 1024.0
-            tb_last = st.traceback.format()[-1].strip() if st.traceback else "<no tb>"
-            lines.append(f"{size_kb:9.1f} KiB {st.count_diff:+5d} {tb_last}")
-        if lines:
-            logger.info("[memdiag] " + tag + " top alloc growth:\n  " + "\n  ".join(lines))
+        # Heavy diagnostics (tracemalloc, pympler) gated by config
+        if bool(config.get("memdiag_heavy", False)):
+            # Force GC to reduce noise
+            gc.collect()
+            # Tracemalloc diff since last snapshot
+            if _last_snapshot is None:
+                _last_snapshot = tracemalloc.take_snapshot()
+            snap_now = tracemalloc.take_snapshot()
+            stats = snap_now.compare_to(_last_snapshot, 'lineno')
+            _last_snapshot = snap_now
+            lines = []
+            for st in stats[:top_n]:
+                size_kb = st.size_diff / 1024.0
+                tb_last = st.traceback.format()[-1].strip() if st.traceback else "<no tb>"
+                lines.append(f"{size_kb:9.1f} KiB {st.count_diff:+5d} {tb_last}")
+            if lines:
+                logger.info("[memdiag] " + tag + " top alloc growth:\n  " + "\n  ".join(lines))
 
-        # Optional deep-size summary
-        if _PYMPLER:
-            try:
-                all_objs = muppy.get_objects()
-                sum_list = pympler_summary.summarize(all_objs)
-                logger.info("[memdiag] pympler summary (top 10):\n" + pympler_summary.format_(sum_list)[:2000])
-            except Exception:
-                pass
+            # Optional deep-size summary
+            if _PYMPLER:
+                try:
+                    all_objs = muppy.get_objects()
+                    sum_list = pympler_summary.summarize(all_objs)
+                    logger.info("[memdiag] pympler summary (top 10):\n" + pympler_summary.format_(sum_list)[:2000])
+                except Exception:
+                    pass
     except Exception as e:
         logger.warning(f"[memdiag] failed: {e}")
 
@@ -172,6 +189,7 @@ def yolo_person_detector(log_queue):
 
         # No-grad inference to avoid autograd graph allocations
         l.trace(config["short_name"] + " starting inference")
+        start_time = time.time()
         try:
             with torch.inference_mode():
                 results = model.predict(
@@ -186,7 +204,7 @@ def yolo_person_detector(log_queue):
         except Exception as e:
             l.error(config["short_name"] + f" inference failed: {e}")
             continue
-        l.trace(config["short_name"] + " inference completed")
+        l.trace(config["short_name"] + " inference completed in " + str(time.time() - start_time) + " seconds")
         person_confidence = 0.0
         # Iterate over detections to find 'person' class
         for r in results:
