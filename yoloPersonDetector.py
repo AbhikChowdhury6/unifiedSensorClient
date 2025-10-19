@@ -194,18 +194,19 @@ def yolo_person_detector(log_queue):
         start_time = time.time()
         try:
             with torch.inference_mode():
-                # Call model directly to reuse predictor; enable persist to avoid re-allocations
-                results = model(
-                    frame,
-                    verbose=config["verbose"],
-                    conf=conf_thresh,
-                    iou=nms_thresh,
-                    stream=False,
-                    save=False,
-                    device=config.get("device", "cpu"),
-                    persist=True,
-                    imgsz=config.get("imgsz", None),
-                )
+                predict_kwargs = {
+                    "source": frame,
+                    "verbose": config["verbose"],
+                    "conf": conf_thresh,
+                    "iou": nms_thresh,
+                    "stream": False,
+                    "save": False,
+                    "device": config.get("device", "cpu"),
+                }
+                _imgsz = config.get("imgsz", None)
+                if _imgsz is not None:
+                    predict_kwargs["imgsz"] = _imgsz
+                results = model.predict(**predict_kwargs)
         except Exception as e:
             l.error(config["short_name"] + f" inference failed: {e}")
             continue
