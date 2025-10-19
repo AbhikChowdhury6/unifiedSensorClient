@@ -119,7 +119,9 @@ def yolo_person_detector(log_queue):
 
 
     next_capture = _compute_next_capture_ts(time.time(), interval_s)
+    l.debug(config["short_name"] + " starting memdiag")
     memdiag_start()
+    l.debug(config["short_name"] + " memdiag started")
     iter_count = 0
     while True:
         parts = sub.recv_multipart()

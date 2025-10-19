@@ -40,7 +40,7 @@ file_uploader_process_config = {
     "func_name": "file_uploader",
     "short_name": "file-up",
     "time_to_shutdown": .1,
-    "debug_lvl": 10,
+    "debug_lvl": 20,
     "upload_url": "http://192.168.10.36:/upload",
     "upload_retry_interval": 10,
     "subscription_endpoints": [
@@ -277,7 +277,7 @@ detector_based_deleter_process_config = {
     "func_name": "detector_based_deleter",
     "short_name": "del",
     "time_to_shutdown": .1,
-    "debug_lvl": 10,
+    "debug_lvl": 20,
     "detector_names": [f"{platform_uuid}_yolo11m_person_detection"],
     "detector_endpoints": [f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock"],
     "files_location": "/home/pi/data/mp4_writer/",
