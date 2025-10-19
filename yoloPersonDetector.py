@@ -209,9 +209,9 @@ def yolo_person_detector(log_queue):
         del frame
 
         iter_count += 1
-        if (iter_count % int(config.get("gc_interval", 1))) == 0:
+        if (iter_count % int(config.get("gc_interval", 10))) == 0:
             gc.collect()
-        if (iter_count % int(config.get("memdiag_interval", 1))) == 0:
+        if (iter_count % int(config.get("memdiag_interval", 10))) == 0:
             memdiag_log(l, tag="yolo_loop")
 
 
