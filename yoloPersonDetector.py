@@ -39,10 +39,12 @@ _last_snapshot = None
 
 def memdiag_start(max_frames: int = 25):
     global _tracemalloc_started, _last_snapshot
-    if not _tracemalloc_started:
-        tracemalloc.start(max_frames)
-        _tracemalloc_started = True
-    _last_snapshot = tracemalloc.take_snapshot()
+    # Start tracemalloc only for heavy diagnostics
+    if bool(config.get("memdiag_heavy", False)):
+        if not _tracemalloc_started:
+            tracemalloc.start(max_frames)
+            _tracemalloc_started = True
+        _last_snapshot = tracemalloc.take_snapshot()
 
 def memdiag_log(logger, tag: str = "", top_n: int = 15):
     global _last_snapshot
@@ -192,14 +194,17 @@ def yolo_person_detector(log_queue):
         start_time = time.time()
         try:
             with torch.inference_mode():
-                results = model.predict(
-                    source=frame,
+                # Call model directly to reuse predictor; enable persist to avoid re-allocations
+                results = model(
+                    frame,
                     verbose=config["verbose"],
                     conf=conf_thresh,
                     iou=nms_thresh,
                     stream=False,
                     save=False,
                     device=config.get("device", "cpu"),
+                    persist=True,
+                    imgsz=config.get("imgsz", None),
                 )
         except Exception as e:
             l.error(config["short_name"] + f" inference failed: {e}")
