@@ -2,6 +2,8 @@ import sys
 import time
 import math
 import gc
+import tracemalloc
+from collections import Counter
 from ultralytics import YOLO
 import torch
 
@@ -19,6 +21,64 @@ from config import (
 )
 
 config = yolo_person_detector_process_config
+"""Optional deep-size support via Pympler (if installed)."""
+try:
+    from pympler import muppy, summary as pympler_summary
+    _PYMPLER = True
+except Exception:
+    _PYMPLER = False
+
+_tracemalloc_started = False
+_last_snapshot = None
+
+def memdiag_start(max_frames: int = 25):
+    global _tracemalloc_started, _last_snapshot
+    if not _tracemalloc_started:
+        tracemalloc.start(max_frames)
+        _tracemalloc_started = True
+    _last_snapshot = tracemalloc.take_snapshot()
+
+def memdiag_log(logger, tag: str = "", top_n: int = 15):
+    global _last_snapshot
+    try:
+        # Force GC first to reduce noise
+        gc.collect()
+
+        # Object type counts
+        try:
+            objs = gc.get_objects()
+            type_counts = Counter(type(o).__name__ for o in objs)
+            top_types = type_counts.most_common(top_n)
+            logger.info(f"[memdiag] {tag} top types by count: " + ", ".join(f"{t}:{c}" for t, c in top_types))
+            logger.info(f"[memdiag] {tag} total_tracked_objects={len(objs)}")
+        except Exception:
+            pass
+
+        # Tracemalloc diff since last snapshot
+        if _last_snapshot is None:
+            _last_snapshot = tracemalloc.take_snapshot()
+        snap_now = tracemalloc.take_snapshot()
+        stats = snap_now.compare_to(_last_snapshot, 'lineno')
+        _last_snapshot = snap_now
+        lines = []
+        for st in stats[:top_n]:
+            size_kb = st.size_diff / 1024.0
+            tb_last = st.traceback.format()[-1].strip() if st.traceback else "<no tb>"
+            lines.append(f"{size_kb:9.1f} KiB {st.count_diff:+5d} {tb_last}")
+        if lines:
+            logger.info("[memdiag] " + tag + " top alloc growth:\n  " + "\n  ".join(lines))
+
+        # Optional deep-size summary
+        if _PYMPLER:
+            try:
+                all_objs = muppy.get_objects()
+                sum_list = pympler_summary.summarize(all_objs)
+                logger.info("[memdiag] pympler summary (top 10):\n" + pympler_summary.format_(sum_list)[:2000])
+            except Exception:
+                pass
+    except Exception as e:
+        logger.warning(f"[memdiag] failed: {e}")
+
 def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
     return int(math.ceil(now_ts / interval_s) * interval_s)
 
@@ -59,6 +119,8 @@ def yolo_person_detector(log_queue):
 
 
     next_capture = _compute_next_capture_ts(time.time(), interval_s)
+    memdiag_start()
+    iter_count = 0
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -120,7 +182,11 @@ def yolo_person_detector(log_queue):
         del results
         del frame
 
-        gc.collect()
+        iter_count += 1
+        if (iter_count % int(config.get("gc_interval", 1))) == 0:
+            gc.collect()
+        if (iter_count % int(config.get("memdiag_interval", 1))) == 0:
+            memdiag_log(l, tag="yolo_loop")
 
 
     l.info(config["short_name"] + " exiting")
