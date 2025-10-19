@@ -226,7 +226,7 @@ yolo_person_detector_process_config = {
     "func_name": "yolo_person_detector",
     "short_name": "yolo",
     "time_to_shutdown": 3,
-    "debug_lvl": 5,
+    "debug_lvl": 10,
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",

@@ -204,7 +204,7 @@ def yolo_person_detector(log_queue):
         except Exception as e:
             l.error(config["short_name"] + f" inference failed: {e}")
             continue
-        l.trace(config["short_name"] + " inference completed in " + str(time.time() - start_time) + " seconds")
+        l.debug(config["short_name"] + " inference completed in " + str(time.time() - start_time) + " seconds")
         person_confidence = 0.0
         # Iterate over detections to find 'person' class
         for r in results:
