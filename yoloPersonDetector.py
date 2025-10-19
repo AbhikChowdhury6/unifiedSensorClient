@@ -145,28 +145,47 @@ def yolo_person_detector(log_queue):
         l.trace(config["short_name"] + " next capture: " + str(next_capture))
         # Ensure contiguous uint8 input to avoid internal copies
         try:
-            if hasattr(frame, "flags") and not frame.flags.get("C_CONTIGUOUS", True):
+            is_c_contig = True
+            if hasattr(frame, "flags"):
+                try:
+                    is_c_contig = bool(frame.flags["C_CONTIGUOUS"])  # numpy flagsobj supports __getitem__
+                except Exception:
+                    is_c_contig = bool(getattr(frame.flags, "c_contiguous", True))
+            if not is_c_contig:
                 l.trace(config["short_name"] + " frame is not C contiguous, making a copy")
                 frame = frame.copy()
             if getattr(frame, "dtype", None) is not None and str(frame.dtype) != "uint8":
                 l.trace(config["short_name"] + " frame is not uint8, converting")
                 frame = frame.astype("uint8", copy=False)
+        except Exception as e:
+            l.warning(config["short_name"] + f" failed to convert frame: {e}")
+            # proceed with original frame
+
+        # Validate expected shape (H,W,3)
+        try:
+            if not (hasattr(frame, "ndim") and frame.ndim == 3 and getattr(frame, "shape", (0,0,0))[2] == 3):
+                l.warning(config["short_name"] + f" invalid frame shape {getattr(frame, 'shape', None)}, skipping")
+                continue
         except Exception:
-            l.trace(config["short_name"] + " failed to convert frame")
-            pass
+            l.warning(config["short_name"] + " unable to inspect frame shape, skipping")
+            continue
 
         # No-grad inference to avoid autograd graph allocations
         l.trace(config["short_name"] + " starting inference")
-        with torch.inference_mode():
-            results = model.predict(
-                source=frame,
-                verbose=config["verbose"],
-                conf=conf_thresh,
-                iou=nms_thresh,
-                stream=False,
-                save=False,
-                device=config.get("device", "cpu"),
-            )
+        try:
+            with torch.inference_mode():
+                results = model.predict(
+                    source=frame,
+                    verbose=config["verbose"],
+                    conf=conf_thresh,
+                    iou=nms_thresh,
+                    stream=False,
+                    save=False,
+                    device=config.get("device", "cpu"),
+                )
+        except Exception as e:
+            l.error(config["short_name"] + f" inference failed: {e}")
+            continue
         l.trace(config["short_name"] + " inference completed")
         person_confidence = 0.0
         # Iterate over detections to find 'person' class
