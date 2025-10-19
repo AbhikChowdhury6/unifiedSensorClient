@@ -1,7 +1,9 @@
 import sys
 import time
 import math
+import gc
 from ultralytics import YOLO
+import torch
 
 import zmq
 import logging
@@ -56,6 +58,7 @@ def yolo_person_detector(log_queue):
 
 
     next_capture = _compute_next_capture_ts(time.time(), interval_s)
+    iter_count = 0
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -75,7 +78,26 @@ def yolo_person_detector(log_queue):
 
         next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
 
-        results = model.predict(source=frame, verbose=config["verbose"], conf=conf_thresh, iou=nms_thresh)
+        # Ensure contiguous uint8 input to avoid internal copies
+        try:
+            if hasattr(frame, "flags") and not frame.flags.get("C_CONTIGUOUS", True):
+                frame = frame.copy()
+            if getattr(frame, "dtype", None) is not None and str(frame.dtype) != "uint8":
+                frame = frame.astype("uint8", copy=False)
+        except Exception:
+            pass
+
+        # No-grad inference to avoid autograd graph allocations
+        with torch.inference_mode():
+            results = model.predict(
+                source=frame,
+                verbose=config["verbose"],
+                conf=conf_thresh,
+                iou=nms_thresh,
+                stream=False,
+                save=False,
+                device=config.get("device", "cpu"),
+            )
 
         person_confidence = 0.0
         # Iterate over detections to find 'person' class
@@ -93,6 +115,18 @@ def yolo_person_detector(log_queue):
         detected = 1 if person_confidence >= conf_thresh else 0
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, detected]))
         l.debug(config["short_name"] + " published " + str(detected) + " (person_conf=" + str(person_confidence) + ")")
+
+        # Proactively drop references and occasionally run GC to curb growth
+        try:
+            del results
+        except Exception:
+            pass
+        iter_count += 1
+        if (iter_count % int(config.get("gc_interval", 256))) == 0:
+            try:
+                gc.collect()
+            except Exception:
+                pass
 
     l.info(config["short_name"] + " exiting")
 
