@@ -56,7 +56,7 @@ class PiCamera:
 
     def capture(self):
         dt_utc = datetime.now(timezone.utc)
-        frame = self.camera.capture_array()
+        frame = self.camera.capture_array().astype(np.uint8)
         if self.subsample_ratio > 1:
             frame = frame[::self.subsample_ratio, ::self.subsample_ratio]
             frame = np.ascontiguousarray(frame)
