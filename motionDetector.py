@@ -64,7 +64,7 @@ def motion_detector(log_queue):
         next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
 
         mean_brightness = (frame - last_frame).mean()
-        l.debug(config["short_name"] + " process mean difference: " + str(mean_brightness))
+        l.debug(config["short_name"] + " process mean difference: " + str(mean_brightness) + " threshold: " + str(threshold))
         last_frame = frame
         motion = int(mean_brightness < threshold)
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, motion]))
