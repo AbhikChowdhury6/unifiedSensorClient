@@ -232,10 +232,10 @@ yolo_person_detector_process_config = {
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
     "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
     "model": "yolo11m",
-    "confidence_threshold": 0.7,
-    "nms_threshold": 0.7,
+    "confidence_threshold": 0.5,
+    "nms_threshold": 0.5,
     "interval_seconds": 4,
-    "verbose": False,
+    "verbose": True,
 }
 
 audio_controller_process_config = {

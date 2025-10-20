@@ -5,6 +5,7 @@ import gc
 import tracemalloc
 from collections import Counter
 from ultralytics import YOLO
+import numpy as np
 import torch
 import os
 try:
@@ -158,75 +159,38 @@ def yolo_person_detector(log_queue):
         l.trace(config["short_name"] + " got frame: " + str(dt_utc))
         if dt_utc.timestamp() < next_capture:
             l.trace(config["short_name"] + " frame is too early, skipping")
+            del frame
+            gc.collect()
             continue
 
         next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
         l.trace(config["short_name"] + " next capture: " + str(next_capture))
-        # Ensure contiguous uint8 input to avoid internal copies
-        try:
-            is_c_contig = True
-            if hasattr(frame, "flags"):
-                try:
-                    is_c_contig = bool(frame.flags["C_CONTIGUOUS"])  # numpy flagsobj supports __getitem__
-                except Exception:
-                    is_c_contig = bool(getattr(frame.flags, "c_contiguous", True))
-            if not is_c_contig:
-                l.trace(config["short_name"] + " frame is not C contiguous, making a copy")
-                frame = frame.copy()
-            if getattr(frame, "dtype", None) is not None and str(frame.dtype) != "uint8":
-                l.trace(config["short_name"] + " frame is not uint8, converting")
-                frame = frame.astype("uint8", copy=False)
-        except Exception as e:
-            l.warning(config["short_name"] + f" failed to convert frame: {e}")
-            # proceed with original frame
+ 
 
-        # Validate expected shape (H,W,3)
-        try:
-            if not (hasattr(frame, "ndim") and frame.ndim == 3 and getattr(frame, "shape", (0,0,0))[2] == 3):
-                l.warning(config["short_name"] + f" invalid frame shape {getattr(frame, 'shape', None)}, skipping")
-                continue
-        except Exception:
-            l.warning(config["short_name"] + " unable to inspect frame shape, skipping")
-            continue
-
-        # No-grad inference to avoid autograd graph allocations
         l.trace(config["short_name"] + " starting inference")
         start_time = time.time()
-        try:
-            with torch.inference_mode():
-                predict_kwargs = {
-                    "source": frame,
-                    "verbose": config["verbose"],
-                    "conf": conf_thresh,
-                    "iou": nms_thresh,
-                    "stream": False,
-                    "save": False,
-                    "device": config.get("device", "cpu"),
-                }
-                _imgsz = config.get("imgsz", None)
-                if _imgsz is not None:
-                    predict_kwargs["imgsz"] = _imgsz
-                results = model.predict(**predict_kwargs)
-        except Exception as e:
-            l.error(config["short_name"] + f" inference failed: {e}")
-            continue
+        frame = frame.cpu().numpy().astype(np.uint8)  
+        results = model.predict(frame, verbose=config["verbose"])
+
         l.debug(config["short_name"] + " inference completed in " + str(time.time() - start_time) + " seconds")
-        person_confidence = 0.0
-        # Iterate over detections to find 'person' class
-        for r in results:
-            boxes = r.boxes
-            names = r.names
-            if boxes is None:
-                continue
-            for cls_id, conf in zip(boxes.cls.tolist(), boxes.conf.tolist()):
-                name = names.get(int(cls_id), str(int(cls_id)))
-                if name.lower() == "person":
-                    person_confidence = max(person_confidence, float(conf))
+        
+        indexesOfPeople = [i for i, x in enumerate(results[0].boxes.cls) if x == 0]
+        if len(indexesOfPeople) > 0:
+            l.debug("saw %d people",len(indexesOfPeople))
+            sys.stdout.flush()
+            maxPersonConf = max([results[0].boxes.conf[i] for i in indexesOfPeople])
+            l.debug("the most confident recognition was %f", maxPersonConf)
+            if maxPersonConf > config["confidence_threshold"]:
+                detected = 1
+            else:
+                detected = 0
+        else:
+            l.debug("didn't see anyone")
+            detected = 0
 
 
-        detected = 1 if person_confidence >= conf_thresh else 0
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, detected]))
-        l.debug(config["short_name"] + " published " + str(detected) + " (person_conf=" + str(person_confidence) + ")")
+        l.debug(config["short_name"] + " published " + str(detected))
 
         # Proactively drop references and occasionally run GC to curb growth
         del results
