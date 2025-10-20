@@ -159,8 +159,6 @@ def yolo_person_detector(log_queue):
         l.trace(config["short_name"] + " got frame: " + str(dt_utc))
         if dt_utc.timestamp() < next_capture:
             l.trace(config["short_name"] + " frame is too early, skipping")
-            del frame
-            gc.collect()
             continue
 
         next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
@@ -191,13 +189,9 @@ def yolo_person_detector(log_queue):
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, detected]))
         l.debug(config["short_name"] + " published " + str(detected))
 
-        # Proactively drop references and occasionally run GC to curb growth
-        del results
-        del frame
+
 
         iter_count += 1
-        if (iter_count % int(config.get("gc_interval", 10))) == 0:
-            gc.collect()
         if (iter_count % int(config.get("memdiag_interval", 10))) == 0:
             memdiag_log(l, tag="yolo_loop")
 
