@@ -128,7 +128,7 @@ def jpeg_writer(log_queue):
                     hourly_subdir = latest_ts.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/")
                     out_dir = os.path.join(write_location, hourly_subdir)
                     os.makedirs(out_dir, exist_ok=True)
-                    filename = f"{config["file_base"]}_{ts_str}.jpeg"
+                    filename = f"{config['file_base']}_{ts_str}.jpeg"
                     filepath = os.path.join(out_dir, filename)
                     try:
                         cv2.imwrite(filepath, frame_to_write, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
