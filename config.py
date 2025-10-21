@@ -176,6 +176,7 @@ video_controller_process_config = {
     "format": "RGB888",
     "fps": 8,
     "subsample_ratio": 2,
+    "flip_vertical": True,
     "timestamp_images": True,
 }
 

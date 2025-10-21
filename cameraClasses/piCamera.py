@@ -19,6 +19,7 @@ class PiCamera:
         self.l = logging.getLogger(camera_config["short_name"])
         self.l.setLevel(camera_config['debug_lvl'])
         self.camera_config = camera_config
+        self.flip_vertical = camera_config['flip_vertical']
         self._enabled = False
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
@@ -62,6 +63,8 @@ class PiCamera:
             frame = np.ascontiguousarray(frame)
         if self.timestamp_images:
             frame = self.add_timestamp(frame)
+        if self.flip_vertical:
+            frame = cv2.flip(frame, 0)
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, frame]))
     
     def is_enabled(self):
