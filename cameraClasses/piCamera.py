@@ -61,10 +61,11 @@ class PiCamera:
         if self.subsample_ratio > 1:
             frame = frame[::self.subsample_ratio, ::self.subsample_ratio]
             frame = np.ascontiguousarray(frame)
-        if self.timestamp_images:
-            frame = self.add_timestamp(frame)
         if self.flip_vertical:
             frame = cv2.flip(frame, 0)
+        if self.timestamp_images:
+            frame = self.add_timestamp(frame)
+        
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, frame]))
     
     def is_enabled(self):

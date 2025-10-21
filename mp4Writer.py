@@ -166,7 +166,8 @@ def mp4_writer(log_queue):
             
             # Determine runtime width/height/pix_fmt/fps
             fmt = cfg_get_or_default(config, "format", "RGB888")
-            pix_fmt = "rgb24" if str(fmt).upper() in ("RGB888", "RGB24") else "bgr24"
+            # Treat incoming frames as BGR for encoding to avoid red/blue swap
+            pix_fmt = "bgr24"
             fps = int(cfg_get_or_default(config, "fps", 8))
             ffmpeg_proc = _spawn_ffmpeg(out_path, width, height, pix_fmt, fps)
             frames_written_in_segment = 0
