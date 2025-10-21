@@ -221,7 +221,7 @@ def spawn_ffmpeg_audio_segments_stdin(
             cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
             bufsize=0, env=env
         )
-        l.info(config["short_name"] + " writer: started ffmpeg: " + " ".join(cmd))
+        l.debug(config["short_name"] + " writer: started ffmpeg: " + " ".join(cmd))
 
         # Start a background stderr reader for diagnostics
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
@@ -244,7 +244,7 @@ def _stderr_reader(p):
     except Exception as e:
         l.error(config["short_name"] + " writer: ffmpeg stderr reader error: " + str(e))
     finally:
-        l.info(config["short_name"] + " writer: ffmpeg stderr: [closed]")
+        l.debug(config["short_name"] + " writer: ffmpeg stderr: [closed]")
 
 
 def stop_ffmpeg(proc) -> None:

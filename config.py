@@ -268,7 +268,8 @@ audio_writer_process_config = {
     "frame_duration_ms": 40,
     "duration_s": 4,
     "loglevel": "warning",
-    "alsa_device": "plughw:CARD=MICTEST,DEV=0",
+#    "device": "plughw:CARD=MICTEST,DEV=0",
+#    "device": "plughw:CARD=Device,DEV=0",
     "frame_hz": 2,
 }
 

@@ -11,3 +11,4 @@ pip3 install lgpio
 //sudo pip3 install rpi_ws281x adafruit-circuitpython-neopixel
 
 sudo pip3 install adafruit-circuitpython-neopixel-spi
+
