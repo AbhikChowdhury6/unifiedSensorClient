@@ -175,7 +175,7 @@ video_controller_process_config = {
     "camera_height": 1080,
     "format": "RGB888",
     "fps": 8,
-    "subsample_ratio": 3,
+    "subsample_ratio": 2,
     "timestamp_images": True,
 }
 
@@ -231,7 +231,7 @@ yolo_person_detector_process_config = {
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
     "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
-    "model": "yolo11n",
+    "model": "yolo11s",
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,
     "interval_seconds": 4,
