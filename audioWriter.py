@@ -205,7 +205,7 @@ def spawn_ffmpeg_audio_segments_stdin(
     else:
         # Fallback to segmenter with UTC strftime pattern
         # Note: strftime cannot emit milliseconds; align to whole seconds with Z suffix
-        output_pattern = f"{output_root}%Y/%m/%d/%H/{platform_uuid}_audio_%Y%m%dT%H%M%SZ.opus"
+        output_pattern = f"{output_root}%Y/%m/%d/%H/{platform_uuid}_audio_opus_%Y%m%dT%H%M%SZ.opus"
         cmd += [
             "-f", "segment",
             "-segment_time", str(segment_time_s),
@@ -266,7 +266,7 @@ def make_output_path(now_utc: datetime) -> str:
     out_dir = os.path.join(config["write_location"], hourly_subdir)
     os.makedirs(out_dir, exist_ok=True)
     # Match video/jpeg timestamp format: YYYYMMDDTHHMMSSpMSZ
-    fname = f"{platform_uuid}_audio_{now_utc.strftime('%Y%m%dT%H%M%S')}p{str(now_utc.microsecond//1000).zfill(3)}Z.opus"
+    fname = f"{platform_uuid}_audio_opus_{now_utc.strftime('%Y%m%dT%H%M%S')}p{str(now_utc.microsecond//1000).zfill(3)}Z.opus"
     return os.path.join(out_dir, fname)
 
 

@@ -2,9 +2,9 @@ import multiprocessing as mp
 
 # this file will evolve based on features
 testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
+testpi4UUID = "ae24c81b-3817-48d0-a6f8-799ec3dec556"
 
-
-platform_uuid = testpi5UUID
+platform_uuid = testpi4UUID
 
 zmq_control_endpoint = f"ipc:///tmp/{platform_uuid}_control.sock"
 # separate inbound requests endpoint (workers PUB -> main SUB)

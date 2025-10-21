@@ -161,7 +161,7 @@ def mp4_writer(log_queue):
             hourly_subdir = segment_start_dt.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/")
             out_dir = os.path.join(write_location, hourly_subdir)
             os.makedirs(out_dir, exist_ok=True)
-            base_name = f"{config["file_base"]}_{start_str}.mp4"
+            base_name = f"{config['file_base']}_{start_str}.mp4"
             out_path = os.path.join(out_dir, base_name)
             
             # Determine runtime width/height/pix_fmt/fps
