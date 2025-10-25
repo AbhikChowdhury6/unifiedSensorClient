@@ -120,8 +120,7 @@ def jpeg_writer(log_queue):
                         frame_to_write = np.ascontiguousarray(frame_to_write)
                     if frame_to_write.dtype != np.uint8:
                         frame_to_write = frame_to_write.astype(np.uint8, copy=False)
-                    if fmt.upper() in ("RGB888", "RGB24", "RGB"):
-                        frame_to_write = cv2.cvtColor(frame_to_write, cv2.COLOR_RGB2BGR)
+                    # Treat incoming frames as BGR for OpenCV imwrite to avoid red/blue swap
 
                     ts_str = _format_ts_for_filename(latest_ts)
                     # Write into UTC hourly folders: YYYY/MM/DD/HH/MM/
