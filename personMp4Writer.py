@@ -65,12 +65,14 @@ def person_mp4_writer(log_queue):
             l.error("Failed to open video writer")
             return None
         
-        return output
+        return output, path
     
-    def close_mp4(output, is_full_speed):
-        if output is not None:
-            output.release()
+    def close_mp4(output, is_full_speed, path, last_dt):
+        if output is None:
+            return
+        output.release()
         #rename the file with the end timestamp
+
     
     
     is_full_speed = False
@@ -78,6 +80,8 @@ def person_mp4_writer(log_queue):
     time_before_seconds = config["time_before_seconds"]
     time_after_seconds = config["time_after_seconds"]
     timelapse_after = last_detection_ts + timedelta(seconds=time_after_seconds)
+    output, path = None, None
+    last_dt = datetime.min.replace(tzinfo=timezone.utc)
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -93,19 +97,20 @@ def person_mp4_writer(log_queue):
                 timelapse_after = msg[0] + timedelta(seconds=time_after_seconds)
                 if not is_full_speed:
                     #close the current mp4 file if open
-                    pass
+                    close_mp4(output, is_full_speed, path)
                     #open a new mp4 file that's a full speed
-                    pass
+                    output, path = start_mp4(msg[0], True)
                 is_full_speed = True
                 last_detection_ts = msg[0]
             
             elif timelapse_after < msg[0]:
                 if is_full_speed:
-                    pass
+                    close_mp4(output, is_full_speed, path)
                     #close the current mp4 file if open
                 is_full_speed = False
                 #open a new mp4 file that's a timelapse
-
+                output, path = start_mp4(msg[0], False)
+            
 
         # use the last detection timestamp to determine if we should be in full speed
         
@@ -113,6 +118,22 @@ def person_mp4_writer(log_queue):
             continue
         dt_utc, frame = msg[0], msg[1]
         l.trace(config["short_name"] + " got frame: " + str(dt_utc))
+        #check for video type transitions and open and close videos
+        # currently tl
+        # currently fs
+        # switch to fs
+        if switch_to_fs:
+            close_mp4(output, False, path, last_detection_ts)
+            output, path = start_mp4(dt_utc, is_full_speed=True)
+        elif switch_to_tl:
+            close_mp4(output, True, path, last_detection_ts)
+            output, path = start_mp4(dt_utc, is_full_speed=False)
+        if last_dt  
+        # switch to tl
+        # is this the first one of a new day
+
+        output.write(frame)
+        last_dt = dt_utc
 
 
 
