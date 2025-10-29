@@ -35,7 +35,7 @@ def fnString_to_dt(s):
     if "." in s:#if it has a file extension
         ts_str = s.split(".")[0]
     ts_str = ts_str.replace(",",".")
-    return datetime.strptime(ts_str, '%Y-%m-%dT%H%M%S,%f%z')
+    return datetime.fromisoformat(ts_str)
 
 logging_process_config = {
     "module_name": "logUtils",
