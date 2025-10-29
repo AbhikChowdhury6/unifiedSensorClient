@@ -12,10 +12,13 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 from logUtils import worker_configurer, check_apply_level, set_process_title
 from config import (
+    fnString_to_dt,
     person_mp4_writer_process_config,
     zmq_control_endpoint,
+    dt_to_fnString
 )
 
+fourcc = cv2.VideoWriter_fourcc(*'avc1')
 config = person_mp4_writer_process_config
 l = logging.getLogger(config["short_name"])
 def person_mp4_writer(log_queue):
@@ -47,37 +50,12 @@ def person_mp4_writer(log_queue):
     l.info(config["short_name"] + " process connected to pub topic")
 
 
-    fourcc = cv2.VideoWriter_fourcc(*'avc1')
-    def dt_to_fnString(dt):
-        return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%S,%f%z')
+    
+    cache_location = config["cache_location"]
+    
     
 
-    def start_mp4(dt, is_full_speed):
-        if is_full_speed:
-            path = config["full_speed_location"]
-        else:
-            path = config["timelapse_location"]
-        path = os.path.join(path, dt_to_fnString(dt) + ".mp4")
-        output = cv2.VideoWriter(path, 
-                        fourcc, 
-                        30.0, 
-                        (config["camera_width"], config["camera_height"]))
-        if not output.isOpened():
-            l.error("Failed to open video writer")
-            return None
-        
-        return output, path
-    
-    def close_mp4(output, is_full_speed, path, last_dt):
-        if output is None:
-            return
-        output.release()
-        #rename the file with the end timestamp
 
-    def tl_time_to_write(dt):
-        return dt.timestamp() % config["timelapse_interval_seconds"] == 0
-    
-    
     is_full_speed = False
     last_detection_ts = datetime.min.replace(tzinfo=timezone.utc)
     time_before_seconds = config["time_before_seconds"]
@@ -95,6 +73,7 @@ def person_mp4_writer(log_queue):
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "person_mp4"):
                 l.info(config["short_name"] + " got control exit")
+                close_mp4(output, is_full_speed, path, last_detection_ts, cache_location)
                 break
             continue
         #check if a detection has occurred
@@ -130,12 +109,12 @@ def person_mp4_writer(log_queue):
 
         #handle new day transitions
         if last_dt.date() != dt_utc.date() and not (switch_to_fs or switch_to_tl):
-            close_mp4(output, is_full_speed, path, last_detection_ts)
+            close_mp4(output, is_full_speed, path, last_detection_ts, cache_location)
             output, path = start_mp4(dt_utc, True)
         
         # handle video type transitions
         if switch_to_fs:
-            close_mp4(output, False, path, last_detection_ts)
+            close_mp4(output, False, path, last_detection_ts, cache_location)
             #get the time before seconds timestamp
             tb_dt_utc = dt_utc - timedelta(seconds=time_before_seconds)
 
@@ -144,7 +123,7 @@ def person_mp4_writer(log_queue):
             # and write them to the output video
             switch_to_fs = False
         elif switch_to_tl:
-            close_mp4(output, True, path, last_detection_ts)
+            close_mp4(output, True, path, last_detection_ts, cache_location)
             output, path = start_mp4(dt_utc, False)
             switch_to_tl = False
 
@@ -163,3 +142,76 @@ def person_mp4_writer(log_queue):
 
 
 
+
+def start_mp4(dt, is_full_speed):
+    if is_full_speed:
+        path = config["full_speed_location"]
+    else:
+        path = config["timelapse_location"]
+    path = os.path.join(path, dt_to_fnString(dt) + ".mp4")
+    output = cv2.VideoWriter(path, 
+                    fourcc, 
+                    30.0, 
+                    (config["camera_width"], config["camera_height"]))
+    if not output.isOpened():
+        l.error("Failed to open video writer")
+        return None
+    
+    return output, path
+
+def close_mp4(output, is_full_speed, path, last_dt, cache_location):
+    if output is None:
+        return
+    output.release()
+    #rename the file with the end timestamp to signal it is complete
+    new_path = path.replace(".mp4", "_" + dt_to_fnString(last_dt) + ".mp4")
+    os.rename(path, new_path)
+    #delete the qoi files that are older than the last detection timestamp
+    qoi_files = [f for f in os.listdir(cache_location)]
+    for qoi_file in qoi_files:
+        qoi_file_dt = fnString_to_dt(qoi_file)
+        if qoi_file_dt < last_dt:
+            os.remove(cache_location + qoi_file)
+
+def tl_time_to_write(dt):
+    return dt.timestamp() % config["timelapse_interval_seconds"] == 0
+    
+def recover_from_cache(cache_location):
+    leftover_qoi_files = [f for f in os.listdir(cache_location)]
+    if len(leftover_qoi_files) == 0:
+        return
+    
+    l.warning(config["short_name"] + " found " + str(len(leftover_qoi_files)) + " leftover qoi files")
+    cache_times = sorted([fnString_to_dt(fn) for fn in leftover_qoi_files])
+    cache_intervals = [cache_times[i+1] - cache_times[i] for i in range(len(cache_times)-1)]
+    
+    # when it stopped it was recording at full speed
+    if cache_intervals[0] < timedelta(seconds=config["timelapse_interval_seconds"]):
+        output, path = start_mp4(cache_times[0], True)
+        for qoi_file in leftover_qoi_files:
+            output.write(pyqoi.read(cache_location + qoi_file))
+        close_mp4(output, True, path, cache_times[-1], cache_location)
+        return
+    
+    
+    # it was recording a timelapse, save as 2 videos
+    index_of_fullspeed_start = -1
+    output, path = start_mp4(cache_times[0], False)
+    for i in range(len(cache_intervals)):
+        if cache_intervals[i] < timedelta(seconds=config["timelapse_interval_seconds"]):
+            index_of_fullspeed_start = i
+            break
+        output.write(pyqoi.read(cache_location + leftover_qoi_files[i]))
+    
+    #if it happend to cut off right at the start of a segment, don't make a fullspeed video
+    if index_of_fullspeed_start == -1:
+        output.write(pyqoi.read(cache_location + leftover_qoi_files[-1]))
+        close_mp4(output, False, path, cache_times[-1], cache_location)
+        return
+    close_mp4(output, False, path, cache_times[i], cache_location)
+
+    #now write the fullspeed video
+    output, path = start_mp4(cache_times[index_of_fullspeed_start], True)
+    for qoi_file in leftover_qoi_files[index_of_fullspeed_start:]:
+        output.write(pyqoi.read(cache_location + qoi_file))
+    close_mp4(output, True, path, cache_times[-1], cache_location)

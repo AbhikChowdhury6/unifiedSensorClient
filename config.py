@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from datetime import datetime, timezone
 
 # this file will evolve based on features
 testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
@@ -24,6 +25,17 @@ responsible_party = "Abhik"
 #- error (40)
 #- critical (50)
 main_debug_lvl = 20
+
+def dt_to_fnString(dt):
+    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%S,%f%z')
+
+def fnString_to_dt(s):
+    if "_" in s: #if it's like a whole file name
+        ts_str = s.split("_")[-1]
+    if "." in s:#if it has a file extension
+        ts_str = s.split(".")[0]
+    ts_str = ts_str.replace(",",".")
+    return datetime.strptime(ts_str, '%Y-%m-%dT%H%M%S,%f%z')
 
 logging_process_config = {
     "module_name": "logUtils",
