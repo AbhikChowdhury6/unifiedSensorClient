@@ -13,6 +13,7 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
 import logging
+from config import dt_to_fnString
 
 
 class PiCamera:
@@ -69,7 +70,7 @@ class PiCamera:
             frame = self.add_timestamp(frame)
         
 
-        output_path = self.save_location + dt_utc.strftime('%Y-%m-%dT%H%M%S,%f%z') + ".qoi"
+        output_path = self.save_location + dt_to_fnString(dt_utc) + ".qoi"
         qoi.write(output_path, frame)
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, frame]))
     
