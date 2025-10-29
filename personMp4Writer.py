@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import logging
 from datetime import datetime, timezone, timedelta
+import pyqoi
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -73,6 +74,8 @@ def person_mp4_writer(log_queue):
         output.release()
         #rename the file with the end timestamp
 
+    def tl_time_to_write(dt):
+        return dt.timestamp() % config["timelapse_interval_seconds"] == 0
     
     
     is_full_speed = False
@@ -82,58 +85,81 @@ def person_mp4_writer(log_queue):
     timelapse_after = last_detection_ts + timedelta(seconds=time_after_seconds)
     output, path = None, None
     last_dt = datetime.min.replace(tzinfo=timezone.utc)
+    switch_to_fs = False
+    switch_to_tl = False
+    start_time = datetime.now(timezone.utc)
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
+        #check if exiting
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "person_mp4"):
                 l.info(config["short_name"] + " got control exit")
                 break
             continue
+        #check if a detection has occurred
         if topic in config["detector_names"]:
             detected = msg[1]
             if detected:
                 # set the timing logic here
                 timelapse_after = msg[0] + timedelta(seconds=time_after_seconds)
                 if not is_full_speed:
-                    #close the current mp4 file if open
-                    close_mp4(output, is_full_speed, path)
-                    #open a new mp4 file that's a full speed
-                    output, path = start_mp4(msg[0], True)
+                    switch_to_fs = True
                 is_full_speed = True
                 last_detection_ts = msg[0]
             
             elif timelapse_after < msg[0]:
                 if is_full_speed:
-                    close_mp4(output, is_full_speed, path)
-                    #close the current mp4 file if open
+                    switch_to_tl = True
                 is_full_speed = False
-                #open a new mp4 file that's a timelapse
-                output, path = start_mp4(msg[0], False)
             
 
-        # use the last detection timestamp to determine if we should be in full speed
-        
         if topic != config["camera_name"]:
             continue
+        
         dt_utc, frame = msg[0], msg[1]
+
+        # wait till after the buffer period before writing
+        if dt_utc < start_time + timedelta(seconds=time_before_seconds):
+            continue
+        if output is None:
+            output, path = start_mp4(start_time, is_full_speed)
+
         l.trace(config["short_name"] + " got frame: " + str(dt_utc))
-        #check for video type transitions and open and close videos
-        # currently tl
-        # currently fs
-        # switch to fs
+
+
+        #handle new day transitions
+        if last_dt.date() != dt_utc.date() and not (switch_to_fs or switch_to_tl):
+            close_mp4(output, is_full_speed, path, last_detection_ts)
+            output, path = start_mp4(dt_utc, True)
+        
+        # handle video type transitions
         if switch_to_fs:
             close_mp4(output, False, path, last_detection_ts)
-            output, path = start_mp4(dt_utc, is_full_speed=True)
+            #get the time before seconds timestamp
+            tb_dt_utc = dt_utc - timedelta(seconds=time_before_seconds)
+
+            output, path = start_mp4(tb_dt_utc, True)
+            #here we need to read the time_before_seconds amount of frames
+            # and write them to the output video
+            switch_to_fs = False
         elif switch_to_tl:
             close_mp4(output, True, path, last_detection_ts)
-            output, path = start_mp4(dt_utc, is_full_speed=False)
-        if last_dt  
-        # switch to tl
-        # is this the first one of a new day
+            output, path = start_mp4(dt_utc, False)
+            switch_to_tl = False
+
+
+        if not is_full_speed and not tl_time_to_write(dt_utc):
+            continue
+ 
 
         output.write(frame)
         last_dt = dt_utc
+
+        # how would I like to go about deleting old qoi files?
+        # if not is full speed, then I'll delete all but the first one in the last block
+        # if is full speed, then I wont delete any
+        # whenever an mp4 is closed, I'll delete the qoi files that are older than the mp4 file
 
 
 

@@ -7,6 +7,7 @@ import cv2
 from datetime import datetime, timezone
 import tzlocal
 import gc
+import qoi
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -28,6 +29,7 @@ class PiCamera:
         sys.stdout.flush()
 
         self.topic = self.camera_config['camera_name']
+        self.save_location = self.camera_config['save_location']
         
         st = datetime.now()
         self.camera = picamera2.Picamera2(self.camera_config['camera_index'])
@@ -66,6 +68,9 @@ class PiCamera:
         if self.timestamp_images:
             frame = self.add_timestamp(frame)
         
+
+        output_path = self.save_location + dt_utc.strftime('%Y-%m-%dT%H%M%S,%f%z') + ".qoi"
+        qoi.write(output_path, frame)
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, frame]))
     
     def is_enabled(self):

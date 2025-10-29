@@ -176,10 +176,21 @@ video_controller_process_config = {
     "format": "RGB888",
     "fps": 8,
     "subsample_ratio": 2,
+    "save_location": "/home/pi/data/camera_cache/",
     "flip_vertical": True,
     "timestamp_images": True,
 }
 
+person_mp4_writer_process_config = {
+    "module_name": "personMp4Writer",
+    "func_name": "person_mp4_writer",
+    "short_name": "person_mp4",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "full_speed_write_location": "/home/pi/data/person_mp4_writer_fs/",
+    "timelapse_write_location": "/home/pi/data/person_mp4_writer_tl/",
+    "timelapse_interval_seconds": 4,
+}
 
 mp4_writer_process_config = {
     "module_name": "mp4Writer",
