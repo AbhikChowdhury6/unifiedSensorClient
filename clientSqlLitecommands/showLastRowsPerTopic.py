@@ -8,46 +8,44 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from config import sqlite_writer_write_location
 
 # Set up command line argument parsing
-parser = argparse.ArgumentParser(description='Show the last N rows per topic from the database.')
+parser = argparse.ArgumentParser(description='Show the last N rows per per-topic table from the database.')
 parser.add_argument('-n', '--num_rows', type=int, default=10,
-                   help='Number of rows to display per topic (default: 10)')
+                   help='Number of rows to display per table (default: 10)')
 args = parser.parse_args()
 
 db_path = f"{sqlite_writer_write_location}data.db"
 
-query = f"""
-WITH RankedRows AS (
-    SELECT 
-        *,
-        ROW_NUMBER() OVER (PARTITION BY topic ORDER BY ts DESC) as rn
-    FROM readings
-)
-SELECT topic, ts, value
-FROM RankedRows 
-WHERE rn <= {args.num_rows}
-ORDER BY topic, ts DESC;
-"""
+def maybe_format_value(value):
+    # Heuristic formatting for epoch-ns timestamps; otherwise return as-is
+    if isinstance(value, int) and value > 1_500_000_000_000_000_000:
+        try:
+            return datetime.fromtimestamp(value / 1_000_000_000).strftime('%Y-%m-%d %H:%M:%S.%f')
+        except Exception:
+            return value
+    return value
 
-try:
-    with sqlite3.connect(db_path) as conn:
-        rows = conn.execute(query).fetchall()
-        if not rows:
-            print("No rows found.")
-        else:
-            current_topic = None
-            for topic, ts, value in rows:
-                if topic != current_topic:
-                    if current_topic is not None:
-                        print("\n" + "=" * 80 + "\n")  # Separator between topics
-                    current_topic = topic
-                    print(f"Topic: {topic}")
-                    print(f"{'Timestamp':<25} {'Value':>15}")
-                    print("-" * 40)
-                
-                dt = datetime.fromtimestamp(ts/1_000_000_000)  # Convert ns to seconds
-                print(f"{dt.strftime('%Y-%m-%d %H:%M:%S.%f'):<25} {value:>15.6f}")
-except sqlite3.OperationalError as e:
-    if "no such table" in str(e).lower():
-        print("Table 'readings' not found. Did you create it first?")
-    else:
-        raise
+with sqlite3.connect(db_path) as conn:
+    conn.row_factory = sqlite3.Row
+    # List all user tables created for topics
+    tables = [r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetchall()]
+
+    if not tables:
+        print("No topic tables found.")
+        sys.exit(0)
+
+    for idx, table in enumerate(tables):
+        # Fetch column names for the table
+        cols = [r[1] for r in conn.execute(f"PRAGMA table_info(\"{table.replace('\"', '\"\"')}\")").fetchall()]
+        # Pull last N rows by insertion order (rowid desc)
+        rows = conn.execute(f"SELECT rowid, * FROM \"{table.replace('\"', '\"\"')}\" ORDER BY rowid DESC LIMIT ?", (args.num_rows,)).fetchall()
+
+        if idx > 0:
+            print("\n" + "=" * 80 + "\n")
+        print(f"Table: {table}")
+        header = ["rowid"] + cols
+        print(" | ".join(header))
+        print("-" * 80)
+        for r in rows:
+            values = [maybe_format_value(r[k]) for k in header]
+            print(" | ".join(str(v) for v in values))

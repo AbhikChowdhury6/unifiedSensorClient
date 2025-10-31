@@ -39,14 +39,6 @@ def sqlite_writer(log_queue):
     conn = sqlite3.connect(f"{config['write_location']}data.db")
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.execute("PRAGMA synchronous=NORMAL;")
-    conn.execute("""
-    CREATE TABLE IF NOT EXISTS readings (
-    topic TEXT NOT NULL,
-    ts INTEGER NOT NULL,   -- epoch ns
-    value REAL,            -- assumes scalar sensors
-    PRIMARY KEY(topic, ts)
-    )
-    """)
     ins = conn.cursor()
 
     # Helpers for dynamic per-topic tables
