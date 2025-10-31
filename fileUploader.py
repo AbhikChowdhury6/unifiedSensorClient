@@ -12,32 +12,9 @@ from zmq_codec import ZmqCodec
 import logging
 from logUtils import worker_configurer, check_apply_level, set_process_title
 
-from config import file_uploader_process_config, zmq_control_endpoint
+from config import file_uploader_process_config, zmq_control_endpoint, fnString_to_dt
 config = file_uploader_process_config
 l = logging.getLogger(config["short_name"])
-
-def _parse_ts_from_filename(path: str):
-    """Extract UTC timestamp seconds from a data file name.
-
-    Expects names like ..._YYYYMMDDTHHMMSSpMSZ.ext; returns None if unparsable.
-    Works whether passed a full path or a base name.
-    """
-    try:
-        base = os.path.basename(path)
-        string_time = base.split("_")[-1].split(".")[0]
-        if string_time.endswith("Z"):
-            string_time = string_time[:-1]
-        string_time = string_time.replace("p", ".")
-        l.trace(path + " parsed string time: " + string_time)
-        # Parse as UTC to avoid naive-local conversions
-        dt_utc = datetime.strptime(string_time, "%Y%m%dT%H%M%S.%f").replace(tzinfo=timezone.utc)
-        timestamp = dt_utc.timestamp()
-        l.trace(path + " parsed timestamp: " + str(timestamp))
-        return timestamp
-    except Exception:
-        l.error(path + " failed to parse timestamp")
-        l.error(traceback.format_exc())
-        return None
 
 
 def _iter_files_recursive(root_dir: str):
@@ -88,7 +65,7 @@ def _upload_files_in_backlog(time_till_ready: int):
         if not os.path.isfile(full_path):
             l.trace("not a file: " + full_path)
             continue
-        ts = _parse_ts_from_filename(full_path)
+        ts = fnString_to_dt(full_path)
         if ts is None:
             l.trace("failed to parse timestamp: " + full_path)
             continue
@@ -173,7 +150,7 @@ def file_uploader(log_queue):
             if isinstance(completed_path, str) and os.path.isfile(completed_path):
                 # Enforce readiness window for live-published files too
                 cutoff = datetime.now(timezone.utc).timestamp() - config["time_till_ready"]
-                ts = _parse_ts_from_filename(completed_path)
+                ts = fnString_to_dt(completed_path)
                 if ts is None:
                     l.debug(config["short_name"] + " process skipping file with unparsable timestamp: " + completed_path)
                 elif ts < cutoff:
