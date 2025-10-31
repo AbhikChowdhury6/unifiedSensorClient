@@ -65,7 +65,7 @@ def _upload_files_in_backlog(time_till_ready: int):
         if not os.path.isfile(full_path):
             l.trace("not a file: " + full_path)
             continue
-        ts = fnString_to_dt(full_path)
+        ts = fnString_to_dt(full_path).timestamp()
         if ts is None:
             l.trace("failed to parse timestamp: " + full_path)
             continue
