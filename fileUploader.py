@@ -119,6 +119,8 @@ def _upload_file(path: str):
     # delete the file
     os.remove(path)
     return
+
+
 def file_uploader(log_queue):
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])

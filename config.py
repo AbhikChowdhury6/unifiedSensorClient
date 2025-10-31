@@ -27,14 +27,14 @@ responsible_party = "Abhik"
 main_debug_lvl = 20
 
 def dt_to_fnString(dt):
-    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%S,%f%z')
+    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%Sp%f%z')
 
 def fnString_to_dt(s):
     if "_" in s: #if it's like a whole file name
         ts_str = s.split("_")[-1]
     if "." in s:#if it has a file extension
         ts_str = s.split(".")[0]
-    ts_str = ts_str.replace(",",".")
+    ts_str = ts_str.replace("p",".")
     return datetime.fromisoformat(ts_str)
 
 logging_process_config = {
