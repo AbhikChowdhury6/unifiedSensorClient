@@ -31,9 +31,13 @@ def dt_to_fnString(dt):
 
 def fnString_to_dt(s):
     ts_str = s
+    if "/" in s:
+        ts_str = ts_str.split("/")[-1]
+    if "\\" in s:
+        ts_str = ts_str.split("\\")[-1]
     if "_" in s: #if it's like a whole file name
         ts_str = ts_str.split("_")[-1]
-    if "." in ts_str:#if it has a file extension
+    if "." in s:#if it has a file extension
         ts_str = ts_str.split(".")[0]
     ts_str = ts_str.replace("p",".")
     return datetime.fromisoformat(ts_str)
