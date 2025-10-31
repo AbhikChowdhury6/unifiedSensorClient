@@ -34,11 +34,14 @@ with sqlite3.connect(db_path) as conn:
         print("No topic tables found.")
         sys.exit(0)
 
+    def qident(name: str) -> str:
+        return name.replace('"', '""')
+
     for idx, table in enumerate(tables):
         # Fetch column names for the table
-        cols = [r[1] for r in conn.execute(f"PRAGMA table_info(\"{table.replace('\"', '\"\"')}\")").fetchall()]
+        cols = [r[1] for r in conn.execute(f"PRAGMA table_info(\"{qident(table)}\")").fetchall()]
         # Pull last N rows by insertion order (rowid desc)
-        rows = conn.execute(f"SELECT rowid, * FROM \"{table.replace('\"', '\"\"')}\" ORDER BY rowid DESC LIMIT ?", (args.num_rows,)).fetchall()
+        rows = conn.execute(f"SELECT rowid, * FROM \"{qident(table)}\" ORDER BY rowid DESC LIMIT ?", (args.num_rows,)).fetchall()
 
         if idx > 0:
             print("\n" + "=" * 80 + "\n")

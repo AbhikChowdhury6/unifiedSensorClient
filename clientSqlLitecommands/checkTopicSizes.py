@@ -16,9 +16,12 @@ with sqlite3.connect(db_path) as conn:
         print("No topic tables found.")
         sys.exit(0)
 
+    def qident(name: str) -> str:
+        return name.replace('"', '""')
+
     counts = []
     for t in tables:
-        cnt = conn.execute(f"SELECT COUNT(*) FROM \"{t.replace('\"', '\"\"')}\"").fetchone()[0]
+        cnt = conn.execute(f"SELECT COUNT(*) FROM \"{qident(t)}\"").fetchone()[0]
         counts.append((t, cnt))
 
     counts.sort(key=lambda x: x[1], reverse=True)

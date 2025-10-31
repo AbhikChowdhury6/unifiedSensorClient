@@ -11,8 +11,10 @@ print(f"dropping all topic tables from {db_path}")
 with sqlite3.connect(db_path) as conn:
     tables = [r[0] for r in conn.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall()]
+    def qident(name: str) -> str:
+        return name.replace('"', '""')
     for t in tables:
         print(f" - dropping {t}")
-        conn.execute(f"DROP TABLE IF EXISTS \"{t.replace('\"', '\"\"')}\"")
+        conn.execute(f"DROP TABLE IF EXISTS \"{qident(t)}\"")
     conn.commit()
 print(f"dropped {len(tables)} tables from {db_path}")
