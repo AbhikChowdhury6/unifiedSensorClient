@@ -31,6 +31,10 @@ class PiCamera:
 
         self.topic = self.camera_config['camera_name']
         self.save_location = self.camera_config['save_location']
+        try:
+            os.makedirs(self.save_location, exist_ok=True)
+        except Exception:
+            pass
         
         st = datetime.now()
         self.camera = picamera2.Picamera2(self.camera_config['camera_index'])
@@ -68,10 +72,27 @@ class PiCamera:
             frame = cv2.flip(frame, 0)
         if self.timestamp_images:
             frame = self.add_timestamp(frame)
-        
+        # Prepare frame for QOI: uint8, HxWx3 or 4, C-contiguous, RGB order
+        try:
+            if not frame.flags.get('C_CONTIGUOUS', True):
+                frame = np.ascontiguousarray(frame)
+            if frame.dtype != np.uint8:
+                frame = frame.astype(np.uint8, copy=False)
+            # If using OpenCV operations, ensure channel order is RGB for QOI
+            # picamera2 with format 'RGB888' yields RGB already; if config format suggests BGR, convert
+            fmt = str(self.camera_config.get('format', 'RGB888')).upper()
+            if fmt in ('BGR24', 'BGR888', 'BGR'):
+                frame_qoi = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            else:
+                frame_qoi = frame
+        except Exception:
+            frame_qoi = frame
 
-        output_path = self.save_location + dt_to_fnString(dt_utc) + ".qoi"
-        qoi.write(output_path, frame)
+        output_path = os.path.join(self.save_location, dt_to_fnString(dt_utc) + ".qoi")
+        try:
+            qoi.write(output_path, frame_qoi)
+        except Exception as e:
+            self.l.error("qoi write failed for " + output_path + ": " + str(e))
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, frame]))
     
     def is_enabled(self):
