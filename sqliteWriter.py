@@ -111,7 +111,11 @@ def sqlite_writer(log_queue):
             col_types.append(_to_sql_type(v))
         col_defs = []
         for i, t in enumerate(col_types):
-            col_defs.append(f"c{i} {t}")
+            if i == 0 and isinstance(msg_list[0], datetime):
+                # Use timestamp column as the primary key so reads can be naturally ordered by time
+                col_defs.append("c0 INTEGER PRIMARY KEY")
+            else:
+                col_defs.append(f"c{i} {t}")
         sql = f"CREATE TABLE IF NOT EXISTS {_qident(topic)} (" + ", ".join(col_defs) + ")"
         conn.execute(sql)
         conn.commit()  # commit DDL immediately
@@ -154,7 +158,8 @@ def sqlite_writer(log_queue):
             if topic not in prepared_statements:
                 placeholders = ",".join(["?"] * ncols)
                 colnames = ",".join([f"c{i}" for i in range(ncols)])
-                insert_sql = f"INSERT INTO {_qident(topic)}(" + colnames + ") VALUES (" + placeholders + ")"
+                # Use OR IGNORE so duplicate timestamp primary keys don't raise errors
+                insert_sql = f"INSERT OR IGNORE INTO {_qident(topic)}(" + colnames + ") VALUES (" + placeholders + ")"
                 prepared_statements[topic] = (insert_sql, ncols)
 
             insert_sql, _ = prepared_statements[topic]

@@ -417,7 +417,6 @@ all_process_configs = {
     "sqlite": [1, sqlite_writer_process_config],
     "i2c": [1, i2c_controller_process_config],
     "video": [1, video_controller_process_config],
-    "jpeg": [1, jpeg_writer_process_config],
     "yolo": [1, yolo_person_detector_process_config],
     "audio": [1, audio_controller_process_config],
     "opus": [1, audio_writer_process_config],
