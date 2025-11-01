@@ -128,6 +128,7 @@ def spawn_ffmpeg_audio_segments_stdin(dt: datetime,):
     file_base = config["file_base"]
     temp_file_name = file_base + "_" + dt_to_fnString(dt, 6) + ".opus"
 
+    os.makedirs(output_root, exist_ok=True)
     output_path = output_root + temp_file_name
 
     cmd = [
@@ -195,6 +196,14 @@ def stop_ffmpeg(proc, file_name, last_chunk_dt, expected_last_sample_micros_offs
     first_sample_dt = fnString_to_dt(file_name)
     last_sample_dt = last_chunk_dt + timedelta(microseconds=expected_last_sample_micros_offset)
     l.trace(config["short_name"] + " writer: last sample dt: " + str(last_sample_dt))
+    
+    # Close stdin first so ffmpeg knows no more data is coming
+    try:
+        if proc.stdin is not None:
+            proc.stdin.close()
+    except Exception as e:
+        l.warning(config["short_name"] + " writer: error closing ffmpeg stdin: " + str(e))
+    
     try:
         proc.terminate()
         proc.wait(timeout=5)
@@ -206,13 +215,20 @@ def stop_ffmpeg(proc, file_name, last_chunk_dt, expected_last_sample_micros_offs
         shutil.move(temp_root + new_file_name, new_base_path + new_file_name)
         l.debug(config["short_name"] + " writer: moved file from " + temp_root + new_file_name + " to " + new_base_path + new_file_name)
 
-    except Exception as e:
+    except subprocess.TimeoutExpired:
+        l.warning(config["short_name"] + " writer: ffmpeg did not terminate within timeout, killing")
         try:
             proc.kill()
-            l.error(config["short_name"] + " writer: failed to stop ffmpeg: " + str(e))
+            proc.wait(timeout=2)  # Give it a moment after kill
         except Exception as e:
             l.error(config["short_name"] + " writer: failed to kill ffmpeg: " + str(e))
-            pass
+    except Exception as e:
+        l.error(config["short_name"] + " writer: failed to stop ffmpeg: " + str(e))
+        try:
+            proc.kill()
+            proc.wait(timeout=2)
+        except Exception as e2:
+            l.error(config["short_name"] + " writer: failed to kill ffmpeg: " + str(e2))
 
 
 def _prepare_chunk(chunk, target_channels: int, expected_samples_per_chunk: int):
