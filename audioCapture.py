@@ -78,7 +78,9 @@ class AudioCapture:
                 now_utc = datetime.now(timezone.utc)
                 self._pa_epoch_utc_base = now_utc - timedelta(seconds=time_info.currentTime)
                 self.l.debug(f"audio capture: initialized PortAudio epoch base: {self._pa_epoch_utc_base}")
-            
+            else:
+                self.l.debug(f"audio capture: no time info, using sequence-based timestamp")
+
             if self._pa_epoch_utc_base is not None and time_info is not None:
                 # Use inputBufferAdcTime which represents when the ADC actually captured the start of this buffer
                 dt_utc = self._pa_epoch_utc_base + timedelta(seconds=time_info.inputBufferAdcTime)
@@ -113,6 +115,7 @@ class AudioCapture:
                         )
             else:
                 # Fallback: calculate timestamp based on sequence if we have a first chunk
+                
                 if self._first_chunk_dt is not None:
                     dt_utc = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
                     if self._pa_epoch_utc_base is None:
@@ -206,6 +209,7 @@ class AudioCapture:
             try:
                 dt_utc, chunk = self._queue.get_nowait()
             except queue.Empty:
+                self.l.debug(f"audio capture: queue empty, breaking")
                 break
             # Ensure contiguous array for serialization
             if not isinstance(chunk, np.ndarray):
@@ -214,6 +218,7 @@ class AudioCapture:
                 chunk = np.ascontiguousarray(chunk)
             #print(f"audio capture publishing {chunk.shape} to {self.topic}")
             #sys.stdout.flush()
+            self.l.trace(f"current time: {datetime.now(timezone.utc)}")
             self.l.trace(f"audio capture publishing {dt_utc} {chunk.shape} to {self.topic}")
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk]))
 
