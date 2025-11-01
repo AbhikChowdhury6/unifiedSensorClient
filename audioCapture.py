@@ -152,40 +152,69 @@ class AudioCapture:
     def start(self):
         if self._stream is not None:
             return
-        # Validate sample rate and fall back to common supported rates if needed
-        #desired_sr = self.sample_rate
-        # candidates = [desired_sr, 48000, 32000, 16000, 8000] #all perfectly divisible by 64
-        # chosen_sr = None
-        # for sr in candidates:
-        #     try:
-        #         sd.check_input_settings(device=self.device, channels=self.channels, samplerate=sr, dtype=self.dtype)
-        #         chosen_sr = sr
-        #         break
-        #     except Exception:
-        #         continue
-        # if chosen_sr is None:
-        #     raise RuntimeError("audio: no supported sample rate found for the selected device")
-
-        # if chosen_sr != self.sample_rate:
-        #     self.l.warning(f"audio: requested {self.sample_rate} Hz not supported, using {chosen_sr} Hz")
-        #     self.sample_rate = chosen_sr
-        #     self.blocksize = int(round(self.sample_rate / self.frame_hz))
+        
+        # Validate device capabilities before creating stream
+        device_to_use = self.device
+        channels_to_use = self.channels
+        
+        try:
+            # Query device info to check capabilities
+            if device_to_use is not None:
+                try:
+                    dev_info = sd.query_devices(device_to_use, kind='input')
+                    max_channels = dev_info['max_input_channels']
+                    self.l.debug(f"Device {device_to_use} supports up to {max_channels} input channels")
+                    
+                    # Check if device supports requested channels
+                    if max_channels < channels_to_use:
+                        self.l.warning(
+                            f"Device {device_to_use} only supports {max_channels} channels, "
+                            f"but {channels_to_use} requested. Using {max_channels} channels."
+                        )
+                        channels_to_use = max_channels
+                    
+                    # Validate settings before creating stream
+                    sd.check_input_settings(
+                        device=device_to_use,
+                        channels=channels_to_use,
+                        samplerate=self.sample_rate,
+                        dtype=self.dtype
+                    )
+                    self.l.debug(f"Device {device_to_use} validated for {channels_to_use} channels, {self.sample_rate} Hz")
+                except Exception as e:
+                    self.l.warning(
+                        f"Device {device_to_use} configuration failed: {e}. "
+                        f"Falling back to default device."
+                    )
+                    device_to_use = None
+                    channels_to_use = self.channels  # Reset to original
+        except Exception as e:
+            self.l.warning(f"Error checking device capabilities: {e}. Using default device.")
+            device_to_use = None
 
         self._stream = sd.InputStream(
-            device=self.device,
-            channels=self.channels,
+            device=device_to_use,
+            channels=channels_to_use,
             samplerate=self.sample_rate,
             blocksize=self.blocksize,
             dtype=self.dtype,
             callback=self._callback,
             latency='high',  # Use higher latency to reduce overflow chances
         )
+        
+        # Update channels if we had to adjust
+        if channels_to_use != self.channels:
+            self.l.warning(
+                f"Using {channels_to_use} channels instead of requested {self.channels}. "
+                f"Downmixing will be handled in audio processing."
+            )
+            self.channels = channels_to_use
         # Reset PortAudio epoch mapping on start (before starting stream)
         self._pa_epoch_utc_base = None
         self._chunk_sequence = 0
         self._first_chunk_dt = None
         self._stream.start()
-        device_info = f"device={self.device}" if self.device is not None else "default device"
+        device_info = f"device={device_to_use}" if device_to_use is not None else "default device"
         self.l.info(
             f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, "
             f"dtype {self.dtype}, {device_info}"
