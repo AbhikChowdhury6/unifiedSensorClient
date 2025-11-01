@@ -147,6 +147,7 @@ def listener_configurer(config, allow_dict, deny_dict):
     formatter = logging.Formatter(fmt)
 
     # File handler
+    os.makedirs(os.path.dirname(config["logfile_path"]), exist_ok=True)
     file_handler = logging.FileHandler(config["logfile_path"])
     file_handler.setFormatter(formatter)
     file_handler.setLevel(TRACE_LEVEL_NUM)
