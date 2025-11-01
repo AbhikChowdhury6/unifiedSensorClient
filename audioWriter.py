@@ -8,7 +8,8 @@ from datetime import datetime, timezone, timedelta
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from config import audio_writer_process_config, zmq_control_endpoint, platform_uuid, dt_to_path, dt_to_fnString
+from config import audio_writer_process_config, zmq_control_endpoint,\
+ dt_to_path, dt_to_fnString, fnString_to_dt
 import zmq
 import logging
 import numpy as np
@@ -74,10 +75,10 @@ def audio_writer(log_queue):
             should_rotate = (dt >= segment_end)
             if should_rotate:
                 if ff is not None:
-                    stop_ffmpeg(ff, full_temp_file_name, last_dt, expected_last_sample_micros_offset)
+                    stop_ffmpeg(ff, temp_file_name, last_dt, expected_last_sample_micros_offset)
                 segment_start, segment_end = aligned_start_end_dt(dt, segment_time_s)
                 #add in the file base
-                ff, full_temp_file_name = spawn_ffmpeg_audio_segments_stdin(segment_start)
+                ff, temp_file_name = spawn_ffmpeg_audio_segments_stdin(segment_start)
                 if ff is None:
                     break
 
@@ -93,8 +94,7 @@ def audio_writer(log_queue):
                 
                 # Attempt restart into a new aligned file
                 segment_start, segment_end = aligned_start_end_dt(dt, segment_time_s)
-                full_temp_file_name = dt_to_path(segment_start, config["temp_write_location_base"]) + ".opus"
-                ff, full_temp_file_name = spawn_ffmpeg_audio_segments_stdin(segment_start)
+                ff, temp_file_name = spawn_ffmpeg_audio_segments_stdin(segment_start)
                 if ff is None:
                     break
 
@@ -103,7 +103,7 @@ def audio_writer(log_queue):
 
     finally:
         if ff is not None:
-            stop_ffmpeg(ff, full_temp_file_name, dt, expected_last_sample_micros_offset)
+            stop_ffmpeg(ff, temp_file_name, dt, expected_last_sample_micros_offset)
         try:
             sub.close(0)
         except Exception:
@@ -126,8 +126,9 @@ def spawn_ffmpeg_audio_segments_stdin(dt: datetime,):
     loglevel = str(config["loglevel"])
     sample_fmt = "s16le"
     file_base = config["file_base"]
+    temp_file_name = file_base + "_" + dt_to_fnString(dt, 6) + ".opus"
 
-    output_path = output_root + file_base + "_" + dt_to_fnString(dt, 6) + ".opus"
+    output_path = output_root + temp_file_name
 
     cmd = [
         "ffmpeg",
@@ -165,7 +166,7 @@ def spawn_ffmpeg_audio_segments_stdin(dt: datetime,):
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
         t.start()
         proc._stderr_thread = t  # attach for lifecycle awareness
-        return proc, output_path
+        return proc, temp_file_name
     except FileNotFoundError:
         l.error(config["short_name"] + " writer: ffmpeg not found. Please install ffmpeg.")
         return None
@@ -186,22 +187,31 @@ def _stderr_reader(p):
 
 
 def stop_ffmpeg(proc, file_name, last_chunk_dt, expected_last_sample_micros_offset) -> None:
+    l.debug(config["short_name"] + " writer: stopping ffmpeg")
+    temp_root = config["temp_write_location_base"]
+    completed_root = config["completed_write_location_base"]
     if proc is None:
         return
+    first_sample_dt = fnString_to_dt(file_name)
     last_sample_dt = last_chunk_dt + timedelta(microseconds=expected_last_sample_micros_offset)
+    l.trace(config["short_name"] + " writer: last sample dt: " + str(last_sample_dt))
     try:
         proc.terminate()
         proc.wait(timeout=5)
         #rename the file adding the end timestamp
         new_file_name = file_name.replace(".opus", "_" + dt_to_fnString(last_sample_dt, 6) + ".opus")
-        os.rename(file_name, new_file_name)
+        os.rename(temp_root + file_name, temp_root + new_file_name)
+        new_base_path = dt_to_path(first_sample_dt, completed_root)
         #move from the temp location to the upload location
-        shutil.move(file_name, config["completed_write_location_base"] + new_file_name)
+        shutil.move(temp_root + new_file_name, new_base_path + new_file_name)
+        l.debug(config["short_name"] + " writer: moved file from " + temp_root + new_file_name + " to " + new_base_path + new_file_name)
 
-    except Exception:
+    except Exception as e:
         try:
             proc.kill()
-        except Exception:
+            l.error(config["short_name"] + " writer: failed to stop ffmpeg: " + str(e))
+        except Exception as e:
+            l.error(config["short_name"] + " writer: failed to kill ffmpeg: " + str(e))
             pass
 
 

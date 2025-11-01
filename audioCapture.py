@@ -139,6 +139,6 @@ class AudioCapture:
                 chunk = np.ascontiguousarray(chunk)
             #print(f"audio capture publishing {chunk.shape} to {self.topic}")
             #sys.stdout.flush()
-            self.l.debug(f"audio capture publishing {chunk.shape} to {self.topic}")
+            self.l.trace(f"audio capture publishing {chunk.shape} to {self.topic}")
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk]))
 

@@ -33,10 +33,10 @@ def dt_to_fnString(dt, decimal_places=3):
     return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%S') + \
         f"p{truncated_microseconds}Z"
 
-def dt_to_path(dt, file_base, base_path="/home/pi/", decimal_places=3):
-    hour_dir = os.path.join(base_path, dt.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/"))
-    os.makedirs(hour_dir, exist_ok=True)
-    return os.path.join(hour_dir, file_base + "_" + dt_to_fnString(dt, decimal_places))
+def dt_to_path(dt, base_path):
+    hour_base_path = os.path.join(base_path, dt.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/"))
+    os.makedirs(hour_base_path, exist_ok=True)
+    return hour_base_path
 
 def fnString_to_dt(s):
     ts_str = s
