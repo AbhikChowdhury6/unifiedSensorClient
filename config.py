@@ -277,7 +277,7 @@ yolo_person_detector_process_config = {
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,
     "interval_seconds": 4,
-    "verbose": True,
+    "verbose": False,
 }
 
 audio_controller_process_config = {
@@ -285,7 +285,7 @@ audio_controller_process_config = {
     "func_name": "audio_controller",
     "short_name": "audio",
     "time_to_shutdown": .6,
-    "debug_lvl": 20,
+    "debug_lvl": 10,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "pub_topic": f"{platform_uuid}_audio_controller",
     "sample_rate": 48000,
@@ -300,7 +300,7 @@ audio_writer_process_config = {
     "func_name": "audio_writer",
     "short_name": "opus",
     "time_to_shutdown": .1,
-    "debug_lvl": 20,
+    "debug_lvl": 10,
     "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "sub_topic": f"{platform_uuid}_audio_controller",
     "temp_write_location_base": "/home/pi/data/temp/audio_writer/",
