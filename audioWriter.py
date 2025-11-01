@@ -8,11 +8,12 @@ from datetime import datetime, timezone, timedelta
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from zmq_codec import ZmqCodec
-from config import audio_writer_process_config, zmq_control_endpoint, platform_uuid
+from config import audio_writer_process_config, zmq_control_endpoint, platform_uuid, dt_to_path, dt_to_fnString
 import zmq
 import logging
 import numpy as np
 from logUtils import worker_configurer, set_process_title
+import shutil
 
 config = audio_writer_process_config
 l = logging.getLogger(config["short_name"])
@@ -32,45 +33,17 @@ def audio_writer(log_queue):
     l.info(config["short_name"] + " writer subscribed to control and audio publisher topics")
     
 
-    channels = int(cfg_get_or_default(config, "channels", 1))
-    sample_rate = int(cfg_get_or_default(config, "sample_rate", 16000))
-    target_frame_hz = float(cfg_get_or_default(config, "frame_hz", 16))
-    expected_samples_per_chunk = max(1, int(round(sample_rate / target_frame_hz)))
-    segment_time_s = int(cfg_get_or_default(config, "duration_s", 4))
-    # Validate frame duration to common Opus values to avoid ffmpeg exit
-    requested_fd = cfg_get_or_default(config, "frame_duration_ms", 20)
-    try:
-        requested_fd = float(requested_fd)
-    except Exception:
-        requested_fd = 20.0
-    valid_fd = [10.0, 20.0, 40.0, 60.0]  # common safe values
-    if requested_fd not in valid_fd:
-        nearest = min(valid_fd, key=lambda v: abs(v - requested_fd))
-        l.warning(config["short_name"] + " writer: frame_duration_ms " + str(requested_fd) + " not supported, using " + str(nearest))
-        
-        requested_fd = nearest
-
-    # Pre-create current and next hour directories so strftime path exists
-    output_root = cfg_get_or_default(config, "write_location", "/home/pi/audio_writer/data/")
-    now_utc = datetime.now(timezone.utc)
-    ensure_hour_dir(output_root, now_utc)
-    ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
+    channels = int(config["channels"])
+    sample_rate = int(config["sample_rate"])
+    frame_hz = float(config["frame_hz"])
+    expected_samples_per_chunk = int(round(sample_rate / frame_hz))
+    single_sample_micros = int(round(1_000_000 / sample_rate))
+    expected_last_sample_micros_offset = int(round(1_000_000 / frame_hz)) - single_sample_micros
+    segment_time_s = int(config["duration_s"])
 
 
-    segment_start = datetime.now(timezone.utc)
-    # Align first segment to the 4s UTC grid
-    aligned_start_epoch = int(segment_start.timestamp()) - (int(segment_start.timestamp()) % segment_time_s)
-    segment_start = datetime.fromtimestamp(aligned_start_epoch, tz=timezone.utc)
-    segment_end = segment_start + timedelta(seconds=segment_time_s)
-    ff = spawn_ffmpeg_audio_segments_stdin(make_output_path(segment_start))
-
-    if ff is None:
-        l.error(config["short_name"] + " writer failed to start ffmpeg; exiting")
-        return
-
-    # Track last ensured hour to avoid redundant mkdirs
-    last_ensured_hour = now_utc.strftime("%Y%m%d%H")
-
+    ff = None
+    segment_end = datetime.min.replace(tzinfo=timezone.utc)
     try:
         while True:
             # Block until a message arrives on either control or audio pub topic
@@ -80,20 +53,13 @@ def audio_writer(log_queue):
             #sys.stdout.flush()
 
             # Check ffmpeg health early in the loop
-            if ff.poll() is not None:
-                l.error(config["short_name"] + " writer: ffmpeg exited with code " + str(ff.returncode))
-                
-                now_utc = datetime.now(timezone.utc)
-                aligned_epoch = int(now_utc.timestamp()) - (int(now_utc.timestamp()) % segment_time_s)
-                segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
-                segment_end = segment_start + timedelta(seconds=segment_time_s)
-                ff = spawn_ffmpeg_audio_segments_stdin(make_output_path(segment_start))
-                if ff is None:
-                    break
+            if ff is not None and ff.poll() is not None:
+                l.error(config["short_name"] + " writer: ffmpeg exited with code " + \
+                    str(ff.returncode))
 
-            if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "opus")):
+            if topic == "control" and (obj[0] == "exit_all" or 
+                    (obj[0] == "exit" and obj[-1] == config["short_name"])):
                 l.info(config["short_name"] + " writer exiting")
-                
                 break
 
             # Ignore messages not on the audio topic
@@ -101,85 +67,67 @@ def audio_writer(log_queue):
                 continue
 
             # Handle audio message: validate/reshape/resample and write PCM to ffmpeg stdin
+            dt, chunk = obj
+
+
+            # Determine if we should rotate segment based on timestamp
+            should_rotate = (dt >= segment_end)
+            if should_rotate:
+                if ff is not None:
+                    stop_ffmpeg(ff, full_temp_file_name, last_dt, expected_last_sample_micros_offset)
+                segment_start, segment_end = aligned_start_end_dt(dt, segment_time_s)
+                #add in the file base
+                ff, full_temp_file_name = spawn_ffmpeg_audio_segments_stdin(segment_start)
+                if ff is None:
+                    break
+
+            # Prepare chunk to target shape/rate
+            chunk = _prepare_chunk(chunk, channels, expected_samples_per_chunk)
+            if chunk is None:
+                continue
             try:
-                ts, chunk = obj
+                ff.stdin.write(chunk.tobytes())
+                last_dt = dt
+            except BrokenPipeError:
+                l.error(config["short_name"] + " writer: ffmpeg pipe closed")
+                
+                # Attempt restart into a new aligned file
+                segment_start, segment_end = aligned_start_end_dt(dt, segment_time_s)
+                full_temp_file_name = dt_to_path(segment_start, config["temp_write_location_base"]) + ".opus"
+                ff, full_temp_file_name = spawn_ffmpeg_audio_segments_stdin(segment_start)
+                if ff is None:
+                    break
 
-                # Ensure the current hour directory exists (handles hour rollovers)
-                now_utc = datetime.now(timezone.utc)
-                hour_key = now_utc.strftime("%Y%m%d%H")
-                if hour_key != last_ensured_hour:
-                    ensure_hour_dir(output_root, now_utc)
-                    ensure_hour_dir(output_root, now_utc + timedelta(hours=1))
-                    last_ensured_hour = hour_key
+                ff.stdin.write(chunk.tobytes())
+                last_dt = dt
 
-                # Determine if we should rotate segment based on timestamp
-                should_rotate = False
-                if isinstance(ts, datetime):
-                    if ts.tzinfo is None:
-                        ts = ts.replace(tzinfo=timezone.utc)
-                    should_rotate = (segment_end is not None and ts >= segment_end)
-                if should_rotate:
-                    try:
-                        ff.stdin.close()
-                    except Exception:
-                        pass
-                    try:
-                        ff.wait(timeout=3)
-                    except Exception:
-                        pass
-                    aligned_epoch = int(ts.timestamp()) - (int(ts.timestamp()) % segment_time_s)
-                    segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
-                    segment_end = segment_start + timedelta(seconds=segment_time_s)
-                    ff = spawn_ffmpeg_audio_segments_stdin(make_output_path(segment_start))
-                    if ff is None:
-                        break
-
-                # Prepare chunk to target shape/rate
-                chunk = _prepare_chunk(chunk, channels, expected_samples_per_chunk)
-                if chunk is None:
-                    continue
-                try:
-                    ff.stdin.write(chunk.tobytes())
-                except BrokenPipeError:
-                    l.error(config["short_name"] + " writer: ffmpeg pipe closed")
-                    
-                    # Attempt restart into a new aligned file
-                    now_utc = datetime.now(timezone.utc)
-                    aligned_epoch = int(now_utc.timestamp()) - (int(now_utc.timestamp()) % segment_time_s)
-                    segment_start = datetime.fromtimestamp(aligned_epoch, tz=timezone.utc)
-                    segment_end = segment_start + timedelta(seconds=segment_time_s)
-                    ff = spawn_ffmpeg_audio_segments_stdin(make_output_path(segment_start))
-                    if ff is None:
-                        break
-            except Exception as e:
-                l.error(config["short_name"] + " writer failed to write chunk: " + str(e))
     finally:
-        stop_ffmpeg(ff)
+        if ff is not None:
+            stop_ffmpeg(ff, full_temp_file_name, dt, expected_last_sample_micros_offset)
         try:
             sub.close(0)
         except Exception:
             pass
 
 
-def spawn_ffmpeg_audio_segments_stdin(
-    output_path: str | None = None,
-):
+def spawn_ffmpeg_audio_segments_stdin(dt: datetime,):
     """Spawn ffmpeg to encode PCM from stdin into Opus segments using config.
 
     Reads all parameters from audio_writer_config for simplicity.
     Returns a subprocess.Popen handle with stdin PIPE for feeding PCM.
     """
-    channels = int(cfg_get_or_default(config, "channels", 1))
-    sample_rate = int(cfg_get_or_default(config, "sample_rate", 16000))
-    bitrate = str(cfg_get_or_default(config, "bitrate", "16k"))
-    application = str(cfg_get_or_default(config, "application", "audio"))
-    frame_duration_ms = int(cfg_get_or_default(config, "frame_duration_ms", 20))
-    segment_time_s = int(cfg_get_or_default(config, "duration_s", 4))
-    output_root = cfg_get_or_default(config, "write_location", "/home/pi/audio_writer/data/")
-    loglevel = str(cfg_get_or_default(config, "loglevel", "warning"))
+    channels = int(config["channels"])
+    sample_rate = int(config["sample_rate"])
+    bitrate = str(config["bitrate"])
+    application = str(config["application"])
+    frame_duration_ms = int(config["frame_duration_ms"])
+    segment_time_s = int(config["duration_s"])
+    output_root = config["temp_write_location_base"]
+    loglevel = str(config["loglevel"])
     sample_fmt = "s16le"
+    file_base = config["file_base"]
 
-    ensure_base_dir(output_root)
+    output_path = dt_to_path(dt, file_base, output_root, 6) + ".opus"
 
     cmd = [
         "ffmpeg",
@@ -195,24 +143,14 @@ def spawn_ffmpeg_audio_segments_stdin(
     ]
     if application:
         cmd += ["-application", application]
+    
+    # Single-file output; we will close/restart per segment
+    cmd += [
+        "-t", str(segment_time_s),
+        output_path,
+    ]
 
-    if output_path:
-        # Single-file output; we will close/restart per segment
-        cmd += [
-            "-t", str(segment_time_s),
-            output_path,
-        ]
-    else:
-        # Fallback to segmenter with UTC strftime pattern
-        # Note: strftime cannot emit milliseconds; align to whole seconds with Z suffix
-        output_pattern = f"{output_root}%Y/%m/%d/%H/{platform_uuid}_audio_opus_%Y%m%dT%H%M%SZ.opus"
-        cmd += [
-            "-f", "segment",
-            "-segment_time", str(segment_time_s),
-            "-strftime", "1",
-            output_pattern,
-        ]
-
+    #standard error reader and running ffmpeg
     try:
         # Force UTC for strftime in ffmpeg so paths match UTC-based folders
         env = os.environ.copy()
@@ -227,7 +165,7 @@ def spawn_ffmpeg_audio_segments_stdin(
         t = threading.Thread(target=_stderr_reader, args=(proc,), daemon=True)
         t.start()
         proc._stderr_thread = t  # attach for lifecycle awareness
-        return proc
+        return proc, output_path
     except FileNotFoundError:
         l.error(config["short_name"] + " writer: ffmpeg not found. Please install ffmpeg.")
         return None
@@ -247,44 +185,24 @@ def _stderr_reader(p):
         l.debug(config["short_name"] + " writer: ffmpeg stderr: [closed]")
 
 
-def stop_ffmpeg(proc) -> None:
+def stop_ffmpeg(proc, file_name, last_chunk_dt, expected_last_sample_micros_offset) -> None:
     if proc is None:
         return
+    last_sample_dt = last_chunk_dt + timedelta(microseconds=expected_last_sample_micros_offset)
     try:
         proc.terminate()
         proc.wait(timeout=5)
+        #rename the file adding the end timestamp
+        new_file_name = file_name.replace(".opus", "_" + dt_to_fnString(last_sample_dt, 6) + ".opus")
+        os.rename(file_name, new_file_name)
+        #move from the temp location to the upload location
+        shutil.move(file_name, config["completed_write_location_base"] + new_file_name)
+
     except Exception:
         try:
             proc.kill()
         except Exception:
             pass
-
-
-# Start first segment with an explicit file path including milliseconds
-def make_output_path(now_utc: datetime) -> str:
-    hourly_subdir = now_utc.strftime("%Y/%m/%d/%H/%M/")
-    out_dir = os.path.join(config["write_location"], hourly_subdir)
-    os.makedirs(out_dir, exist_ok=True)
-    # Match video/jpeg timestamp format: YYYYMMDDTHHMMSSpMSZ
-    fname = f"{platform_uuid}_audio_opus_{now_utc.strftime('%Y%m%dT%H%M%S')}p{str(now_utc.microsecond//1000).zfill(3)}Z.opus"
-    return os.path.join(out_dir, fname)
-
-
-def ensure_base_dir(path: str) -> None:
-    try:
-        os.makedirs(path, exist_ok=True)
-    except Exception as e:
-        l.error(config["short_name"] + " writer: failed to create base dir " + path + ": " + str(e))
-        sys.stdout.flush()
-
-
-def ensure_hour_dir(root: str, dt_utc: datetime) -> None:
-    try:
-        hour_dir = os.path.join(root, dt_utc.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/"))
-        os.makedirs(hour_dir, exist_ok=True)
-    except Exception as e:
-        l.error(config["short_name"] + " writer: failed to create hour dir " + root + ": " + str(e))
-        sys.stdout.flush()
 
 
 def _prepare_chunk(chunk, target_channels: int, expected_samples_per_chunk: int):
@@ -328,18 +246,10 @@ def _prepare_chunk(chunk, target_channels: int, expected_samples_per_chunk: int)
         chunk = np.ascontiguousarray(chunk)
     return chunk
 
-def cfg_get_or_default(cfg, key, default):
-    try:
-        value = cfg.get(key)
-    except Exception:
-        value = None
-    if value is None:
-        l.warning(config["short_name"] + " writer: config missing '" + key + "', using default " + str(default))
-        sys.stdout.flush()
-        return default
-    return value
-
-
+def aligned_start_end_dt(ts: datetime, segment_time_s: int) -> tuple[datetime, datetime]:
+    aligned_epoch = int(ts.timestamp()) - (int(ts.timestamp()) % segment_time_s)
+    return datetime.fromtimestamp(aligned_epoch, tz=timezone.utc), \
+        datetime.fromtimestamp(aligned_epoch + segment_time_s, tz=timezone.utc)
 
 if __name__ == "__main__":
     audio_writer(None)

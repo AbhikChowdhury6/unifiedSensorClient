@@ -164,6 +164,7 @@ def close_mp4(output, is_full_speed, path, last_dt, cache_location):
         return
     output.release()
     #rename the file with the end timestamp to signal it is complete
+    #move the file to the correct location in data
     new_path = path.replace(".mp4", "_" + dt_to_fnString(last_dt) + ".mp4")
     os.rename(path, new_path)
     #delete the qoi files that are older than the last detection timestamp

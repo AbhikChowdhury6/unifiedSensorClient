@@ -19,12 +19,12 @@ class AudioCapture:
         self.l.debug("audio capture class initializing")
         self.config = config
 
-        self.sample_rate = int(config.get("sample_rate", 16000))
-        self.channels = int(config.get("channels", 1))
-        self.frame_hz = float(config.get("hz", 16))
-        self.blocksize = max(1, int(round(self.sample_rate / self.frame_hz)))
-        self.dtype = config.get("dtype", "int16")  # "int16" or "float32"
-        self.device = config.get("device", None)  # sounddevice device name/index or None
+        self.sample_rate = int(config["sample_rate"])
+        self.channels = int(config["channels"])
+        self.frame_hz = float(config["hz"])
+        self.blocksize = int(round(self.sample_rate / self.frame_hz))
+        self.dtype = config["dtype"]  # "int16" or "float32"
+        self.device = config["device"]  # sounddevice device name/index or None
 
         self.topic = config["pub_topic"]
         self.endpoint = config["pub_endpoint"]
@@ -80,23 +80,23 @@ class AudioCapture:
         if self._stream is not None:
             return
         # Validate sample rate and fall back to common supported rates if needed
-        desired_sr = self.sample_rate
-        candidates = [desired_sr, 48000, 44100, 32000, 22050, 16000, 8000]
-        chosen_sr = None
-        for sr in candidates:
-            try:
-                sd.check_input_settings(device=self.device, channels=self.channels, samplerate=sr, dtype=self.dtype)
-                chosen_sr = sr
-                break
-            except Exception:
-                continue
-        if chosen_sr is None:
-            raise RuntimeError("audio: no supported sample rate found for the selected device")
+        #desired_sr = self.sample_rate
+        # candidates = [desired_sr, 48000, 32000, 16000, 8000] #all perfectly divisible by 64
+        # chosen_sr = None
+        # for sr in candidates:
+        #     try:
+        #         sd.check_input_settings(device=self.device, channels=self.channels, samplerate=sr, dtype=self.dtype)
+        #         chosen_sr = sr
+        #         break
+        #     except Exception:
+        #         continue
+        # if chosen_sr is None:
+        #     raise RuntimeError("audio: no supported sample rate found for the selected device")
 
-        if chosen_sr != self.sample_rate:
-            self.l.warning(f"audio: requested {self.sample_rate} Hz not supported, using {chosen_sr} Hz")
-            self.sample_rate = chosen_sr
-            self.blocksize = max(1, int(round(self.sample_rate / self.frame_hz)))
+        # if chosen_sr != self.sample_rate:
+        #     self.l.warning(f"audio: requested {self.sample_rate} Hz not supported, using {chosen_sr} Hz")
+        #     self.sample_rate = chosen_sr
+        #     self.blocksize = int(round(self.sample_rate / self.frame_hz))
 
         self._stream = sd.InputStream(
             device=self.device,

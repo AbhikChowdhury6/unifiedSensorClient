@@ -1,5 +1,6 @@
 import multiprocessing as mp
 from datetime import datetime, timezone
+import os
 
 # this file will evolve based on features
 testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
@@ -26,8 +27,16 @@ responsible_party = "Abhik"
 #- critical (50)
 main_debug_lvl = 20
 
-def dt_to_fnString(dt):
-    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%Sp%f%z')
+def dt_to_fnString(dt, decimal_places=3):
+    microseconds = dt.microsecond / 1_000_000
+    truncated_microseconds = f"{microseconds:.6f}"[2:2+decimal_places]
+    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%S') + \
+        f"p{truncated_microseconds}Z"
+
+def dt_to_path(dt, file_base, base_path="/home/pi/", decimal_places=3):
+    hour_dir = os.path.join(base_path, dt.astimezone(timezone.utc).strftime("%Y/%m/%d/%H/%M/"))
+    os.makedirs(hour_dir, exist_ok=True)
+    return os.path.join(hour_dir, file_base + "_" + dt_to_fnString(dt, decimal_places))
 
 def fnString_to_dt(s):
     ts_str = s
@@ -48,7 +57,7 @@ logging_process_config = {
     "short_name": "logging",
     "time_to_shutdown": .1,
     "debug_lvl": 20,
-    "logfile_path": "/home/pi/unifiedSensorClient.log",
+    "logfile_path": "/home/pi/logs/unifiedSensorClient.log",
 }
 
 
@@ -69,7 +78,7 @@ file_uploader_process_config = {
         f"{platform_uuid}_audio_writer",
     ],
     "time_till_ready": 20, # this has to be longer than the delete process time before
-    "data_dir": "/home/pi/data/",
+    "data_dir": "/home/pi/data/upload/",
 
 
 }
@@ -79,7 +88,7 @@ csv_writer_process_config = {
     "module_name": "csvWriter",
     "short_name": "csv",
     "time_to_shutdown": .1,
-    "write_location": "/home/pi/data/csv_writer/",
+    "write_location": "/home/pi/data/temp/csv_writer/",
     "subscription_endpoints": [
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
@@ -92,7 +101,7 @@ csv_writer_process_config = {
     ],
 }
 
-sqlite_writer_write_location = "/home/pi/sqlite_writer/"
+sqlite_writer_write_location = "/home/pi/data/temp/sqlite_writer/"
 
 sqlite_writer_process_config = {
     "module_name": "sqliteWriter",
@@ -193,7 +202,7 @@ video_controller_process_config = {
     "format": "RGB888",
     "fps": 8,
     "subsample_ratio": 2,
-    "save_location": "/home/pi/data/camera_cache/",
+    "save_location": "/home/pi/data/temp/camera_cache/",
     "flip_vertical": True,
     "timestamp_images": True,
 }
@@ -204,51 +213,55 @@ person_mp4_writer_process_config = {
     "short_name": "person_mp4",
     "time_to_shutdown": .1,
     "debug_lvl": 20,
-    "full_speed_write_location": "/home/pi/data/person_mp4_writer_fs/",
-    "timelapse_write_location": "/home/pi/data/person_mp4_writer_tl/",
+    "completed_full_speed_write_location_base": "/home/pi/data/upload/person_mp4_writer_fs/",
+    "completed_timelapse_write_location_base": "/home/pi/data/upload/person_mp4_writer_tl/",
     "timelapse_interval_seconds": 4,
+    "cache_location": "/home/pi/camera_cache/",
+    "temp_file_location": "/home/pi/data/temp/person_mp4_writer_temp/",
+    "full_speed_file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps",
+    "timelapse_file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps",
 }
 
-mp4_writer_process_config = {
-    "module_name": "mp4Writer",
-    "func_name": "mp4_writer",
-    "short_name": "mp4",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "write_location": "/home/pi/data/mp4_writer/",
-    "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4",
-    "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "publish_topic": f"{platform_uuid}_mp4_writer",
-    "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
-    "duration_s": 4,
-    "container_type": "mp4",
-    "loglevel": "warning",
-    "codec": "h264",
-    "quality": 80,
-    "keyframe_interval_seconds": 2,
-    "fps": 8,
-    "frame_gap_restart_seconds": .5,
-    "format": "RGB888",
-}
+# mp4_writer_process_config = {
+#     "module_name": "mp4Writer",
+#     "func_name": "mp4_writer",
+#     "short_name": "mp4",
+#     "time_to_shutdown": .1,
+#     "debug_lvl": 20,
+#     "write_location_base": "/home/pi/data/temp/mp4_writer/",
+#     "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4",
+#     "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+#     "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+#     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+#     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+#     "publish_topic": f"{platform_uuid}_mp4_writer",
+#     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
+#     "duration_s": 4,
+#     "container_type": "mp4",
+#     "loglevel": "warning",
+#     "codec": "h264",
+#     "quality": 80,
+#     "keyframe_interval_seconds": 2,
+#     "fps": 8,
+#     "frame_gap_restart_seconds": .5,
+#     "format": "RGB888",
+# }
 
 
-jpeg_writer_process_config = {
-    "module_name": "jpegWriter",
-    "func_name": "jpeg_writer",
-    "short_name": "jpeg",
-    "time_to_shutdown": .1,
-    "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_jpeg",
-    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "debug_lvl": 20,
-    "write_location": "/home/pi/data/jpeg_writer/",
-    "capture_tolerance_seconds": 0.25,
-    "quality": 90,
-    "image_interval_seconds": 16,
-}
+# jpeg_writer_process_config = {
+#     "module_name": "jpegWriter",
+#     "func_name": "jpeg_writer",
+#     "short_name": "jpeg",
+#     "time_to_shutdown": .1,
+#     "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_jpeg",
+#     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+#     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+#     "debug_lvl": 20,
+#     "write_location_base": "/home/pi/data/temp/jpeg_writer/",
+#     "capture_tolerance_seconds": 0.25,
+#     "quality": 90,
+#     "image_interval_seconds": 16,
+# }
 
 yolo_person_detector_process_config = {
     "module_name": "yoloPersonDetector",
@@ -289,14 +302,16 @@ audio_writer_process_config = {
     "debug_lvl": 20,
     "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "sub_topic": f"{platform_uuid}_audio_controller",
-    "write_location": "/home/pi/data/audio_writer/",
+    "temp_write_location_base": "/home/pi/data/temp/audio_writer/",
+    "completed_write_location_base": "/home/pi/data/upload/audio_writer/",
     "bitrate": "16k",
     "sample_rate": 16000,
     "channels": 1,
     "application": "audio",
-    "frame_duration_ms": 40,
+    "frame_duration_ms": 40, #this is the frame duration for the opus encoder
     "duration_s": 4,
     "loglevel": "warning",
+    "file_base": f"{platform_uuid}_audio_opus_",
 #    "device": "plughw:CARD=MICTEST,DEV=0",
 #    "device": "plughw:CARD=Device,DEV=0",
     "frame_hz": 2,
@@ -429,5 +444,5 @@ all_process_configs = {
     "motion": [0, motion_detector_process_config],
 #    "buttons": pigpio_toggle_buttons_process_config,
     "led": [0, led_controller_process_config],
-    "file-up": [1, file_uploader_process_config],
+    "file-up": [0, file_uploader_process_config],
 }
