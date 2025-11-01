@@ -72,15 +72,23 @@ class AudioCapture:
         
         # Prefer PortAudio-provided ADC time for drift-free timestamps
         try:
-            if self._pa_epoch_utc_base is None and time_info is not None:
-                # Map PortAudio currentTime (seconds) to UTC now
-                # Use time_info.currentTime which is more stable than inputBufferAdcTime for initial mapping
-                now_utc = datetime.now(timezone.utc)
-                self._pa_epoch_utc_base = now_utc - timedelta(seconds=time_info.currentTime)
-                self.l.debug(f"audio capture: initialized PortAudio epoch base: {self._pa_epoch_utc_base}")
-            else:
-                self.l.debug(f"audio capture: no time info, using sequence-based timestamp")
+            # First, try to initialize epoch base from time_info if we haven't yet
+            if self._pa_epoch_utc_base is None:
+                if time_info is not None:
+                    # Map PortAudio currentTime (seconds) to UTC now
+                    # Use time_info.currentTime which is more stable than inputBufferAdcTime for initial mapping
+                    now_utc = datetime.now(timezone.utc)
+                    self._pa_epoch_utc_base = now_utc - timedelta(seconds=time_info.currentTime)
+                    self.l.info(f"audio capture: initialized PortAudio epoch base: {self._pa_epoch_utc_base}")
+                else:
+                    # Log only on first few callbacks to avoid spam
+                    if self._chunk_sequence < 5:
+                        self.l.warning(
+                            f"audio capture: time_info is None (chunk {self._chunk_sequence}). "
+                            f"Device may not support timing. Using fallback timestamps."
+                        )
 
+            # Now use time_info if we have both epoch base and time_info
             if self._pa_epoch_utc_base is not None and time_info is not None:
                 # Use inputBufferAdcTime which represents when the ADC actually captured the start of this buffer
                 dt_utc = self._pa_epoch_utc_base + timedelta(seconds=time_info.inputBufferAdcTime)
@@ -115,15 +123,21 @@ class AudioCapture:
                         )
             else:
                 # Fallback: calculate timestamp based on sequence if we have a first chunk
+                # This happens when time_info is None (device doesn't support timing)
                 
                 if self._first_chunk_dt is not None:
                     dt_utc = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
-                    if self._pa_epoch_utc_base is None:
-                        self.l.warning(f"audio capture: no time info, using sequence-based timestamp")
+                    # Only log occasionally to avoid spam
+
+                    self.l.debug(f"audio capture: using sequence-based timestamp (chunk {self._chunk_sequence})")
                 else:
                     # First chunk with no time info - align to start-of-chunk by subtracting buffer duration from now
                     dt_utc = datetime.now(timezone.utc) - timedelta(seconds=chunk_duration)
-                    self.l.warning(f"audio capture: no time info on first callback, using fallback timestamp")
+                    self.l.warning(
+                        f"audio capture: no time_info available on first callback. "
+                        f"Using fallback timestamp: {dt_utc}. "
+                        f"Future timestamps will be sequence-based."
+                    )
                     # Store first chunk timestamp immediately for future sequence-based calculations
                     self._first_chunk_dt = dt_utc
         except Exception as e:
@@ -215,10 +229,20 @@ class AudioCapture:
         self._first_chunk_dt = None
         self._stream.start()
         device_info = f"device={device_to_use}" if device_to_use is not None else "default device"
-        self.l.info(
-            f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, "
-            f"dtype {self.dtype}, {device_info}"
-        )
+        
+        # Get actual device info for logging
+        try:
+            actual_device_info = sd.query_devices(device_to_use) if device_to_use is not None else sd.query_devices(sd.default.device[0])
+            device_name = actual_device_info.get('name', 'unknown')
+            self.l.info(
+                f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, "
+                f"dtype {self.dtype}, {device_info} ('{device_name}')"
+            )
+        except Exception:
+            self.l.info(
+                f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, "
+                f"dtype {self.dtype}, {device_info}"
+            )
         # Give the stream a moment to initialize and get first time_info
         # The epoch mapping will be set on first callback
 
