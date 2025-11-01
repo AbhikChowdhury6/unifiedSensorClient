@@ -56,12 +56,19 @@ class AudioCapture:
     def _callback(self, indata, frames, time_info, status):
         if not self._enabled:
             return
-        if status:
-            self.l.debug(f"audio callback status: {status}")
         
         # Calculate expected chunk duration
         chunk_duration = frames / float(self.sample_rate)
         expected_interval = 1.0 / self.frame_hz  # Expected time between chunks
+        
+        # Handle status flags - input overflow is a serious issue
+        has_overflow = False
+        if status:
+            if 'input overflow' in str(status):
+                has_overflow = True
+                self.l.warning(f"audio callback status: {status} - system cannot keep up with audio capture!")
+            else:
+                self.l.debug(f"audio callback status: {status}")
         
         # Prefer PortAudio-provided ADC time for drift-free timestamps
         try:
@@ -79,9 +86,25 @@ class AudioCapture:
                 # Validate timestamp progression on subsequent chunks
                 if self._first_chunk_dt is not None:
                     expected_dt = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
-                    time_diff = abs((dt_utc - expected_dt).total_seconds())
-                    # Warn if timestamp drifts significantly (>50ms) from expected
-                    if time_diff > 0.05:
+                    time_diff = (dt_utc - expected_dt).total_seconds()  # Can be negative or positive
+                    
+                    # If overflow occurred or drift is very large (>500ms), reset our sequence tracking
+                    # to match PortAudio's timestamps (which reflect reality)
+                    if has_overflow or abs(time_diff) > 0.5:
+                        if has_overflow:
+                            self.l.warning(
+                                f"audio capture: input overflow detected - resetting timestamp sequence. "
+                                f"Previous expected: {expected_dt}, PortAudio says: {dt_utc}, diff: {time_diff*1000:.1f}ms"
+                            )
+                        else:
+                            self.l.warning(
+                                f"audio capture: large timestamp drift ({time_diff*1000:.1f}ms) - resetting sequence. "
+                                f"Previous expected: {expected_dt}, PortAudio says: {dt_utc}"
+                            )
+                        # Reset sequence tracking to match PortAudio timestamps
+                        self._first_chunk_dt = dt_utc
+                        self._chunk_sequence = 0
+                    elif abs(time_diff) > 0.05:  # Warn on smaller drifts (>50ms)
                         self.l.warning(
                             f"audio capture: timestamp drift detected: "
                             f"chunk {self._chunk_sequence}, expected {expected_dt}, got {dt_utc}, "
@@ -151,6 +174,7 @@ class AudioCapture:
             blocksize=self.blocksize,
             dtype=self.dtype,
             callback=self._callback,
+            latency='high',  # Use higher latency to reduce overflow chances
         )
         # Reset PortAudio epoch mapping on start (before starting stream)
         self._pa_epoch_utc_base = None
@@ -189,6 +213,6 @@ class AudioCapture:
                 chunk = np.ascontiguousarray(chunk)
             #print(f"audio capture publishing {chunk.shape} to {self.topic}")
             #sys.stdout.flush()
-            self.l.trace(f"audio capture publishing {chunk.shape} to {self.topic}")
+            self.l.trace(f"audio capture publishing {dt_utc} {chunk.shape} to {self.topic}")
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk]))
 
