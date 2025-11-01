@@ -292,7 +292,7 @@ audio_controller_process_config = {
     "channels": 1,
     "hz": 8,
     "dtype": "int16",
-    #"device": "plughw:CARD=Device,DEV=0",
+    "device": 1,  # USB PnP Sound Device: Audio (hw:3,0) - supports timing
 }
 
 audio_writer_process_config = {

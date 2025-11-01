@@ -185,8 +185,10 @@ class AudioCapture:
         self._chunk_sequence = 0
         self._first_chunk_dt = None
         self._stream.start()
+        device_info = f"device={self.device}" if self.device is not None else "default device"
         self.l.info(
-            "audio stream started: " + str(self.sample_rate) + " Hz, " + str(self.channels) + " ch, blocksize " + str(self.blocksize) + ", dtype " + str(self.dtype)
+            f"audio stream started: {self.sample_rate} Hz, {self.channels} ch, blocksize {self.blocksize}, "
+            f"dtype {self.dtype}, {device_info}"
         )
         # Give the stream a moment to initialize and get first time_info
         # The epoch mapping will be set on first callback
