@@ -290,7 +290,7 @@ audio_controller_process_config = {
     "pub_topic": f"{platform_uuid}_audio_controller",
     "sample_rate": 48000,
     "channels": 1,
-    "hz": 2,
+    "hz": 8,
     "dtype": "int16",
     #"device": "plughw:CARD=Device,DEV=0",
 }
