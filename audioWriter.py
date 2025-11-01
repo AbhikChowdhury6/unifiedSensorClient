@@ -127,7 +127,7 @@ def spawn_ffmpeg_audio_segments_stdin(dt: datetime,):
     sample_fmt = "s16le"
     file_base = config["file_base"]
 
-    output_path = dt_to_path(dt, file_base, output_root, 6) + ".opus"
+    output_path = output_root + file_base + "_" + dt_to_fnString(dt, 6) + ".opus"
 
     cmd = [
         "ffmpeg",
