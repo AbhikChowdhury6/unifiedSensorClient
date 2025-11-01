@@ -24,7 +24,7 @@ class AudioCapture:
         self.frame_hz = float(config["hz"])
         self.blocksize = int(round(self.sample_rate / self.frame_hz))
         self.dtype = config["dtype"]  # "int16" or "float32"
-        self.device = config["device"]  # sounddevice device name/index or None
+        self.device = config.get("device", None)  # sounddevice device name/index or None
 
         self.topic = config["pub_topic"]
         self.endpoint = config["pub_endpoint"]

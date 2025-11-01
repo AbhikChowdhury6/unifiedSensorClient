@@ -292,6 +292,7 @@ audio_controller_process_config = {
     "channels": 1,
     "hz": 2,
     "dtype": "int16",
+    #"device": "plughw:CARD=Device,DEV=0",
 }
 
 audio_writer_process_config = {
@@ -313,7 +314,7 @@ audio_writer_process_config = {
     "loglevel": "warning",
     "file_base": f"{platform_uuid}_audio_opus_",
 #    "device": "plughw:CARD=MICTEST,DEV=0",
-#    "device": "plughw:CARD=Device,DEV=0",
+#    "device": "plughw:CARD=Device,DEV=0", 
     "frame_hz": 2,
 }
 

@@ -40,6 +40,7 @@ def audio_controller(log_queue):
         "dtype": config["dtype"],
         "pub_topic": config["pub_topic"],
         "pub_endpoint": config["pub_endpoint"],
+        "device": config.get("device", None),
     })
     cap.start()
     cap.enable()
