@@ -288,7 +288,7 @@ audio_controller_process_config = {
     "debug_lvl": 20,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "pub_topic": f"{platform_uuid}_audio_controller",
-    "sample_rate": 16000,
+    "sample_rate": 48000,
     "channels": 1,
     "hz": 2,
     "dtype": "int16",
@@ -306,7 +306,7 @@ audio_writer_process_config = {
     "temp_write_location_base": "/home/pi/data/temp/audio_writer/",
     "completed_write_location_base": "/home/pi/data/upload/audio_writer/",
     "bitrate": "16k",
-    "sample_rate": 16000,
+    "sample_rate": 48000,
     "channels": 1,
     "application": "audio",
     "frame_duration_ms": 40, #this is the frame duration for the opus encoder
