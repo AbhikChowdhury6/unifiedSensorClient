@@ -88,24 +88,25 @@ class AudioCapture:
                     expected_dt = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
                     time_diff = (dt_utc - expected_dt).total_seconds()  # Can be negative or positive
                     
-                    # If overflow occurred or drift is very large (>500ms), reset our sequence tracking
-                    # to match PortAudio's timestamps (which reflect reality)
-                    if has_overflow or abs(time_diff) > 0.5:
+                    # If overflow occurred or drift is significant (>150ms), reset our sequence tracking
+                    # to match PortAudio's timestamps (which reflect reality when the ADC actually captured the data)
+                    # Lower threshold (150ms) allows us to adapt faster to consistent timing issues
+                    if has_overflow or abs(time_diff) > 0.15:
                         if has_overflow:
                             self.l.warning(
                                 f"audio capture: input overflow detected - resetting timestamp sequence. "
                                 f"Previous expected: {expected_dt}, PortAudio says: {dt_utc}, diff: {time_diff*1000:.1f}ms"
                             )
                         else:
-                            self.l.warning(
-                                f"audio capture: large timestamp drift ({time_diff*1000:.1f}ms) - resetting sequence. "
+                            self.l.debug(
+                                f"audio capture: timestamp drift ({time_diff*1000:.1f}ms) - resetting sequence. "
                                 f"Previous expected: {expected_dt}, PortAudio says: {dt_utc}"
                             )
                         # Reset sequence tracking to match PortAudio timestamps
                         self._first_chunk_dt = dt_utc
                         self._chunk_sequence = 0
-                    elif abs(time_diff) > 0.05:  # Warn on smaller drifts (>50ms)
-                        self.l.warning(
+                    elif abs(time_diff) > 0.05:  # Warn on smaller drifts (>50ms) but don't reset
+                        self.l.debug(
                             f"audio capture: timestamp drift detected: "
                             f"chunk {self._chunk_sequence}, expected {expected_dt}, got {dt_utc}, "
                             f"diff {time_diff*1000:.1f}ms"
