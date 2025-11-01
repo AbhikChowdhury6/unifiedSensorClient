@@ -39,6 +39,8 @@ class AudioCapture:
         self._stream = None
         self._next_chunk_ts_utc: datetime | None = None
         self._pa_epoch_utc_base: datetime | None = None  # maps PortAudio time to UTC
+        self._chunk_sequence: int = 0  # Track chunk sequence for timestamp validation
+        self._first_chunk_dt: datetime | None = None  # First chunk timestamp for validation
 
         self._enabled = False
 
@@ -56,22 +58,66 @@ class AudioCapture:
             return
         if status:
             self.l.debug(f"audio callback status: {status}")
+        
+        # Calculate expected chunk duration
+        chunk_duration = frames / float(self.sample_rate)
+        expected_interval = 1.0 / self.frame_hz  # Expected time between chunks
+        
         # Prefer PortAudio-provided ADC time for drift-free timestamps
         try:
             if self._pa_epoch_utc_base is None and time_info is not None:
                 # Map PortAudio currentTime (seconds) to UTC now
-                self._pa_epoch_utc_base = datetime.now(timezone.utc) - timedelta(seconds=time_info.currentTime)
+                # Use time_info.currentTime which is more stable than inputBufferAdcTime for initial mapping
+                now_utc = datetime.now(timezone.utc)
+                self._pa_epoch_utc_base = now_utc - timedelta(seconds=time_info.currentTime)
+                self.l.debug(f"audio capture: initialized PortAudio epoch base: {self._pa_epoch_utc_base}")
+            
             if self._pa_epoch_utc_base is not None and time_info is not None:
+                # Use inputBufferAdcTime which represents when the ADC actually captured the start of this buffer
                 dt_utc = self._pa_epoch_utc_base + timedelta(seconds=time_info.inputBufferAdcTime)
+                
+                # Validate timestamp progression on subsequent chunks
+                if self._first_chunk_dt is not None:
+                    expected_dt = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
+                    time_diff = abs((dt_utc - expected_dt).total_seconds())
+                    # Warn if timestamp drifts significantly (>50ms) from expected
+                    if time_diff > 0.05:
+                        self.l.warning(
+                            f"audio capture: timestamp drift detected: "
+                            f"chunk {self._chunk_sequence}, expected {expected_dt}, got {dt_utc}, "
+                            f"diff {time_diff*1000:.1f}ms"
+                        )
             else:
-                # Fallback: align to start-of-chunk by subtracting buffer duration from now
-                dt_utc = datetime.now(timezone.utc) - timedelta(seconds=frames / float(self.sample_rate))
-        except Exception:
-            dt_utc = datetime.now(timezone.utc)
+                # Fallback: calculate timestamp based on sequence if we have a first chunk
+                if self._first_chunk_dt is not None:
+                    dt_utc = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
+                    if self._pa_epoch_utc_base is None:
+                        self.l.warning(f"audio capture: no time info, using sequence-based timestamp")
+                else:
+                    # First chunk with no time info - align to start-of-chunk by subtracting buffer duration from now
+                    dt_utc = datetime.now(timezone.utc) - timedelta(seconds=chunk_duration)
+                    self.l.warning(f"audio capture: no time info on first callback, using fallback timestamp")
+                    # Store first chunk timestamp immediately for future sequence-based calculations
+                    self._first_chunk_dt = dt_utc
+        except Exception as e:
+            self.l.error(f"audio capture: error getting timestamp: {e}")
+            # Fallback: calculate from sequence if available, otherwise use now
+            if self._first_chunk_dt is not None:
+                dt_utc = self._first_chunk_dt + timedelta(seconds=self._chunk_sequence * expected_interval)
+            else:
+                dt_utc = datetime.now(timezone.utc) - timedelta(seconds=chunk_duration)
+                # Store first chunk timestamp immediately
+                self._first_chunk_dt = dt_utc
+        
+        # Store first chunk timestamp for validation (if not already stored)
+        if self._first_chunk_dt is None:
+            self._first_chunk_dt = dt_utc
+        
         try:
             # Copy to avoid buffer reuse
             chunk = np.array(indata, copy=True)
             self._queue.put_nowait((dt_utc, chunk))
+            self._chunk_sequence += 1
         except queue.Full:
             # Drop if consumer is behind
             pass
@@ -106,12 +152,16 @@ class AudioCapture:
             dtype=self.dtype,
             callback=self._callback,
         )
+        # Reset PortAudio epoch mapping on start (before starting stream)
+        self._pa_epoch_utc_base = None
+        self._chunk_sequence = 0
+        self._first_chunk_dt = None
         self._stream.start()
         self.l.info(
             "audio stream started: " + str(self.sample_rate) + " Hz, " + str(self.channels) + " ch, blocksize " + str(self.blocksize) + ", dtype " + str(self.dtype)
         )
-        # Reset PortAudio epoch mapping on start
-        self._pa_epoch_utc_base = None
+        # Give the stream a moment to initialize and get first time_info
+        # The epoch mapping will be set on first callback
 
     def stop(self):
         if self._stream is None:

@@ -30,7 +30,7 @@ main_debug_lvl = 20
 def dt_to_fnString(dt, decimal_places=3):
     microseconds = dt.microsecond / 1_000_000
     truncated_microseconds = f"{microseconds:.6f}"[2:2+decimal_places]
-    return dt.astimezone(timezone.utc).strftime('%Y-%m-%dT%H%M%S') + \
+    return dt.astimezone(timezone.utc).strftime('%Y%m%dT%H%M%S') + \
         f"p{truncated_microseconds}Z"
 
 def dt_to_path(dt, base_path):
@@ -285,7 +285,7 @@ audio_controller_process_config = {
     "func_name": "audio_controller",
     "short_name": "audio",
     "time_to_shutdown": .6,
-    "debug_lvl": 10,
+    "debug_lvl": 5,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
     "pub_topic": f"{platform_uuid}_audio_controller",
     "sample_rate": 48000,
@@ -312,7 +312,7 @@ audio_writer_process_config = {
     "frame_duration_ms": 40, #this is the frame duration for the opus encoder
     "duration_s": 4,
     "loglevel": "warning",
-    "file_base": f"{platform_uuid}_audio_opus_",
+    "file_base": f"{platform_uuid}_audio_opus",
 #    "device": "plughw:CARD=MICTEST,DEV=0",
 #    "device": "plughw:CARD=Device,DEV=0", 
     "frame_hz": 2,
