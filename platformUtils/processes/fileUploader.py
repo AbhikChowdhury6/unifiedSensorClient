@@ -8,9 +8,9 @@ import traceback
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 import logging
-from logUtils import worker_configurer, check_apply_level, set_process_title
+from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 
 from config import file_uploader_process_config, zmq_control_endpoint, fnString_to_dt
 config = file_uploader_process_config

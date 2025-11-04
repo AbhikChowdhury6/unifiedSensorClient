@@ -3,9 +3,9 @@ import zmq
 import time
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 import logging
-from logUtils import worker_configurer, check_apply_level
+from platformUtils.logUtils import worker_configurer, check_apply_level
 from config import led_controller_process_config, zmq_control_endpoint
 config = led_controller_process_config
 l = logging.getLogger(config["short_name"])

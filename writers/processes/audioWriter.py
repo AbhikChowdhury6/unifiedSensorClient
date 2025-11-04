@@ -7,13 +7,13 @@ from datetime import datetime, timezone, timedelta
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 from config import audio_writer_process_config, zmq_control_endpoint,\
  dt_to_path, dt_to_fnString, fnString_to_dt
 import zmq
 import logging
 import numpy as np
-from logUtils import worker_configurer, set_process_title
+from platformUtils.logUtils import worker_configurer, set_process_title
 import shutil
 
 config = audio_writer_process_config

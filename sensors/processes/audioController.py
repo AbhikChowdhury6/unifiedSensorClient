@@ -8,13 +8,13 @@ import logging
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from logUtils import worker_configurer, set_process_title
+from platformUtils.logUtils import worker_configurer, set_process_title
 from config import (
     zmq_control_endpoint,
     audio_controller_process_config,
 )
-from zmq_codec import ZmqCodec
-from audioCapture import AudioCapture
+from platformUtils.zmq_codec import ZmqCodec
+from sensors.audio.audioCapture import AudioCapture
 
 config = audio_controller_process_config
 def audio_controller(log_queue):

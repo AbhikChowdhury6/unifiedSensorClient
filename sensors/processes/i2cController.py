@@ -11,9 +11,9 @@ import zmq
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 class_loc = repoPath + "unifiedSensorClient/sensorClasses/i2c/"
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 import logging
-from logUtils import worker_configurer, check_apply_level, set_process_title
+from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 #import the config
 from config import i2c_controller_process_config, zmq_control_endpoint
 config = i2c_controller_process_config

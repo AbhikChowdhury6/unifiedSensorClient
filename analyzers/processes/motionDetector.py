@@ -5,8 +5,8 @@ import zmq
 import logging
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
-from logUtils import worker_configurer, set_process_title
+from platformUtils.zmq_codec import ZmqCodec
+from platformUtils.logUtils import worker_configurer, set_process_title
 from config import (
     motion_detector_process_config,
     zmq_control_endpoint,

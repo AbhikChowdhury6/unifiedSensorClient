@@ -8,9 +8,9 @@ import numpy as np
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 import logging
-from logUtils import worker_configurer, check_apply_level, set_process_title
+from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 
 from config import sqlite_writer_process_config, zmq_control_endpoint
 config = sqlite_writer_process_config

@@ -16,8 +16,9 @@ from config import (
     main_debug_lvl,
     logging_process_config,
 )
-from zmq_codec import ZmqCodec
-from logUtils import logging_process, worker_configurer
+from platformUtils.zmq_codec import ZmqCodec
+from platformUtils.processes.loggingProcess import logging_process
+from platformUtils.logUtils import worker_configurer
 allow_dict = {s: ["all"] for s in all_process_configs.keys()}
 # Ensure logs from this process (typically "MainProcess") are allowed
 allow_dict[mp.current_process().name] = ["all"]
@@ -31,23 +32,12 @@ def _start_processes_dynamically():
     for name, value in all_process_configs.items():
         desired_state, cfg = value[0], value[1]
         if desired_state == 1:
-            module_name = cfg.get("module_name")
-            func_name = cfg.get("func_name")
-            module = importlib.import_module(module_name)
-
-            target = getattr(module, func_name)
-
-            # pass log queue only if target expects at least one positional param
-            try:
-                params = inspect.signature(target).parameters
-                args = (q,) if len(params) >= 1 else ()
-            except (ValueError, TypeError):
-                args = ()
-
-            p = mp.Process(target=target, name=cfg.get("short_name"), args=args)
+            module_path = cfg.get("module_path")
+            module = importlib.import_module(module_path)
+            target = getattr(module, cfg.get("func_name"))
+            p = mp.Process(target=target, name=cfg.get("short_name"), args=(q,))
             p.start()
             processes[name] = p
-
     return processes
 
 

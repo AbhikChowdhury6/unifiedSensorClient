@@ -5,7 +5,7 @@ import time
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 
 from config import (
     pigpio_toggle_buttons_process_config,

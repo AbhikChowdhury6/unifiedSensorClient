@@ -9,8 +9,8 @@ import pyqoi
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
-from logUtils import worker_configurer, check_apply_level, set_process_title
+from platformUtils.zmq_codec import ZmqCodec
+from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 from config import (
     fnString_to_dt,
     person_mp4_writer_process_config,

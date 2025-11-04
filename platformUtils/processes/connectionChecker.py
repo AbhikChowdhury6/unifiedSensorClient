@@ -5,7 +5,7 @@ import subprocess
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 
 from config import connection_check_process_config, zmq_control_endpoint
 config = connection_check_process_config
