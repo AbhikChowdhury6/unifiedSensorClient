@@ -12,3 +12,9 @@ sudo pip3 install adafruit-circuitpython-neopixel-spi
 
 
 #how to do memory compression
+
+
+#nmcli connection show
+#nmcli con down snet5
+#nmcli device wifi connect snet24 password secret
+#nmcli con delete snet 5

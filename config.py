@@ -27,6 +27,8 @@ responsible_party = "Abhik"
 #- critical (50)
 main_debug_lvl = 20
 
+###########################################Platform Utilities###########################################
+
 def dt_to_fnString(dt, decimal_places=3):
     microseconds = dt.microsecond / 1_000_000
     truncated_microseconds = f"{microseconds:.6f}"[2:2+decimal_places]
@@ -53,6 +55,7 @@ def fnString_to_dt(s):
 
 logging_process_config = {
     "module_name": "logUtils",
+    "module_path": "platformUtils.processes.logUtils",
     "func_name": "logging_process",
     "short_name": "logging",
     "time_to_shutdown": .1,
@@ -60,9 +63,9 @@ logging_process_config = {
     "logfile_path": "/home/pi/logs/unifiedSensorClient.log",
 }
 
-
 file_uploader_process_config = {
     "module_name": "fileUploader",
+    "module_path": "platformUtils.processes.fileUploader",
     "func_name": "file_uploader",
     "short_name": "file-up",
     "time_to_shutdown": .1,
@@ -79,61 +82,70 @@ file_uploader_process_config = {
     ],
     "time_till_ready": 20, # this has to be longer than the delete process time before
     "data_dir": "/home/pi/data/upload/",
-
-
 }
 
-csv_writer_process_config = {
-    "func_name": "csv_writer",
-    "module_name": "csvWriter",
-    "short_name": "csv",
-    "time_to_shutdown": .1,
-    "write_location": "/home/pi/data/temp/csv_writer/",
-    "subscription_endpoints": [
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
-    ],
-    "subscription_topics": [
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
-    ],
-}
-
-sqlite_writer_write_location = "/home/pi/data/temp/sqlite_writer/"
-
-sqlite_writer_process_config = {
-    "module_name": "sqliteWriter",
-    "func_name": "sqlite_writer",
-    "short_name": "sqlite",
+connection_check_process_config = {
+    "module_name": "connectionChecker",
+    "module_path": "platformUtils.processes.connectionChecker",
+    "func_name": "connection_check",
+    "short_name": "check",
     "time_to_shutdown": .1,
     "debug_lvl": 20,
-    "write_location": sqlite_writer_write_location,
-    "subscription_endpoints": [
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
-        f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
-#        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix.sock",
-#        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
-#        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
-    ],
-    "subscription_topics": [
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
-        f"{platform_uuid}_yolo11m_person_detection",
-#        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
-#        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
-#        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
-    ],
+    "pub_topic": f"{platform_uuid}_connection_check",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_connection_check.sock",
+    "interval_seconds": 1,
+    "states": ["offline", "hotspot", "home-wifi"],
+    "ssids": {"hotspot": "chowderphone", "home-wifi": "snet24"},
 }
 
-# note all sensors are floats and are in units standard for the sensor
+pigpio_toggle_buttons_process_config = {
+    "module_name": "pigpioButtons",
+    "module_path": "platformUtils.processes.pigpioButtons",
+    "func_name": "pigpio_buttons",
+    "short_name": "buttons",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "button_sense_pins": [[20, "low"], [12, "low"], [7, "high"]],
+    "set_high_pins": [21, 16],
+    "set_low_pins": [],
+    "button_message_map": {
+        17: [[['d', 'video']], [['e', 'video']]],
+        27: [[['d', 'audio']], [['e', 'audio']]],
+        26: [
+            [['e', 'yolo'], ['e', 'del'], ['d', "motion"], ['d', "dark"]], # yolo only
+            [['d', 'yolo'], ['e', 'del'], ['e', 'motion'], ['d', 'dark']], # motion only
+            [['d', 'yolo'], ['e', 'del'], ['d', 'motion'], ['e', 'dark']], # dark only
+            [['d', 'yolo'], ['d', 'del'], ['d', 'motion'], ['d', 'dark']], # off
+        ],
+    },
+    "button_endpoint": f"ipc:///tmp/control.sock",
+}
+
+led_controller_process_config = {
+    "module_name": "ledController",
+    "module_path": "platformUtils.processes.ledController",
+    "func_name": "led_controller",
+    "short_name": "led",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "pub_topic": "control",
+    # for requests to main, publish to the dedicated requests endpoint
+    "pub_endpoint": zmq_control_requests_endpoint,
+    "states": {0 : {(255, 0, 0): set([(1, 'video')]), (0, 0, 0): set([(0, 'video')])},
+               1 : {(0, 255, 0): set([(1, 'audio')]), (0, 0, 0): set([(0, 'audio')])},
+               2 : {(255, 0, 0): set([(1, 'yolo'), (1, 'del'), (0, "motion"), (0, "dark")]), # yolo only
+                    (0, 255, 0): set([(0, 'yolo'), (1, 'del'), (1, 'motion'), (0, 'dark')]), # motion only
+                    (0, 0, 255): set([(0, 'yolo'), (1, 'del'), (0, 'motion'), (1, 'dark')]), # dark only
+                    (0, 0, 0): set([(0, 'yolo'), (0, 'del'), (0, 'motion'), (0, 'dark')]), # off
+                },
+    },
+}
+
+###########################################Platform Sensors###########################################
 
 i2c_controller_process_config = {
     "module_name": "i2cController",
+    "module_path": "sensors.processes.i2cController",
     "func_name": "i2c_controller",
     "short_name": "i2c",
     "time_to_shutdown": .1,
@@ -187,6 +199,7 @@ picamv3wide = "picamV3-sony-imx708-120fov-12MP"
 
 video_controller_process_config = {
     "module_name": "videoController",
+    "module_path": "sensors.processes.videoController",
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
@@ -207,81 +220,9 @@ video_controller_process_config = {
     "timestamp_images": True,
 }
 
-person_mp4_writer_process_config = {
-    "module_name": "personMp4Writer",
-    "func_name": "person_mp4_writer",
-    "short_name": "person_mp4",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "completed_full_speed_write_location_base": "/home/pi/data/upload/person_mp4_writer_fs/",
-    "completed_timelapse_write_location_base": "/home/pi/data/upload/person_mp4_writer_tl/",
-    "timelapse_interval_seconds": 4,
-    "cache_location": "/home/pi/camera_cache/",
-    "temp_file_location": "/home/pi/data/temp/person_mp4_writer_temp/",
-    "full_speed_file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps",
-    "timelapse_file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps",
-}
-
-# mp4_writer_process_config = {
-#     "module_name": "mp4Writer",
-#     "func_name": "mp4_writer",
-#     "short_name": "mp4",
-#     "time_to_shutdown": .1,
-#     "debug_lvl": 20,
-#     "write_location_base": "/home/pi/data/temp/mp4_writer/",
-#     "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4",
-#     "subscription_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-#     "subscription_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-#     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-#     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-#     "publish_topic": f"{platform_uuid}_mp4_writer",
-#     "publish_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
-#     "duration_s": 4,
-#     "container_type": "mp4",
-#     "loglevel": "warning",
-#     "codec": "h264",
-#     "quality": 80,
-#     "keyframe_interval_seconds": 2,
-#     "fps": 8,
-#     "frame_gap_restart_seconds": .5,
-#     "format": "RGB888",
-# }
-
-
-# jpeg_writer_process_config = {
-#     "module_name": "jpegWriter",
-#     "func_name": "jpeg_writer",
-#     "short_name": "jpeg",
-#     "time_to_shutdown": .1,
-#     "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_jpeg",
-#     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-#     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-#     "debug_lvl": 20,
-#     "write_location_base": "/home/pi/data/temp/jpeg_writer/",
-#     "capture_tolerance_seconds": 0.25,
-#     "quality": 90,
-#     "image_interval_seconds": 16,
-# }
-
-yolo_person_detector_process_config = {
-    "module_name": "yoloPersonDetector",
-    "func_name": "yolo_person_detector",
-    "short_name": "yolo",
-    "time_to_shutdown": 3,
-    "debug_lvl": 10,
-    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
-    "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
-    "model": "yolo11n",
-    "confidence_threshold": 0.5,
-    "nms_threshold": 0.5,
-    "interval_seconds": 4,
-    "verbose": False,
-}
-
 audio_controller_process_config = {
     "module_name": "audioController",
+    "module_path": "sensors.processes.audioController",
     "func_name": "audio_controller",
     "short_name": "audio",
     "time_to_shutdown": .6,
@@ -295,8 +236,82 @@ audio_controller_process_config = {
     "device": 1,  # USB PnP Sound Device: Audio (hw:3,0) - supports timing
 }
 
+gps_capture_process_config = {
+    "module_name": "gpsCapture",
+    "module_path": "sensors.processes.gpsCapture",
+    "func_name": "gps_capture",
+    "short_name": "gps",
+    "time_to_shutdown": 1,
+    "debug_lvl": 20,
+    "baudrate": 9600,
+    "timeout": 10,
+    "update_hz": 1,
+    "serial_port": "ttyUSB0",
+    "baudrate": 9600,
+    "timeout": 10,
+    "update_hz": 1,
+    "pub_topic_3dFix": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
+    "pub_endpoint_3dFix": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_adafruit_PA1616S_gps3dFix.sock",
+    "pub_topic_speed": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
+    "pub_endpoint_speed": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
+    "pub_topic_epe": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
+    "pub_endpoint_epe": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
+}
+
+###########################################Platform Data Writers###########################################
+
+sqlite_writer_write_location = "/home/pi/data/temp/sqlite_writer/"
+
+sqlite_writer_process_config = {
+    "module_name": "sqliteWriter",
+    "module_path": "dataWriters.processes.sqliteWriter",
+    "func_name": "sqlite_writer",
+    "short_name": "sqlite",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "write_location": sqlite_writer_write_location,
+    "subscription_endpoints": [
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
+        f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+#        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix.sock",
+#        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
+#        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
+    ],
+    "subscription_topics": [
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
+        f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
+        f"{platform_uuid}_yolo11m_person_detection",
+#        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
+#        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
+#        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
+    ],
+}
+
+# note all sensors are floats and are in units standard for the sensor
+
+
+person_mp4_writer_process_config = {
+    "module_name": "personMp4Writer",
+    "module_path": "dataWriters.processes.personMp4Writer",
+    "func_name": "person_mp4_writer",
+    "short_name": "person_mp4",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "completed_full_speed_write_location_base": "/home/pi/data/upload/person_mp4_writer_fs/",
+    "completed_timelapse_write_location_base": "/home/pi/data/upload/person_mp4_writer_tl/",
+    "timelapse_interval_seconds": 4,
+    "cache_location": "/home/pi/camera_cache/",
+    "temp_file_location": "/home/pi/data/temp/person_mp4_writer_temp/",
+    "full_speed_file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps",
+    "timelapse_file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps",
+}
+
 audio_writer_process_config = {
     "module_name": "audioWriter",
+    "module_path": "dataWriters.processes.audioWriter",
     "func_name": "audio_writer",
     "short_name": "opus",
     "time_to_shutdown": .1,
@@ -318,23 +333,29 @@ audio_writer_process_config = {
     "frame_hz": 2,
 }
 
-detector_based_deleter_process_config = {
-    "module_name": "detectorBasedDeleter",
-    "func_name": "detector_based_deleter",
-    "short_name": "del",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "detector_names": [f"{platform_uuid}_yolo11m_person_detection"],
-    "detector_endpoints": [f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock"],
-    "files_location": "/home/pi/data/mp4_writer/",
-    "mp4_writer_topic": f"{platform_uuid}_mp4_writer",
-    "mp4_writer_endpoint": f"ipc:///tmp/{platform_uuid}_mp4_writer.sock",
-    "seconds_after_keep": 20,
-    "seconds_before_keep": 10,
+###########################################Platform Analyzers###########################################
+
+yolo_person_detector_process_config = {
+    "module_name": "yoloPersonDetector",
+    "module_path": "analyzers.processes.yoloPersonDetector",
+    "func_name": "yolo_person_detector",
+    "short_name": "yolo",
+    "time_to_shutdown": 3,
+    "debug_lvl": 10,
+    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+    "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
+    "model": "yolo11n",
+    "confidence_threshold": 0.5,
+    "nms_threshold": 0.5,
+    "interval_seconds": 4,
+    "verbose": False,
 }
 
 is_dark_detector_process_config = {
     "module_name": "isDarkDetector",
+    "module_path": "analyzers.processes.isDarkDetector",
     "func_name": "is_dark_detector",
     "short_name": "dark",
     "time_to_shutdown": .1,
@@ -349,6 +370,7 @@ is_dark_detector_process_config = {
 
 motion_detector_process_config = {
     "module_name": "motionDetector",
+    "module_path": "analyzers.processes.motionDetector",
     "func_name": "motion_detector",
     "short_name": "motion",
     "time_to_shutdown": .1,
@@ -361,78 +383,7 @@ motion_detector_process_config = {
     "interval_seconds": 1,
 }
 
-pigpio_toggle_buttons_process_config = {
-    "module_name": "pigpioButtons",
-    "func_name": "pigpio_buttons",
-    "short_name": "buttons",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "button_sense_pins": [[20, "low"], [12, "low"], [7, "high"]],
-    "set_high_pins": [21, 16],
-    "set_low_pins": [],
-    "button_message_map": {
-        17: [[['d', 'video']], [['e', 'video']]],
-        27: [[['d', 'audio']], [['e', 'audio']]],
-        26: [
-            [['e', 'yolo'], ['e', 'del'], ['d', "motion"], ['d', "dark"]], # yolo only
-            [['d', 'yolo'], ['e', 'del'], ['e', 'motion'], ['d', 'dark']], # motion only
-            [['d', 'yolo'], ['e', 'del'], ['d', 'motion'], ['e', 'dark']], # dark only
-            [['d', 'yolo'], ['d', 'del'], ['d', 'motion'], ['d', 'dark']], # off
-        ],
-    },
-    "button_endpoint": f"ipc:///tmp/control.sock",
-}
-
-connection_check_process_config = {
-    "module_name": "connectionCheck",
-    "func_name": "connection_check",
-    "short_name": "check",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "pub_topic": f"{platform_uuid}_connection_check",
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_connection_check.sock",
-    "interval_seconds": 1,
-    "states": ["offline", "hotspot", "home-wifi"],
-    "ssids": {"hotspot": "chowderphone", "home-wifi": "snet24"},
-}
-
-led_controller_process_config = {
-    "module_name": "ledController",
-    "func_name": "led_controller",
-    "short_name": "led",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-    "pub_topic": "control",
-    # for requests to main, publish to the dedicated requests endpoint
-    "pub_endpoint": zmq_control_requests_endpoint,
-    "states": {0 : {(255, 0, 0): set([(1, 'video')]), (0, 0, 0): set([(0, 'video')])},
-               1 : {(0, 255, 0): set([(1, 'audio')]), (0, 0, 0): set([(0, 'audio')])},
-               2 : {(255, 0, 0): set([(1, 'yolo'), (1, 'del'), (0, "motion"), (0, "dark")]), # yolo only
-                    (0, 255, 0): set([(0, 'yolo'), (1, 'del'), (1, 'motion'), (0, 'dark')]), # motion only
-                    (0, 0, 255): set([(0, 'yolo'), (1, 'del'), (0, 'motion'), (1, 'dark')]), # dark only
-                    (0, 0, 0): set([(0, 'yolo'), (0, 'del'), (0, 'motion'), (0, 'dark')]), # off
-                },
-    },
-}
-
-gps_capture_process_config = {
-    "module_name": "gpsCapture",
-    "func_name": "gps_capture",
-    "short_name": "gps",
-    "time_to_shutdown": 1,
-    "debug_lvl": 20,
-    "baudrate": 9600,
-    "timeout": 10,
-    "update_hz": 1,
-    "serial_port": "ttyUSB0",
-    "pub_topic_3dFix": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
-    "pub_endpoint_3dFix": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_adafruit_PA1616S_gps3dFix.sock",
-    "pub_topic_speed": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
-    "pub_endpoint_speed": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
-    "pub_topic_epe": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
-    "pub_endpoint_epe": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
-}
-
+###########################################Platform Processes###########################################
 
 all_process_configs = {
     "sqlite": [1, sqlite_writer_process_config],
