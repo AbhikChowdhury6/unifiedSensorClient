@@ -11,7 +11,7 @@ import qoi
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from zmq_codec import ZmqCodec
+from platformUtils.zmq_codec import ZmqCodec
 import logging
 from config import dt_to_fnString
 

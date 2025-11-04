@@ -2,7 +2,7 @@ from adafruit_bme280 import basic as adafruit_bme280
 import sys
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from sensor import Sensor
+from sensors.i2c.i2cSensor import Sensor
 import logging
 
 # open the config

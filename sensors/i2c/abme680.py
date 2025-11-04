@@ -4,7 +4,7 @@ import sys
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from sensor import Sensor
+from sensors.i2c.i2cSensor import Sensor
 
 from config import i2c_controller_process_config
 device_config = [d for d in i2c_controller_process_config['devices'] if d['module_name'] == 'abme680'][0]
