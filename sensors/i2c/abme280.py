@@ -13,7 +13,9 @@ device_config = [d for d in i2c_controller_process_config['devices'] if d['modul
 
 class aBME280():
     def __init__(self, bus):
-        self.l = logging.getLogger(config["short_name"] + "." + device_config['model'])
+        self.l = logging.getLogger(device_config['class_name'] + "-" 
+                                    + device_config['bus_location'] + "-" 
+                                    + device_config['device_name'])
         self.l.setLevel(device_config['debug_lvl'])
         self.l.info("i2c starting a " + device_config['model'] + "!")
         self.bme280 = adafruit_bme280.Adafruit_BME280_I2C(bus, address=device_config['address'])

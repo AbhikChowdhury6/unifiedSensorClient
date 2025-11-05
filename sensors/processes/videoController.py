@@ -40,15 +40,14 @@ def video_controller(log_queue):
     camera = load_class_and_instantiate(
         class_loc + config['camera_type_module'] + '.py',
         config['camera_type_class'],
-        config)
+        config['camera_config'])
 
     hz = config['fps']
     delay_micros = 1_000_000/hz
-    camera.enable()
+    sensor = camera.sensor
 
     while True:
-        if camera.is_enabled():
-            camera.capture()
+        sensor.read_data()
         
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
