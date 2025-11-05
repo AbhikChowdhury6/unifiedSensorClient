@@ -13,10 +13,6 @@ import logging
 
 class Sensor:
     def __init__(self, config, retrieve_data, is_ready=lambda: True):
-        #logging
-        self.l = logging.getLogger(config["short_name"])
-        self.l.setLevel(config["debug_lvl"])
-        
         #timing
         self.hz = config['update_hz']
         self.delay_micros = int(1_000_000/self.hz)
@@ -44,13 +40,17 @@ class Sensor:
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
         self.pub.bind(self.endpoint)
+
+        #logging setup
+        self.l = logging.getLogger(self.topic)
+        self.l.setLevel(config["debug_lvl"])
         self.l.info(self.topic + " connected to " + self.endpoint)
         time.sleep(.25)
 
         #ready
         self.is_ready = is_ready
         while not self.is_ready():
-            self.l.info(config["topic"] + " waiting for data...")
+            self.l.info(self.topic + " waiting for data...")
             time.sleep(self.delay_micros/1_000_000)
         _ = self.retrieve_data() # a warmup reading
         time.sleep(.25)
@@ -59,7 +59,7 @@ class Sensor:
         ts = datetime.now(timezone.utc)
         _ = self.retrieve_data()
         self.max_read_micros = (datetime.now(timezone.utc) - ts).total_seconds() * 1_000_000
-        self.l.info(f"estimated read time for {self.topic} is {self.max_read_micros} microseconds")
+        self.l.info("estimated read time for " + self.topic + " is " + str(self.max_read_micros) + " microseconds")
 
 
     def read_data(self):
@@ -90,7 +90,6 @@ class Sensor:
         else:
             rounded_down_micros = (now.microsecond//self.delay_micros) * self.delay_micros
             now = now.replace(microsecond=int(rounded_down_micros))# round down to the nearest delay micros
-        self.l.trace("rounded ts: " + str(now))
         
         self.retrive_after = now + timedelta(microseconds=self.delay_micros)
         self.l.trace("next read after" + str(self.retrive_after))
