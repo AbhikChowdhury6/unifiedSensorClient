@@ -250,12 +250,12 @@ gps_capture_process_config = {
     "baudrate": 9600,
     "timeout": 10,
     "update_hz": 1,
-    "pub_topic_3dFix": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
-    "pub_endpoint_3dFix": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_adafruit_PA1616S_gps3dFix.sock",
-    "pub_topic_speed": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
-    "pub_endpoint_speed": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
-    "pub_topic_epe": f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
-    "pub_endpoint_epe": f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
+    "pub_topic_3dFix": f"{platform_uuid}_ttyUSB0_cdtopTech-PA1616S_gps3dFix",
+    "pub_endpoint_3dFix": f"ipc:///tmp/{platform_uuid}_ttyUSB0_adafruit_PA1616S_gps3dFix.sock",
+    "pub_topic_speed": f"{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
+    "pub_endpoint_speed": f"ipc:///tmp/{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
+    "pub_topic_epe": f"{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
+    "pub_endpoint_epe": f"ipc:///tmp/{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
 }
 
 ###########################################Platform Data Writers###########################################
