@@ -27,7 +27,7 @@ class output:
 
 
 class Writer:
-    def __init__(self, config, output, persist, load_function):
+    def __init__(self, config, output, persist, load):
         self.config = config
         self.l = logging.getLogger(config["short_name"])
         self.l.setLevel(config['debug_lvl'])
@@ -40,10 +40,9 @@ class Writer:
         self.completed_file_location = config["completed_file_location"]
         os.makedirs(self.completed_file_location, exist_ok=True)
 
-        self.output_base = config["output_base"]
-        self.extension = config["extension"]
+        self.output_base = config["sub_topic"]
         self.persist = persist
-        self.load = load_function
+        self.load = load
         
         self.output = output
         self.output_file = ""
@@ -51,9 +50,9 @@ class Writer:
 
         #deciding to close
         self.last_dt = None
-        self.target_file_size_mb = config["target_file_size_mb"]
+        self.target_file_size = config["target_file_size"]
         self.next_size_check_dt = datetime.min.replace(tzinfo=timezone.utc)
-        self.size_check_interval_s_range = (30, 60)
+        self.size_check_interval_s_range = config["file_size_check_interval_s_range"]
         self.expected_hz = config["expected_hz"]
 
         #if the last move or anything else failed, delete all the temp files
@@ -112,7 +111,7 @@ class Writer:
         
         out_file_and_path = self.temp_file_location + self.output_file
         output_size = os.path.getsize(out_file_and_path)
-        if output_size > self.target_file_size_mb * 1024 * 1024:
+        if output_size > self.target_file_size:
             return True
         
         return False

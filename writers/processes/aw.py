@@ -9,7 +9,7 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
 from config import audio_writer_process_config, zmq_control_endpoint,\
- dt_to_path, dt_to_fnString, fnString_to_dt
+     dt_to_fnString, fnString_to_dt
 import zmq
 import logging
 import numpy as np
@@ -57,7 +57,8 @@ class output:
     def __init__(self):
         self.ff = None
         self.file_name = None
-        self.temp_output_root = None
+        self.temp_output_location = config["temp_write_location"]
+        self.extension = config["extension"]
     
     def open(self, dt: datetime):
         """Spawn ffmpeg to encode PCM from stdin into Opus segments using config.
@@ -69,13 +70,12 @@ class output:
         sample_rate = int(config["sample_rate"])
         bitrate = str(config["bitrate"])
         frame_duration_ms = int(config["frame_duration_ms"])
-        output_root = config["temp_write_location_base"]
         loglevel = str(config["loglevel"])
         sample_fmt = "s16le"
         file_base = config["file_base"]
-        self.file_name = file_base + "_" + dt_to_fnString(dt, 6) + ".opus"
+        self.file_name = file_base + "_" + dt_to_fnString(dt, 6) + self.extension
 
-        file_name_and_path = output_root + self.file_name
+        file_name_and_path = self.temp_output_location + self.file_name
 
         cmd = [
             "ffmpeg",
@@ -129,6 +129,7 @@ class output:
             l.debug(config["short_name"] + " writer: ffmpeg stderr: [closed]")
     
     def close(self, dt: datetime):
+        #close the stdin
         if self.ff.stdin is not None:
             self.ff.stdin.close()
         
@@ -144,10 +145,11 @@ class output:
             l.error(config["short_name"] + " writer: failed to kill ffmpeg: " + str(e))
         self.ff = None
 
-        new_fn = self.file_name.replace("." + self.extension, 
-                                            "_" + dt_to_fnString(dt, 6) + "." + self.extension)
-        os.rename(self.temp_output_root + self.file_name, 
-                  self.temp_output_root + new_fn)
+        #rename the file to seal it
+        new_fn = self.file_name.replace(self.extension, 
+                                        "_" + dt_to_fnString(dt, 6) + self.extension)
+        os.rename(self.temp_output_location + self.file_name, 
+                  self.temp_output_location + new_fn)
         self.file_name = None
         return new_fn
 

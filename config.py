@@ -329,33 +329,23 @@ audio_writer_process_config = {
     "short_name": "opus",
     "time_to_shutdown": .1,
     "debug_lvl": 10,
-    "writer_config": {
-        "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16.sock",
-        "sub_topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
-        "quick_persist_config": {
-            "enabled": True,
-            "location": "/home/pi/data/temp/audio_writer_cache/",
-            "presist_function": None, #takes in a time and object tuple and writes to the location
-            "presist_function": lambda x, y: pickle.dump(y, open(x, "wb")),
-            "open_function": lambda x: pickle.load(open(x, "rb"))
-        },
-        "writer_codec_config": {
-            "open_function": None,
-            "write_function": None,
-            "close_function": None,
-            "temp_write_location_base": "/home/pi/data/temp/audio_writer/",
-            "completed_write_location_base": "/home/pi/data/upload/audio_writer/",
-            "target_file_size_mb": 10,
-            "extension": "opus",
-            "expected_hz": 2,
-            
-            "bitrate": "16k",
-            "sample_rate": 48000,
-            "channels": 1,
-            "application": "audio",
-            "frame_duration_ms": 40, #this is the frame duration for the opus encoder
-        },
-    }
+
+    "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16.sock",
+    "sub_topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
+
+    "persist_location": "/home/pi/data/temp/audio_writer_cache/",
+    "temp_write_location": "/home/pi/data/temp/audio_writer/",
+    "completed_write_location": "/home/pi/data/upload/audio_writer/",
+    "target_file_size": 10 * 1024 * 1024, #10MB
+    "extension": ".opus",
+    "expected_hz": 2,
+    "file_size_check_interval_s_range": (30, 60),
+    
+    "bitrate": "16k",
+    "sample_rate": 48000,
+    "channels": 1,
+    "application": "audio",
+    "frame_duration_ms": 40, #this is the frame duration for the opus encoder
 }
 
 ###########################################Platform Analyzers###########################################
