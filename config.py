@@ -1,6 +1,8 @@
 import multiprocessing as mp
 from datetime import datetime, timezone
 import os
+import pickle
+
 
 # this file will evolve based on features
 testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
@@ -237,11 +239,12 @@ audio_controller_process_config = {
     "short_name": "audio",
     "time_to_shutdown": .6,
     "debug_lvl": 5,
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
-    "pub_topic": f"{platform_uuid}_audio_controller",
+    #format is platformUUID_busLocation_deviceName_sensorType_units_dataType
+    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16.sock",
+    "pub_topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
     "sample_rate": 48000,
     "channels": 1,
-    "hz": 8,
+    "hz": 2,
     "dtype": "int16",
     "device": 1,  # USB PnP Sound Device: Audio (hw:3,0) - supports timing
 }
@@ -326,21 +329,33 @@ audio_writer_process_config = {
     "short_name": "opus",
     "time_to_shutdown": .1,
     "debug_lvl": 10,
-    "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio_controller.sock",
-    "sub_topic": f"{platform_uuid}_audio_controller",
-    "temp_write_location_base": "/home/pi/data/temp/audio_writer/",
-    "completed_write_location_base": "/home/pi/data/upload/audio_writer/",
-    "bitrate": "16k",
-    "sample_rate": 48000,
-    "channels": 1,
-    "application": "audio",
-    "frame_duration_ms": 40, #this is the frame duration for the opus encoder
-    "duration_s": 4,
-    "loglevel": "warning",
-    "file_base": f"{platform_uuid}_audio_opus",
-#    "device": "plughw:CARD=MICTEST,DEV=0",
-#    "device": "plughw:CARD=Device,DEV=0", 
-    "frame_hz": 2,
+    "writer_config": {
+        "sub_endpoint": f"ipc:///tmp/{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16.sock",
+        "sub_topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
+        "quick_persist_config": {
+            "enabled": True,
+            "location": "/home/pi/data/temp/audio_writer_cache/",
+            "presist_function": None, #takes in a time and object tuple and writes to the location
+            "presist_function": lambda x, y: pickle.dump(y, open(x, "wb")),
+            "open_function": lambda x: pickle.load(open(x, "rb"))
+        },
+        "writer_codec_config": {
+            "open_function": None,
+            "write_function": None,
+            "close_function": None,
+            "temp_write_location_base": "/home/pi/data/temp/audio_writer/",
+            "completed_write_location_base": "/home/pi/data/upload/audio_writer/",
+            "target_file_size_mb": 10,
+            "extension": "opus",
+            "expected_hz": 2,
+            
+            "bitrate": "16k",
+            "sample_rate": 48000,
+            "channels": 1,
+            "application": "audio",
+            "frame_duration_ms": 40, #this is the frame duration for the opus encoder
+        },
+    }
 }
 
 ###########################################Platform Analyzers###########################################
