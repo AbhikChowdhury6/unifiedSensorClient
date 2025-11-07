@@ -19,8 +19,17 @@ class wavpak_output:
         self.proc = None
         self.file_name = None
         self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
+        self.persist_location = self.config["persist_location"] + self.config["topic"] + "/"
+
+        os.makedirs(self.persist_location, exist_ok=True)
+        os.makedirs(self.temp_output_location, exist_ok=True)
+
+
+        self.persist_fn = self.persist_location + "persist.csv"
+        self.data_type = config["data_type"]
+
         self.extension = ".wavpack"
-        self.sample_rate = config["expected_hz"]
+        self.sample_rate = config["hz"]
     
         self.n_channels = config["channels"]
 
@@ -29,12 +38,16 @@ class wavpak_output:
         endian = config["endian"]
         self.raw_spec = f"--raw-pcm={self.sample_rate},{bits}{sign},{self.n_channels},{endian}"
 
-    def persist(self, dt, data, path):
-        fn = path + dt_to_fnString(dt, 6) + ".pkl"
-        pickle.dump(data, open(fn, "wb"))
+    def persist(self, dt, data):
+        csv_line = f"{dt_to_fnString(dt)},{data}"
+        with open(self.persist_fn, "a") as f:
+            f.write(csv_line + "\n")
     
-    def load(self, path):
-        return fnString_to_dt(path), pickle.load(open(path, "rb"))
+    def load(self): #I would like this to be an iterator that returns the next line
+        with open(self.persist_fn, "r") as f:
+            for line in f:
+                dt, data = line.split(",")
+                yield fnString_to_dt(dt), self.data_type(data)
     
 
     def _stderr_reader(self, p):

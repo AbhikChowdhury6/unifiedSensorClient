@@ -1,6 +1,7 @@
 import sys
 import queue
 from datetime import datetime, timezone, timedelta
+import time
 
 import numpy as np
 import sounddevice as sd
@@ -156,6 +157,7 @@ class AudioCapture:
         
         try:
             # Copy to avoid buffer reuse
+            indata = indata[::self.subsample_ratio]
             chunk = np.array(indata, copy=True)
             self._queue.put_nowait((dt_utc, chunk))
             self._chunk_sequence += 1
@@ -227,6 +229,9 @@ class AudioCapture:
         self._pa_epoch_utc_base = None
         self._chunk_sequence = 0
         self._first_chunk_dt = None
+
+        #wait until a round second
+        time.sleep(1 - time.time() % 1)
         self._stream.start()
         device_info = f"device={device_to_use}" if device_to_use is not None else "default device"
         

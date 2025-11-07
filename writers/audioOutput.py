@@ -22,13 +22,23 @@ class audio_output:
         self.file_base = self.config["topic"]
         self.extension = ".opus"
         self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
+        self.persist_location = self.config["persist_location"] + self.config["topic"] + "/"
+        os.makedirs(self.persist_location, exist_ok=True)
+        os.makedirs(self.temp_output_location, exist_ok=True)
     
-    def persist(self, dt, data, path):
-        fn = path + dt_to_fnString(dt, 6) + ".pkl"
+    def persist(self, dt, data):
+        fn = self.persist_location + dt_to_fnString(dt, 6) + ".pkl"
         pickle.dump(data, open(fn, "wb"))
 
-    def load(self, path):
-        return fnString_to_dt(path), pickle.load(open(path, "rb"))
+    def load(self):
+        files = os.listdir(self.persist_location).sorted()
+        if len(files) == 0:
+            return
+        self.l.info(self.log_name + " found " + str(len(files)) + " files in cache")
+        
+        for file in files:
+            data = self.data_type(pickle.load(open(self.persist_location + file, "rb")))
+            yield fnString_to_dt(file), data
 
     def open(self, dt: datetime):
         """Spawn ffmpeg to encode PCM from stdin into Opus segments using config.

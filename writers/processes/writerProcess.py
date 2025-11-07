@@ -19,10 +19,11 @@ import pickle
 
 
 def writer_process(log_queue, config, output):
-    l = logging.getLogger(config["topic"])
-    set_process_title(config["topic"])
+    process_name = config["topic"] + "_writer-process"
+    l = logging.getLogger(process_name)
+    set_process_title(process_name)
     worker_configurer(log_queue, config["debug_lvl"])
-    l.info(config["topic"] + " writer starting")
+    l.info(process_name + " starting")
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
@@ -32,10 +33,21 @@ def writer_process(log_queue, config, output):
     sensor_endpoint = f"ipc:///tmp/{config['topic']}.sock"
     sub.connect(sensor_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, config["topic"].encode())
-    l.info(config["topic"] + " writer subscribed to " + config["topic"])
+    l.info(process_name + " subscribed to " + config["topic"])
+
+    hz = config["hz"]
+    interp_seconds = 0
+    last_dt = datetime.min.replace(tzinfo=timezone.utc)
+    last_data = None
+    if hz < 1:
+        interp_seconds = 1/hz
+        sub.setsockopt(zmq.RCVTIMEO, 2000) 
 
     #TODO
     #subsample and write every second if desired (barometric pressure and IMU)
+        #no longer as needed for now with the new persist method
+    #automatically interpolate to the second as needed (1hz timeout on messages
+    # that will resend the last data with the next second timestamp)
     #look out for commands to stop the output
     #look out for commands to start the output
 
@@ -46,15 +58,28 @@ def writer_process(log_queue, config, output):
         topic, msg = ZmqCodec.decode(sub.recv_multipart())
 
         if topic == "control" and (msg[0] == "exit_all" or 
-                (msg[0] == "exit" and msg[-1] == config["file_base"]+"_writer-process")):
-            l.info(config["file_base"] + "_writer-process exiting")
+                (msg[0] == "exit" and msg[-1] == process_name)):
+            l.info(process_name + " exiting")
             break
 
         if topic != config["topic"]:
             continue
 
-        dt, chunk = msg
-        writer.write(dt, chunk)
 
-    l.info(config["topic"] + " writer exiting")
+        dt, chunk = msg
+
+        if interp_seconds == 0 or dt != last_dt: #if we got new data
+            writer.write(dt, chunk)
+            last_dt = dt
+            last_data = chunk
+            continue
+        
+        #untill the end of the interp_seconds, we'll write the last data
+        curr_dt = datetime.now(timezone.utc).replace(microsecond=0)
+        if curr_dt < last_dt + timedelta(seconds=interp_seconds):
+            writer.write(curr_dt, last_data)
+        
+
+
+    l.info(process_name + " exiting")
     writer.close()

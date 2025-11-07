@@ -41,13 +41,7 @@ class Writer:
         self._recover_from_cache()
 
     def _recover_from_cache(self):
-        files = os.listdir(self.cache_location).sorted()
-        if len(files) == 0:
-            return
-        self.l.info(self.config["short_name"] + " writer found " + str(len(files)) + " files in cache")
-        
-        for file in files:
-            dt, data = self.output.load(self.cache_location + file)
+        for dt, data in self.output.load():
             self.write(dt, data)
 
     def _open_file(self, dt): 
