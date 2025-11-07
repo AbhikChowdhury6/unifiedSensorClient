@@ -11,32 +11,30 @@ import logging
 
 class wavpak_output:
     def __init__(self,config):
-        self.config = config
-        self.log_name = self.config["topic"] + "_wavpak-output"
+        self.log_name = config["topic"] + "_wavpak-output"
         self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(self.config['debug_lvl'])
+        self.l.setLevel(config['debug_lvl'])
         self.l.info(self.log_name + " starting")
         self.proc = None
         self.file_name = None
-        self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
-        self.persist_location = self.config["persist_location"] + self.config["topic"] + "/"
+        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
+        self.persist_location = config["persist_location"] + config["topic"] + "/"
 
         os.makedirs(self.persist_location, exist_ok=True)
         os.makedirs(self.temp_output_location, exist_ok=True)
 
 
-        self.persist_fn = self.persist_location + "persist.csv"
+        self.persist_fn = config["persist_location"] + "persist.csv"
         self.data_type = config["data_type"]
-
         self.extension = ".wavpack"
-        self.sample_rate = config["hz"]
-    
-        self.n_channels = config["channels"]
+        self.file_base = config["topic"]
 
-        bits = config["bits"]
-        sign = config["sign"]
-        endian = config["endian"]
-        self.raw_spec = f"--raw-pcm={self.sample_rate},{bits}{sign},{self.n_channels},{endian}"
+        self.hz = max(1, config["hz"])
+        self.n_channels = config["channels"]
+        self.bits = config["bits"]
+        self.sign = config["sign"]
+        self.endian = config["endian"]
+        self.raw_spec = f"--raw-pcm={self.hz},{self.bits}{self.sign},{self.n_channels},{self.endian}"
 
     def persist(self, dt, data):
         csv_line = f"{dt_to_fnString(dt)},{data}"
@@ -63,9 +61,9 @@ class wavpak_output:
     
 
     def open(self, dt):
-        self.file_name = self.temp_output_location + dt_to_fnString(dt) + self.extension
+        self.file_name = self.file_base + "_" + dt_to_fnString(dt) + self.extension
         self.proc = subprocess.Popen(
-            ["wavpack", "-hh", self.raw_spec, "-", "-o", self.file_name],
+            ["wavpack", "-hh", self.raw_spec, "-", "-o", self.temp_output_location + self.file_name],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
         )
         t = threading.Thread(target=self._stderr_reader, args=(self.proc,), daemon=True)

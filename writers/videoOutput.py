@@ -10,33 +10,42 @@ from config import dt_to_fnString, fnString_to_dt
 
 class video_output:
     def __init__(self, config):
-        self.config = config
-        self.log_name = self.config["topic"] + "_video-output"
+        self.log_name = config["topic"] + "_video-output"
         self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(self.config['debug_lvl'])
+        self.l.setLevel(config['debug_lvl'])
         self.l.info(self.log_name + " starting")
         self.file_name = None
         self.output = None
-        self.file_base = self.config["topic"]
+        self.file_base = config["topic"]
+        self.persist_location = config["persist_location"] + config["topic"] + "/"
+        os.makedirs(self.persist_location, exist_ok=True)
 
-        self.fps = config["fps"]
+        self.hz = max(1, config["hz"])
         self.camera_width = config["camera_width"]
         self.camera_height = config["camera_height"]
         self.fourcc = cv2.VideoWriter_fourcc(*'avc1')
-        self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
+        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
+        os.makedirs(self.temp_output_location, exist_ok=True)
     
-    def persist(self, dt, data, path):
-        fn = path + dt_to_fnString(dt) + ".qoi"
+    def persist(self, dt, data):
+        fn = self.persist_location + dt_to_fnString(dt) + ".qoi"
         qoi.write(fn, data)
     
-    def load(self, path):
-        return fnString_to_dt(path), qoi.read(path)
+    def load(self):
+        files = os.listdir(self.persist_location).sorted()
+        if len(files) == 0:
+            return
+        self.l.info(self.log_name + " found " + str(len(files)) + " files in cache")
+        
+        for file in files:
+            data = qoi.read(self.persist_location + file)
+            yield fnString_to_dt(file), data
     
     def open(self, dt):
         self.file_name = self.file_base + "_" + dt_to_fnString(dt) + ".mp4"
         self.output = cv2.VideoWriter(self.temp_output_location + self.file_name, 
                                 self.fourcc, 
-                                self.fps, 
+                                self.hz, 
                                 (self.camera_width, self.camera_height))
         if not self.output.isOpened():
             self.l.error("Failed to open video writer")

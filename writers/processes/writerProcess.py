@@ -41,7 +41,7 @@ def writer_process(log_queue, config, output):
     last_data = None
     if hz < 1:
         interp_seconds = 1/hz
-        sub.setsockopt(zmq.RCVTIMEO, 2000) 
+        sub.setsockopt(zmq.RCVTIMEO, 900) 
 
     #TODO
     #subsample and write every second if desired (barometric pressure and IMU)
@@ -74,10 +74,13 @@ def writer_process(log_queue, config, output):
             last_data = chunk
             continue
         
-        #untill the end of the interp_seconds, we'll write the last data
+        #until the end of the interp_seconds, we'll write the last data
         curr_dt = datetime.now(timezone.utc).replace(microsecond=0)
         if curr_dt < last_dt + timedelta(seconds=interp_seconds):
             writer.write(curr_dt, last_data)
+        
+        #sleep for microseconds until the start of the next second
+        time.sleep((1 - datetime.now().microsecond/1_000_000))
         
 
 

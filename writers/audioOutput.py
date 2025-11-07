@@ -12,19 +12,27 @@ import logging
 
 class audio_output:
     def __init__(self, config):
-        self.config = config
-        self.log_name = self.config["topic"] + "_audio-output"
+        self.log_name = config["topic"] + "_audio-output"
         self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(self.config['debug_lvl'])
+        self.l.setLevel(config['debug_lvl'])
         self.l.info(self.log_name + " starting")
         self.ff = None
         self.file_name = None
-        self.file_base = self.config["topic"]
+        self.file_base = config["topic"]
         self.extension = ".opus"
-        self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
-        self.persist_location = self.config["persist_location"] + self.config["topic"] + "/"
+        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
+        self.persist_location = config["persist_location"] + config["topic"] + "/"
         os.makedirs(self.persist_location, exist_ok=True)
         os.makedirs(self.temp_output_location, exist_ok=True)
+
+
+        self.hz = max(1, config["hz"])
+        self.channels = int(config["channels"])
+        self.bitrate = str(config["bitrate"])
+        self.frame_duration_ms = int(config["frame_duration_ms"])
+        self.loglevel = str(config["loglevel"])
+        self.sample_fmt = "s16le"
+
     
     def persist(self, dt, data):
         fn = self.persist_location + dt_to_fnString(dt, 6) + ".pkl"
@@ -46,12 +54,7 @@ class audio_output:
         Reads all parameters from audio_writer_config for simplicity.
         Returns a subprocess.Popen handle with stdin PIPE for feeding PCM.
         """
-        channels = int(self.config["channels"])
-        sample_rate = int(self.config["sample_rate"])
-        bitrate = str(self.config["bitrate"])
-        frame_duration_ms = int(self.config["frame_duration_ms"])
-        loglevel = str(self.config["loglevel"])
-        sample_fmt = "s16le"
+        
         self.file_name = self.file_base + "_" + dt_to_fnString(dt, 6) + self.extension
 
         file_name_and_path = self.temp_output_location + self.file_name
@@ -59,14 +62,14 @@ class audio_output:
         cmd = [
             "ffmpeg",
             "-hide_banner",
-            "-loglevel", loglevel,
-            "-f", sample_fmt,
-            "-ac", str(channels),
-            "-ar", str(sample_rate),
+            "-loglevel", self.loglevel,
+            "-f", self.sample_fmt,
+            "-ac", str(self.channels),
+            "-ar", str(self.hz),
             "-i", "pipe:0",
             "-c:a", "libopus",
-            "-b:a", bitrate,
-            "-frame_duration", str(frame_duration_ms),
+            "-b:a", self.bitrate,
+            "-frame_duration", str(self.frame_duration_ms),
             file_name_and_path,
         ]
 
