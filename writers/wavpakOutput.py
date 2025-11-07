@@ -19,7 +19,7 @@ class wavpak_output:
         self.proc = None
         self.file_name = None
         self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
-        self.extension = config["extension"]
+        self.extension = ".wavpack"
         self.sample_rate = config["expected_hz"]
     
         self.n_channels = config["channels"]

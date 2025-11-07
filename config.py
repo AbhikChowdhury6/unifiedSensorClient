@@ -287,18 +287,14 @@ sqlite_writer_process_config = {
     "debug_lvl": 20,
     "write_location": sqlite_writer_write_location,
     "subscription_endpoints": [
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius.sock",
         f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa.sock",
         f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
     ],
     "subscription_topics": [
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_air-temprature-celcius",
         f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_barometric-pressure-pa",
         f"{platform_uuid}_yolo11m_person_detection",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
@@ -306,9 +302,66 @@ sqlite_writer_process_config = {
     ],
 }
 
+
+
+writers_configs = {
+    "module_name": "writerProcess",
+    "module_path": "writers.processes.writerProcess",
+    "func_name": "writer_process",
+    "temp_write_location": "/home/pi/data/temp/",
+    "completed_write_location": "/home/pi/data/upload/",
+    "target_file_size": 10 * 1024 * 1024, #10MB
+    "file_size_check_interval_s_range": (30, 60),
+    "writers": {
+        "audio": {
+            "output_module": "audioOutput",
+            "output_module_path": "writers.audioOutput",
+            "output_class": "audio_output",
+
+            "configs": [
+                {
+                "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
+                "expected_hz": 2,
+                "bitrate": "16k",
+                "sample_rate": 48000,
+                "channels": 1,
+                "application": "audio",
+                "frame_duration_ms": 40, #this is the frame duration for the opus encoder
+                "loglevel": "debug",
+                }
+            ],
+        },
+        
+        "wavpak": {
+            "output_module": "wavpakOutput",
+            "output_module_path": "writers.wavpakOutput",
+            "output_class": "wavpak_output",
+
+            "configs": [
+                {
+                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float",
+                "expected_hz": 16,
+                "channels": 1,
+                "bits": 32,
+                "sign": "f",
+                "endian": "le",
+                }, {
+                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float",
+                "expected_hz": 1,
+                "channels": 1,
+                "bits": 32,
+                "sign": "f",
+                "endian": "le",
+                },
+
+            ],
+
+        },
+    }
+}  
+
+
 # note all sensors are floats and are in units standard for the sensor
-
-
 person_mp4_writer_process_config = {
     "module_name": "personMp4Writer",
     "module_path": "dataWriters.processes.personMp4Writer",
@@ -350,82 +403,6 @@ audio_writer_process_config = {
     "application": "audio",
     "frame_duration_ms": 40, #this is the frame duration for the opus encoder
 }
-
-data_writer_process_config = {
-    "module_name": "dataWriter",
-    "module_path": "dataWriters.processes.dataWriter",
-    "func_name": "data_writer",
-    "short_name": "data",
-    "time_to_shutdown": .1,
-    "debug_lvl": 20,
-
-    "persist_location": "/home/pi/data/temp/data_writer_cache/",
-    "temp_write_location": "/home/pi/data/temp/data_writer/",
-    "completed_write_location": "/home/pi/data/upload/data_writer/",
-    "target_file_size": 10 * 1024 * 1024, #10MB
-    "extension": ".pkl",
-    "expected_hz": 2,
-    "file_size_check_interval_s_range": (30, 60),
-
-
-    "dtype": "float32",
-    "n_channels": 1,
-    "little_endian": True,
-    "extra_tags": {
-        "artist": "Abhik",
-        "title": "Data",
-        "album": "Data",
-        "year": "2025",
-    },
-}
-
-
-writers_configs = {
-    "module_name": "writerProcess",
-    "module_path": "writers.processes.writerProcess",
-    "func_name": "writer_process",
-    "writers": [
-        {
-            "output_module": "audioOutput",
-            "output_module_path": "writers.audioOutput",
-            "output_class": "audio_output",
-            "config": {
-                "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
-                "temp_write_location": "/home/pi/data/temp/",
-                "completed_write_location": "/home/pi/data/upload/",
-                "target_file_size": 10 * 1024 * 1024, #10MB
-                "extension": ".opus",
-                "expected_hz": 2,
-                "file_size_check_interval_s_range": (30, 60),
-
-                "bitrate": "16k",
-                "sample_rate": 48000,
-                "channels": 1,
-                "application": "audio",
-                "frame_duration_ms": 40, #this is the frame duration for the opus encoder
-            },
-        },
-        {
-            "output_module": "wavpakOutput",
-            "output_module_path": "writers.wavpakOutput",
-            "output_class": "wavpak_output",
-            "config": {
-                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float",
-                "temp_write_location": "/home/pi/data/temp/",
-                "completed_write_location": "/home/pi/data/upload/data_writer/",
-                "target_file_size": 10 * 1024 * 1024, #10MB
-                "extension": ".wavpack",
-                "expected_hz": 16,
-                "file_size_check_interval_s_range": (300, 600),
-
-                "channels": 1,
-                "bits": 32,
-                "sign": "f",
-                "endian": "le",
-            },
-        },
-    ],
-}  
 
 ###########################################Platform Analyzers###########################################
 
