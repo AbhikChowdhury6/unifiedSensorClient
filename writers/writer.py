@@ -108,7 +108,8 @@ class Writer:
         self.last_dt = dt
     
     def close(self):
-        self._close_file(self.last_dt)
+        if self.output.file_name is not None:
+            self._close_file(self.last_dt)
         self.l.info(self.process_name + " closing")
         
 

@@ -34,6 +34,12 @@ def writer_process(log_queue, config, output):
     sub.setsockopt(zmq.SUBSCRIBE, config["topic"].encode())
     l.info(config["topic"] + " writer subscribed to " + config["topic"])
 
+    #TODO
+    #subsample and write every second if desired (barometric pressure and IMU)
+    #look out for commands to stop the output
+    #look out for commands to start the output
+
+    #we'll need another process to listen to the detectors
 
     writer = Writer(config, output)
     while True:

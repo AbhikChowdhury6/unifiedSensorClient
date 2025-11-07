@@ -19,6 +19,7 @@ class audio_output:
         self.l.info(self.log_name + " starting")
         self.ff = None
         self.file_name = None
+        self.file_base = self.config["topic"]
         self.extension = ".opus"
         self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
     
@@ -41,7 +42,7 @@ class audio_output:
         frame_duration_ms = int(self.config["frame_duration_ms"])
         loglevel = str(self.config["loglevel"])
         sample_fmt = "s16le"
-        self.file_name = self.config["topic"] + "_" + dt_to_fnString(dt, 6) + self.extension
+        self.file_name = self.file_base + "_" + dt_to_fnString(dt, 6) + self.extension
 
         file_name_and_path = self.temp_output_location + self.file_name
 
