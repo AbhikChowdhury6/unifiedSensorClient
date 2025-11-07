@@ -1,79 +1,47 @@
-import os
 import sys
-import time
+import pickle
+import os
 import subprocess
 import threading
-from datetime import datetime, timezone, timedelta
-
+from datetime import datetime
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from platformUtils.zmq_codec import ZmqCodec
-from config import audio_writer_process_config, zmq_control_endpoint,\
-     dt_to_fnString, fnString_to_dt
-import zmq
+from config import dt_to_fnString, fnString_to_dt
 import logging
-import numpy as np
-from platformUtils.logUtils import worker_configurer, set_process_title
-from writers.writer import Writer
-import pickle
-
-config = audio_writer_process_config
-l = logging.getLogger(config["short_name"])
-def audio_writer(log_queue):
-    set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
-    l.info(config["short_name"] + " writer starting")
-
-    ctx = zmq.Context()
-    sub = ctx.socket(zmq.SUB)
-    sub.connect(config["sub_endpoint"])
-    sub.setsockopt(zmq.SUBSCRIBE, config["sub_topic"].encode())
-    l.info(config["short_name"] + " writer subscribed to " + config["sub_topic"])
-
-    def persist(dt, data):
-        path = config["cache_location"] + dt_to_fnString(dt, 6) + ".pkl"
-        pickle.dump(data, open(path, "wb"))
-
-    def load(path):
-        return fnString_to_dt(path), pickle.load(open(path, "rb"))
-
-    writer = Writer(config["writer_config"], persist, load)
-    while True:
-        topic, msg = ZmqCodec.decode(sub.recv_multipart())
-
-        if topic == "control" and (msg[0] == "exit_all" or 
-                (msg[0] == "exit" and msg[-1] == config["short_name"])):
-            l.info(config["short_name"] + " writer exiting")
-            break
-
-        if topic != config["sub_topic"]:
-            continue
-
-        dt, chunk = msg
-        writer.write(dt, chunk)
 
 
-class output:
-    def __init__(self):
+class audio_output:
+    def __init__(self, config):
+        self.config = config
+        self.log_name = self.config["topic"] + "_audio-output"
+        self.l = logging.getLogger(self.log_name)
+        self.l.setLevel(self.config['debug_lvl'])
+        self.l.info(self.log_name + " starting")
         self.ff = None
         self.file_name = None
-        self.temp_output_location = config["temp_write_location"]
-        self.extension = config["extension"]
+        self.extension = ".opus"
+        self.temp_output_location = self.config["temp_write_location"] + self.config["topic"] + "/"
     
+    def persist(self, dt, data, path):
+        fn = path + dt_to_fnString(dt, 6) + ".pkl"
+        pickle.dump(data, open(fn, "wb"))
+
+    def load(self, path):
+        return fnString_to_dt(path), pickle.load(open(path, "rb"))
+
     def open(self, dt: datetime):
         """Spawn ffmpeg to encode PCM from stdin into Opus segments using config.
 
         Reads all parameters from audio_writer_config for simplicity.
         Returns a subprocess.Popen handle with stdin PIPE for feeding PCM.
         """
-        channels = int(config["channels"])
-        sample_rate = int(config["sample_rate"])
-        bitrate = str(config["bitrate"])
-        frame_duration_ms = int(config["frame_duration_ms"])
-        loglevel = str(config["loglevel"])
+        channels = int(self.config["channels"])
+        sample_rate = int(self.config["sample_rate"])
+        bitrate = str(self.config["bitrate"])
+        frame_duration_ms = int(self.config["frame_duration_ms"])
+        loglevel = str(self.config["loglevel"])
         sample_fmt = "s16le"
-        file_base = config["file_base"]
-        self.file_name = file_base + "_" + dt_to_fnString(dt, 6) + self.extension
+        self.file_name = self.config["topic"] + "_" + dt_to_fnString(dt, 6) + self.extension
 
         file_name_and_path = self.temp_output_location + self.file_name
 
@@ -100,7 +68,7 @@ class output:
                 cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
                 bufsize=0, env=env
             )
-            l.debug(config["short_name"] + " writer: started ffmpeg: " + " ".join(cmd))
+            self.l.debug(self.log_name + " started ffmpeg: " + " ".join(cmd))
 
             # Start a background stderr reader for diagnostics
             t = threading.Thread(target=self._stderr_reader, args=(proc,), daemon=True)
@@ -110,10 +78,10 @@ class output:
             self.is_open = True
             return self.file_name
         except FileNotFoundError:
-            l.error(config["short_name"] + " writer: ffmpeg not found. Please install ffmpeg.")
+            self.l.error(self.log_name + " ffmpeg not found. Please install ffmpeg.")
             return None
         except Exception as e:
-            l.error(config["short_name"] + " writer: failed to start ffmpeg: " + str(e))
+            self.l.error(self.log_name + " failed to start ffmpeg: " + str(e))
             return None
 
 
@@ -122,11 +90,11 @@ class output:
             for raw in iter(p.stderr.readline, b""):
                 line = raw.decode(errors="replace").rstrip()
                 if line:
-                    l.debug(config["short_name"] + " writer: ffmpeg stderr: " + line)
+                    self.l.debug(self.log_name + " ffmpeg stderr: " + line)
         except Exception as e:
-            l.error(config["short_name"] + " writer: ffmpeg stderr reader error: " + str(e))
+            self.l.error(self.log_name + " ffmpeg stderr reader error: " + str(e))
         finally:
-            l.debug(config["short_name"] + " writer: ffmpeg stderr: [closed]")
+            self.l.debug(self.log_name + " ffmpeg stderr: [closed]")
     
     def close(self, dt: datetime):
         #close the stdin
@@ -137,12 +105,12 @@ class output:
             self.ff.terminate()
             self.ff.wait(timeout=3)
         except Exception as e:
-            l.error(config["short_name"] + " writer: failed to terminate ffmpeg: " + str(e))
+            self.l.error(self.log_name + " failed to terminate ffmpeg: " + str(e))
         try:
             self.ff.kill()
             self.ff.wait(timeout=2)
         except Exception as e:
-            l.error(config["short_name"] + " writer: failed to kill ffmpeg: " + str(e))
+            self.l.error(self.log_name + " failed to kill ffmpeg: " + str(e))
         self.ff = None
 
         #rename the file to seal it

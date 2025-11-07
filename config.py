@@ -170,6 +170,7 @@ i2c_controller_process_config = {
                     "sensor_type": "barometric-pressure",
                     "units": "pascal",
                     "data_type": "float",
+                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float",
                     "hz": 16,
                     "debug_lvl": 20,
                 },
@@ -180,6 +181,7 @@ i2c_controller_process_config = {
                     "sensor_type": "air-temperature",
                     "units": "celsius",
                     "data_type": "float",
+                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float",
                     "hz": 1,
                     "debug_lvl": 20,
                 },
@@ -190,6 +192,7 @@ i2c_controller_process_config = {
                     "sensor_type": "relative-humidity",
                     "units": "percent",
                     "data_type": "float",
+                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float",
                     "hz": .25,
                     "debug_lvl": 20,
                 },
@@ -347,6 +350,82 @@ audio_writer_process_config = {
     "application": "audio",
     "frame_duration_ms": 40, #this is the frame duration for the opus encoder
 }
+
+data_writer_process_config = {
+    "module_name": "dataWriter",
+    "module_path": "dataWriters.processes.dataWriter",
+    "func_name": "data_writer",
+    "short_name": "data",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+
+    "persist_location": "/home/pi/data/temp/data_writer_cache/",
+    "temp_write_location": "/home/pi/data/temp/data_writer/",
+    "completed_write_location": "/home/pi/data/upload/data_writer/",
+    "target_file_size": 10 * 1024 * 1024, #10MB
+    "extension": ".pkl",
+    "expected_hz": 2,
+    "file_size_check_interval_s_range": (30, 60),
+
+
+    "dtype": "float32",
+    "n_channels": 1,
+    "little_endian": True,
+    "extra_tags": {
+        "artist": "Abhik",
+        "title": "Data",
+        "album": "Data",
+        "year": "2025",
+    },
+}
+
+
+writers_configs = {
+    "module_name": "writerProcess",
+    "module_path": "writers.processes.writerProcess",
+    "func_name": "writer_process",
+    "writers": [
+        {
+            "output_module": "audioOutput",
+            "output_module_path": "writers.audioOutput",
+            "output_class": "audio_output",
+            "config": {
+                "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
+                "temp_write_location": "/home/pi/data/temp/",
+                "completed_write_location": "/home/pi/data/upload/",
+                "target_file_size": 10 * 1024 * 1024, #10MB
+                "extension": ".opus",
+                "expected_hz": 2,
+                "file_size_check_interval_s_range": (30, 60),
+
+                "bitrate": "16k",
+                "sample_rate": 48000,
+                "channels": 1,
+                "application": "audio",
+                "frame_duration_ms": 40, #this is the frame duration for the opus encoder
+            },
+        },
+        {
+            "output_module": "wavpakOutput",
+            "output_module_path": "writers.wavpakOutput",
+            "output_class": "wavpak_output",
+            "config": {
+                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float",
+                "temp_write_location": "/home/pi/data/temp/",
+                "completed_write_location": "/home/pi/data/upload/data_writer/",
+                "target_file_size": 10 * 1024 * 1024, #10MB
+                "extension": ".wavpack",
+                "expected_hz": 16,
+                "file_size_check_interval_s_range": (300, 600),
+
+                "channels": 1,
+                "bits": 32,
+                "sign": "f",
+                "endian": "le",
+            },
+        },
+    ],
+}  
 
 ###########################################Platform Analyzers###########################################
 

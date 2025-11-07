@@ -3,50 +3,28 @@ import os
 import sys
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from platformUtils.zmq_codec import ZmqCodec
-from config import audio_writer_process_config, zmq_control_endpoint,\
- dt_to_path, dt_to_fnString, fnString_to_dt
-import zmq
+
 import logging
-import numpy as np
-from platformUtils.logUtils import worker_configurer, set_process_title
 import shutil
 from datetime import datetime, timezone, timedelta
 import random
 
-class output:
-    def __init__(self, file_name):
-        self.file_name = file_name
-        self.file = open(file_name, "wb")
-    
-    def write(self, data):
-        self.file.write(data)
-    
-    def close(self):
-        self.file.close()
 
 
 class Writer:
-    def __init__(self, config, output, persist, load):
+    def __init__(self, config, output):
         self.config = config
-        self.l = logging.getLogger(config["short_name"])
+        self.process_name = config["topic"] + "_writer-process"
+        self.l = logging.getLogger(self.process_name)
         self.l.setLevel(config['debug_lvl'])
-        self.l.info(config["short_name"] + " writer starting")
+        self.l.info(self.process_name + " starting")
 
-        self.cache_location = config["cache_location"]
-        os.makedirs(self.cache_location, exist_ok=True)
-        self.temp_file_location = config["temp_file_location"]
-        os.makedirs(self.temp_file_location, exist_ok=True)
-        self.completed_file_location = config["completed_file_location"]
-        os.makedirs(self.completed_file_location, exist_ok=True)
-
-        self.output_base = config["sub_topic"]
-        self.persist = persist
-        self.load = load
-        
-        self.output = output
-        self.output_file = ""
-        self.output_start_dt = None
+        self.persist_location = config["temp_write_location"] + config["topic"] + "_persist" + "/"
+        os.makedirs(self.persist_location, exist_ok=True)
+        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
+        os.makedirs(self.temp_output_location, exist_ok=True)
+        self.completed_output_location = config["completed_write_location"] + config["topic"] + "/"
+        os.makedirs(self.completed_output_location, exist_ok=True)
 
         #deciding to close
         self.last_dt = None
@@ -69,7 +47,7 @@ class Writer:
         self.l.info(self.config["short_name"] + " writer found " + str(len(files)) + " files in cache")
         
         for file in files:
-            dt, data = self.load(self.cache_location + file)
+            dt, data = self.output.load(self.cache_location + file)
             self.write(dt, data)
 
     def _open_file(self, dt): 
@@ -120,7 +98,7 @@ class Writer:
         if self._should_close(dt):
             self._close_file(dt)
 
-        self.persist(dt, data)
+        self.output.persist(dt, data, self.persist_location)
         
         if self.output.file_name is None:
             self.output.open(dt)
@@ -128,6 +106,10 @@ class Writer:
         self.output.write(data)
 
         self.last_dt = dt
+    
+    def close(self):
+        self._close_file(self.last_dt)
+        self.l.info(self.process_name + " closing")
         
 
 
