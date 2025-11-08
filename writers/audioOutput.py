@@ -22,6 +22,7 @@ class audio_output:
         self.extension = ".opus"
         self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
         self.persist_location = config["persist_location"] + config["topic"] + "/"
+        self.persist_fn = config["persist_location"] + "persist.pkl"
         os.makedirs(self.persist_location, exist_ok=True)
         os.makedirs(self.temp_output_location, exist_ok=True)
 
@@ -35,18 +36,13 @@ class audio_output:
 
     
     def persist(self, dt, data):
-        fn = self.persist_location + dt_to_fnString(dt, 6) + ".pkl"
-        pickle.dump(data, open(fn, "wb"))
+        obj = [dt, data]
+        pickle.dump(obj, open(self.persist_fn, "a"))
 
     def load(self):
-        files = os.listdir(self.persist_location).sorted()
-        if len(files) == 0:
-            return
-        self.l.info(self.log_name + " found " + str(len(files)) + " files in cache")
-        
-        for file in files:
-            data = self.data_type(pickle.load(open(self.persist_location + file, "rb")))
-            yield fnString_to_dt(file), data
+        with open(self.persist_fn, "r") as f:
+            for obj in pickle.load(f):
+                yield obj[0], obj[1]
 
     def open(self, dt: datetime):
         """Spawn ffmpeg to encode PCM from stdin into Opus segments using config.
@@ -136,5 +132,7 @@ class audio_output:
         return new_fn
 
     def write(self, data):
+        #the array is numsamples x 1 for 1 channel, so we need to flatten it
+        data = data.flatten()
         self.ff.stdin.write(data)
         

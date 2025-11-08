@@ -89,17 +89,38 @@ class Writer:
         return False
 
     def write(self, dt, data):
-        if self._should_close(dt):
-            self._close_file(dt)
+        
+        # handle if we get a chunk of data that spans 2 days
+        if data.ndim > 1:
+            end_dt = dt + timedelta(seconds=data.shape[0]/self.hz)
+            if end_dt.date() != dt.date():
+                #calc the data index for the end of the day
+                start_of_next_day = end_dt.replace(hour=0, minute=0, second=0, microsecond=0)\
+                     + timedelta(days=1)
+                samples_till_eod = (start_of_next_day.timestamp() - dt.timestamp()) * self.hz
+                self.output.persist(dt, data[:samples_till_eod])
+                self.output.write(data[:samples_till_eod])
+                self.output.close(start_of_next_day-timedelta(seconds=1/self.hz))
+                self.output.persist(start_of_next_day, data[samples_till_eod:])
+                self.output.open(start_of_next_day)
+                self.output.write(data[samples_till_eod:])
+                self.last_dt = end_dt
+                return
+        else:
+            end_dt = dt
 
-        self.output.persist(dt, data, self.persist_location)
+        
+        if self._should_close(end_dt):
+            self._close_file(end_dt)
+
+        self.output.persist(dt, data)
         
         if self.output.file_name is None:
             self.output.open(dt)
         
         self.output.write(data)
 
-        self.last_dt = dt
+        self.last_dt = end_dt
     
     def close(self):
         if self.output.file_name is not None:

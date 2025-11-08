@@ -94,5 +94,6 @@ class Sensor:
         self.retrive_after = now + timedelta(microseconds=self.delay_micros)
         self.l.trace("next read after" + str(self.retrive_after))
 
-        #send the data
-        self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data]))
+        # convert to numpy array before sending
+        new_data_np = np.array(new_data)
+        self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))

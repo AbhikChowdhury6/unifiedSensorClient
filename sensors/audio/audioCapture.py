@@ -280,5 +280,7 @@ class AudioCapture:
             #sys.stdout.flush()
             self.l.trace(f"current time: {datetime.now(timezone.utc)}")
             self.l.trace(f"audio capture publishing {dt_utc} {chunk.shape} to {self.topic}")
-            self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk]))
+            # convert to numpy array before sending numsamples x 1
+            chunk_np = np.array(chunk).reshape(-1, 1)
+            self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt_utc, chunk_np]))
 

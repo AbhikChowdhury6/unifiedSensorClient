@@ -24,7 +24,7 @@ class wavpak_output:
         os.makedirs(self.temp_output_location, exist_ok=True)
 
 
-        self.persist_fn = config["persist_location"] + "persist.csv"
+        self.persist_fn = config["persist_location"] + "persist.pkl"
         self.data_type = config["data_type"]
         self.extension = ".wavpack"
         self.file_base = config["topic"]
@@ -37,15 +37,14 @@ class wavpak_output:
         self.raw_spec = f"--raw-pcm={self.hz},{self.bits}{self.sign},{self.n_channels},{self.endian}"
 
     def persist(self, dt, data):
-        csv_line = f"{dt_to_fnString(dt)},{data}"
+        obj = [dt, data]
         with open(self.persist_fn, "a") as f:
-            f.write(csv_line + "\n")
+            pickle.dump(obj, f)
     
     def load(self): #I would like this to be an iterator that returns the next line
         with open(self.persist_fn, "r") as f:
-            for line in f:
-                dt, data = line.split(",")
-                yield fnString_to_dt(dt), self.data_type(data)
+            for obj in pickle.load(f):
+                yield obj[0], obj[1]
     
 
     def _stderr_reader(self, p):
@@ -69,7 +68,10 @@ class wavpak_output:
         t = threading.Thread(target=self._stderr_reader, args=(self.proc,), daemon=True)
         t.start()
         self.proc._stderr_thread = t  # attach for lifecycle awareness
+    
     def write(self, data):
+        #the array is numsamples x 1 for 1 channel, so we need to flatten it
+        data = data.flatten()
         self.proc.stdin.write(data.tobytes(order="C"))
 
     def close(self):

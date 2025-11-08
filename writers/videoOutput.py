@@ -2,7 +2,7 @@ import sys
 import qoi
 import os
 import cv2
-from datetime import datetime
+from datetime import datetime, timedelta
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 import logging
@@ -28,8 +28,10 @@ class video_output:
         os.makedirs(self.temp_output_location, exist_ok=True)
     
     def persist(self, dt, data):
-        fn = self.persist_location + dt_to_fnString(dt) + ".qoi"
-        qoi.write(fn, data)
+        for i in range(data.shape[0]):
+            frame_dt = dt + timedelta(seconds=i/self.hz)
+            fn = self.persist_location + dt_to_fnString(frame_dt) + ".qoi"
+            qoi.write(fn, data[i])
     
     def load(self):
         files = os.listdir(self.persist_location).sorted()
@@ -65,4 +67,5 @@ class video_output:
         return new_fn
 
     def write(self, data):
-        self.output.write(data)
+        for frame in data:
+            self.output.write(frame)
