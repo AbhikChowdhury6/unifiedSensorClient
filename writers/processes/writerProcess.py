@@ -41,7 +41,8 @@ def writer_process(log_queue, config, output):
     last_data = None
     if hz < 1:
         interp_seconds = 1/hz
-        sub.setsockopt(zmq.RCVTIMEO, 900) 
+        #if it's 800ms into the second, assume the data isn't coming
+        sub.setsockopt(zmq.RCVTIMEO, 800) 
 
     #TODO
     #subsample and write every second if desired (barometric pressure and IMU)
@@ -68,10 +69,17 @@ def writer_process(log_queue, config, output):
 
         dt, chunk = msg
 
-        if interp_seconds == 0 or dt != last_dt: #if we got new data
+        if interp_seconds == 0: #if we got new data
+            writer.write(dt, chunk)
+            continue
+
+        if dt != last_dt:
             writer.write(dt, chunk)
             last_dt = dt
             last_data = chunk
+            #if we're interpolating, and got new data, wait till the end of the second
+            # so we don't try to intpolate the same second
+            time.sleep(max(0, (dt.replace(microsecond=0).timestamp() + 1 - datetime.now().timestamp())))
             continue
         
         #until the end of the interp_seconds, we'll write the last data
@@ -79,8 +87,8 @@ def writer_process(log_queue, config, output):
         if curr_dt < last_dt + timedelta(seconds=interp_seconds):
             writer.write(curr_dt, last_data)
         
-        #sleep for microseconds until the start of the next second
-        time.sleep((1 - datetime.now().microsecond/1_000_000))
+        #if it for some reason took longer than 200ms to write, don't wait
+        time.sleep(max(0, curr_dt.timestamp() + 1 - datetime.now().timestamp()))
         
 
 

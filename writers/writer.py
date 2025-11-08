@@ -31,7 +31,7 @@ class Writer:
         self.target_file_size = config["target_file_size"]
         self.next_size_check_dt = datetime.min.replace(tzinfo=timezone.utc)
         self.size_check_interval_s_range = config["file_size_check_interval_s_range"]
-        self.expected_hz = config["expected_hz"]
+        self.hz = max(1, config["hz"])
 
         #if the last move or anything else failed, delete all the temp files
         for file in os.listdir(self.temp_file_location).sorted():
@@ -71,7 +71,7 @@ class Writer:
         if dt.date() != self.last_dt.date():
             return True
         #too long since last write
-        if dt - self.last_dt > 2 * timedelta(seconds=1/self.expected_hz):
+        if dt - self.last_dt > 2 * timedelta(seconds=1/self.hz):
             return True
 
         # Get the current size on disk of the output file
