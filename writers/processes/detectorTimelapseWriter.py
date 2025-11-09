@@ -45,6 +45,7 @@ def detector_timelapse_writer(log_queue):
     timelapse_writer = Writer(config["timelapse_output_config"], timelapse_output)
 
     timelapse_hz = config["timelapse_output_config"]["hz"]
+    seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)
 
 
     persist_location = config["cache_location"] + config["short_name"] + "/"
@@ -54,7 +55,7 @@ def detector_timelapse_writer(log_queue):
     
     def load():
         files = [file for file in os.listdir(persist_location).sorted() 
-                    if fnString_to_dt(file) < datetime.now(timezone.utc) -\
+                    if fnString_to_dt(file) <= datetime.now(timezone.utc) -\
                         timedelta(seconds=config["time_before_seconds"])]
         
         for file in files:
@@ -65,7 +66,7 @@ def detector_timelapse_writer(log_queue):
         files = os.listdir(persist_location).sorted()
         for file in files:
             if fnString_to_dt(file) < datetime.now(timezone.utc) -\
-                timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz):
+                seconds_till_irrelvance:
                 os.remove(persist_location + file)
     
     def get_file(dt):
@@ -78,6 +79,8 @@ def detector_timelapse_writer(log_queue):
     timelapse_after = last_detection_ts + timedelta(seconds=config["time_after_seconds"])
     is_full_speed = False
     switch_to_fs = False
+    switch_to_tl = True
+    start_writing_after = None
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -99,8 +102,6 @@ def detector_timelapse_writer(log_queue):
             elif timelapse_after < msg[0]: #switch to timelapse
                 if is_full_speed:
                     switch_to_tl = True
-                    next_timelapse_frame_to_write = msg[0] + timedelta(seconds=1)
-                    next_timelapse_frame_update = msg[0] + timedelta(seconds=1/timelapse_hz)
                 is_full_speed = False
         
         if topic != config["camera_topic"]:
@@ -126,28 +127,23 @@ def detector_timelapse_writer(log_queue):
         persist(dt_utc, frame)
 
         if switch_to_tl:
-            
-            timelapse_writer.write(dt_utc, frame) #write to a timelapse video
-            latest_timelapse_frame = frame
-            next_timelapse_frame_to_write = dt_utc + timedelta(seconds=1)
-            next_timelapse_frame_update = dt_utc + timedelta(seconds=1/timelapse_hz)
+            start_writing_after = dt_utc + seconds_till_irrelvance
+            next_timelapse_frame_update = start_writing_after
             switch_to_tl = False
             continue
-        
+
+        if dt_utc < start_writing_after:
+            continue
 
         #upsample writes to every second
-        if dt_utc < next_timelapse_frame_to_write:
+        if dt_utc.microsecond != 0:
             continue
 
-
-        time_before_name = dt_to_fnString(dt_utc - timedelta(seconds=config["ti"]))
-        #check if the time before seconds frame exists
-        if time_before_name in os.listdir(persist_location):
-            curr_timelapse_frame = qoi.read(persist_location + time_before_name + ".qoi")
-            timelapse_writer.write(dt_utc, curr_timelapse_frame)
+        if dt_utc >= next_timelapse_frame_update:
+            curr_timelapse_frame = get_file(dt_utc - seconds_till_irrelvance)
             delete_old_files()
-            continue
+            next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
 
-        if curr_timelapse_frame is not None:
-            timelapse_writer.write(dt_utc, curr_timelapse_frame)
+
+        timelapse_writer.write(dt_utc - seconds_till_irrelvance, curr_timelapse_frame)
 
