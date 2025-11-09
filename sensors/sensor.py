@@ -27,6 +27,8 @@ class Sensor:
         self.sensor_type = config['sensor_type']
         self.units = config['units'] # dash separated units if multiple
         self.data_type = config['data_type']
+        self.shape = config['shape']
+        self.hz = config['hz']
         #self.float_rounding_precision = config['float_rounding_precision']
 
         #zmq
@@ -35,7 +37,9 @@ class Sensor:
                                 self.device_name, 
                                 self.sensor_type, 
                                 self.units, 
-                                self.data_type])
+                                self.data_type,
+                                self.shape,
+                                str(self.hz)])
         self.endpoint = f"ipc:///tmp/{self.topic}.sock"
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)

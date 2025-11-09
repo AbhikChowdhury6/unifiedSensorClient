@@ -8,16 +8,21 @@ import logging
 import shutil
 from datetime import datetime, timezone, timedelta
 import random
+import zmq
 
-
-
+from platformUtils.zmq_codec import ZmqCodec
 class Writer:
     def __init__(self, config, output):
         self.config = config
-        self.process_name = config["topic"] + "_writer-process"
+        self.process_name = config["process_name"]
         self.l = logging.getLogger(self.process_name)
         self.l.setLevel(config['debug_lvl'])
         self.l.info(self.process_name + " starting")
+
+        self.pub_endpoint = f"ipc:///tmp/{self.process_name}.sock"
+        self.pub = zmq.Context().socket(zmq.PUB)
+        self.pub.bind(self.pub_endpoint)
+        self.l.info(self.process_name + " connected to pub topic")
 
         self.persist_location = config["temp_write_location"] + config["topic"] + "_persist" + "/"
         os.makedirs(self.persist_location, exist_ok=True)
@@ -57,6 +62,7 @@ class Writer:
         infile = self.temp_file_location + self.output_file
         outfile = self.completed_file_location + finished_file_name
         shutil.move(infile, outfile)
+        self.pub.send_multipart(ZmqCodec.encode(self.process_name, [dt, finished_file_name]))
         self.output_file = None
         self.last_dt = None
         

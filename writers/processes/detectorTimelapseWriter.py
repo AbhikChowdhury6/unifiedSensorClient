@@ -53,7 +53,7 @@ def detector_timelapse_writer(log_queue):
         fn = persist_location + dt_to_fnString(dt) + ".qoi"
         qoi.write(fn, frame)
     
-    def load():
+    def load():#for when we switch to full speed
         files = [file for file in os.listdir(persist_location).sorted() 
                     if fnString_to_dt(file) <= datetime.now(timezone.utc) -\
                         timedelta(seconds=config["time_before_seconds"])]
@@ -141,6 +141,9 @@ def detector_timelapse_writer(log_queue):
 
         if dt_utc >= next_timelapse_frame_update:
             curr_timelapse_frame = get_file(dt_utc - seconds_till_irrelvance)
+            if curr_timelapse_frame is None:
+                l.error(config["short_name"] + " writer no frame found for " + str(dt_utc - seconds_till_irrelvance))
+                continue
             delete_old_files()
             next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
 
