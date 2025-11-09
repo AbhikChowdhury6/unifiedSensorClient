@@ -1,21 +1,15 @@
-import os
 import sys
 import time
-import subprocess
-import threading
 from datetime import datetime, timezone, timedelta
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
-from config import zmq_control_endpoint,\
-     dt_to_fnString, fnString_to_dt
+from config import zmq_control_endpoint
 import zmq
 import logging
-import numpy as np
 from platformUtils.logUtils import worker_configurer, set_process_title
 from writers.writer import Writer
-import pickle
 
 
 def writer_process(log_queue, config, output):
@@ -45,14 +39,7 @@ def writer_process(log_queue, config, output):
         sub.setsockopt(zmq.RCVTIMEO, 800) 
 
     #TODO
-    #subsample and write every second if desired (barometric pressure and IMU)
-        #no longer as needed for now with the new persist method
-    #automatically interpolate to the second as needed (1hz timeout on messages
-    # that will resend the last data with the next second timestamp)
-    #look out for commands to stop the output
-    #look out for commands to start the output
-
-    #we'll need another process to listen to the detectors
+    #we'll need another type of writer-process to listen to the detectors
 
     writer = Writer(config, output)
     while True:

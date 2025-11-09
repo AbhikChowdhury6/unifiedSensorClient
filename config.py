@@ -294,14 +294,14 @@ sqlite_writer_process_config = {
     "debug_lvl": 20,
     "write_location": sqlite_writer_write_location,
     "subscription_endpoints": [
-        f"ipc:///tmp/{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent.sock",
+#        f"ipc:///tmp/{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float.sock",
         f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
     ],
     "subscription_topics": [
-        f"{platform_uuid}_i2c-0_bosch-bme280-77_relative-humidity-percent",
+#        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float",
         f"{platform_uuid}_yolo11m_person_detection",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
@@ -311,7 +311,7 @@ sqlite_writer_process_config = {
 
 
 
-writers_configs = {
+writer_process_configs = {
     "module_name": "writerProcess",
     "module_path": "writers.processes.writerProcess",
     "func_name": "writer_process",
@@ -360,6 +360,14 @@ writers_configs = {
                 "sign": "f",
                 "endian": "le",
                 },
+                {
+                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float",
+                "expected_hz": .25,
+                "channels": 1,
+                "bits": 32,
+                "sign": "f",
+                "endian": "le",
+                },
 
             ],
 
@@ -367,6 +375,57 @@ writers_configs = {
     }
 }  
 
+
+detector_timelapse_writer_process_config = {
+    "module_name": "detectorTimelapseWriter",
+    "module_path": "dataWriters.processes.detectorTimelapseWriter",
+    "func_name": "detector_timelapse_writer",
+    "short_name": "detector_timelapse",
+    "time_to_shutdown": .1,
+    "debug_lvl": 20,
+    "cache_location": "/home/pi/camera_cache/",
+    "temp_file_location": "/home/pi/data/temp/",
+    "completed_write_location_base": "/home/pi/data/upload/",
+    "target_file_size": 10 * 1024 * 1024, #10MB
+    "time_before_seconds": 16,
+    "time_after_seconds": 16,
+    
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "camera_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    
+    "detector_endpoints": [
+        f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+    ],
+    "detector_topics": [
+        f"{platform_uuid}_yolo11m_person_detection",
+    ],
+
+    "full_speed_output_config": {
+        "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps",
+        "hz": 8,
+        "file_size_check_interval_s_range": (5, 10),
+        "gop_interval": 256,
+        "preset": "ultrafast",
+        "crf": 23,
+
+        "codec": "libx264",
+        "pix_fmt": "yuv420p",
+        "x264_params": "scenecut=0",
+    },
+    
+    "timelapse_output_config": {
+        "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps",
+        "hz": .25,
+        "file_size_check_interval_s_range": (30, 60),
+        "gop_interval": 1024,
+        "preset": "slow",
+        "crf": 23,
+
+        "codec": "libx264",
+        "pix_fmt": "yuv420p",
+        "x264_params": "scenecut=0",
+    },
+}
 
 # note all sensors are floats and are in units standard for the sensor
 person_mp4_writer_process_config = {
