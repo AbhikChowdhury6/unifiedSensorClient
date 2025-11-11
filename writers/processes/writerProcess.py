@@ -5,18 +5,26 @@ from datetime import datetime, timezone, timedelta
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
-from config import zmq_control_endpoint
+from config import zmq_control_endpoint, file_writer_process_info, file_output_infos
 import zmq
 import logging
 from platformUtils.logUtils import worker_configurer, set_process_title
 from writers.writer import Writer
+import importlib
 
-
-def writer_process(log_queue, config, output):
-    process_name = config["topic"] + "_writer-process"
+def writer_process(log_queue, 
+                    topic,
+                    msg_hz,
+                    output_hz,
+                    output_base,
+                    output_module,
+                    additional_output_config = {},
+                    debug_lvl = "warning",
+                    ):
+    process_name = topic + "_writer-process"
     l = logging.getLogger(process_name)
     set_process_title(process_name)
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(log_queue, debug_lvl)
     l.info(process_name + " starting")
 
     ctx = zmq.Context()
@@ -24,33 +32,46 @@ def writer_process(log_queue, config, output):
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     
-    sensor_endpoint = f"ipc:///tmp/{config['topic']}.sock"
+    sensor_endpoint = f"ipc:///tmp/{topic}.sock"
     sub.connect(sensor_endpoint)
-    sub.setsockopt(zmq.SUBSCRIBE, config["topic"].encode())
-    l.info(process_name + " subscribed to " + config["topic"])
+    sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
+    l.info(process_name + " subscribed to " + topic)
 
-    hz = config["hz"]
     interp_seconds = 0
     last_dt = datetime.min.replace(tzinfo=timezone.utc)
     last_data = None
-    if hz < 1:
-        interp_seconds = 1/hz
+    if msg_hz < 1:
+        interp_seconds = 1/msg_hz
         #if it's 800ms into the second, assume the data isn't coming
         sub.setsockopt(zmq.RCVTIMEO, 800) 
 
-    #TODO
-    #we'll need another type of writer-process to listen to the detectors
 
-    writer = Writer(config, output)
+    wc = file_writer_process_info
+
+    output_module_name = file_output_infos[output_module]["module_name"]
+    importlib.import_module(output_module_name)
+    output_class = getattr(output_module_name, output_module_name)
+    output = output_class(**additional_output_config,
+                          output_base=output_base,
+                          output_hz=output_hz,
+                          temp_write_location=wc["temp_write_location"],
+                          debug_lvl=debug_lvl)
+    
+    writer = Writer(output=output,
+                    temp_write_location=wc["temp_write_location"],
+                    completed_write_location=wc["completed_write_location"],
+                    target_file_size=wc["target_file_size"],
+                    file_size_check_interval_s_range=wc["file_size_check_interval_s_range"],
+                    debug_lvl=debug_lvl)
     while True:
-        topic, msg = ZmqCodec.decode(sub.recv_multipart())
+        msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
 
-        if topic == "control" and (msg[0] == "exit_all" or 
+        if msg_topic == "control" and (msg[0] == "exit_all" or 
                 (msg[0] == "exit" and msg[-1] == process_name)):
             l.info(process_name + " exiting")
             break
 
-        if topic != config["topic"]:
+        if msg_topic != topic:
             continue
 
 

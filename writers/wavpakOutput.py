@@ -10,31 +10,32 @@ from config import dt_to_fnString, fnString_to_dt
 import logging
 
 class wavpak_output:
-    def __init__(self,config):
-        self.log_name = config["topic"] + "_wavpak-output"
+    def __init__(self,
+                    output_base,
+                    output_hz = 1,
+                    temp_write_location = "/home/pi/data/temp/",
+                    debug_lvl = "warning",
+                    channels = 1,
+                    bits = 16,
+                    sign = "s",
+                    endian = "le"):
+        self.output_base = output_base
+        self.temp_write_location = temp_write_location
+        self.output_hz = max(1, output_hz)
+        self.channels = channels
+        self.bits = bits
+        self.sign = sign
+        self.endian = endian
+
+        self.log_name = output_base + "_wavpak-output"
         self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(config['debug_lvl'])
+        self.l.setLevel(debug_lvl)
         self.l.info(self.log_name + " starting")
-        self.proc = None
-        self.file_name = None
-        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
-        self.persist_location = config["persist_location"] + config["topic"] + "/"
-
-        os.makedirs(self.persist_location, exist_ok=True)
-        os.makedirs(self.temp_output_location, exist_ok=True)
 
 
-        self.persist_fn = config["persist_location"] + "persist.pkl"
-        self.data_type = config["data_type"]
+        self.persist_fn = temp_write_location + output_base + "_persist/persist.pkl"
         self.extension = ".wavpack"
-        self.file_base = config["topic"]
-
-        self.hz = max(1, config["hz"])
-        self.n_channels = config["channels"]
-        self.bits = config["bits"]
-        self.sign = config["sign"]
-        self.endian = config["endian"]
-        self.raw_spec = f"--raw-pcm={self.hz},{self.bits}{self.sign},{self.n_channels},{self.endian}"
+        self.raw_spec = f"--raw-pcm={self.output_hz},{self.bits}{self.sign},{self.channels},{self.endian}"
 
     def persist(self, dt, data):
         obj = [dt, data]

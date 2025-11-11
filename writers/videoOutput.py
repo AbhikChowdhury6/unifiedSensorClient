@@ -9,8 +9,25 @@ import logging
 from config import dt_to_fnString, fnString_to_dt
 
 class video_output:
-    def __init__(self, config):
-        self.log_name = config["topic"] + "_video-output"
+    def __init__(self,
+                    output_base,
+                    temp_write_location,
+                    hz,
+                    debug_lvl = "warning",
+                    camera_width,
+                    camera_height,
+                    fourcc = "avc1",
+                    loglevel = "debug"):
+        
+        self.output_base = output_base
+        self.temp_write_location = temp_write_location
+        self.hz = max(1, hz)
+        self.camera_width = camera_width
+        self.camera_height = camera_height
+        self.fourcc = fourcc
+        self.loglevel = loglevel
+
+        self.log_name = output_base + "_video-output"
         self.l = logging.getLogger(self.log_name)
         self.l.setLevel(config['debug_lvl'])
         self.l.info(self.log_name + " starting")

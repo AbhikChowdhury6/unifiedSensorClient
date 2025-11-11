@@ -1,8 +1,7 @@
 import multiprocessing as mp
 from datetime import datetime, timezone
 import os
-import pickle
-
+from collections import OrderedDict
 
 # this file will evolve based on features
 testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
@@ -78,21 +77,13 @@ file_uploader_process_config = {
     "debug_lvl": 20,
     "upload_url": "http://192.168.10.36:/upload",
     "upload_retry_interval": 10,
-    "subscription_endpoints": [
-        f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_writer-process.sock",
-        f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps_writer-process.sock",
-        f"ipc:///tmp/{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16_writer-process.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_writer-process.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_writer-process.sock",
-        f"ipc:///tmp/{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_writer-process.sock",
-    ],
     "subscription_topics": [
-        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_writer-process",
-        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps_writer-process",
-        f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16_writer-process",
-        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_writer-process",
-        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_writer-process",
-        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_writer-process",
+        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_540x960_8hz_writer-process",
+        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-1fps_540x960_p25hz_writer-process",
+        f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16_2hz_writer-process",
+        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz_writer-process",
+        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz_writer-process",
+        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_p25hz_writer-process",
     ],
     "time_till_ready": 20, # this has to be longer than the delete process time before
     "data_dir": "/home/pi/data/upload/",
@@ -157,6 +148,34 @@ file_uploader_process_config = {
 
 ###########################################Platform Sensors###########################################
 
+file_writer_process_info = {
+    "module_name": "writerProcess",
+    "module_path": "writers.processes.writerProcess",
+    "func_name": "writer_process",
+    "persist_location": "/home/pi/data/persist/",
+    "temp_write_location": "/home/pi/data/temp/",
+    "upload_location": "/home/pi/data/upload/",
+    "target_file_size": 10 * 1024 * 1024, #10MB
+}
+
+file_output_infos = {
+    "audioOutput": {
+        "module_name": "audioOutput",
+        "module_path": "writers.audioOutput",
+        "func_name": "audio_output",
+    },
+    "wavpakOutput": {
+        "module_name": "wavpakOutput",
+        "module_path": "writers.wavpakOutput",
+        "func_name": "wavpak_output",
+    },
+    "videoOutput": {
+        "module_name": "videoOutput",
+        "module_path": "writers.videoOutput",
+        "func_name": "video_output",
+    },
+}
+
 i2c_controller_process_config = {
     "module_name": "i2cController",
     "module_path": "sensors.processes.i2cController",
@@ -182,10 +201,16 @@ i2c_controller_process_config = {
                     "sensor_type": "barometric-pressure",
                     "units": "pascal",
                     "data_type": "float",
-                    "data_shape": "1",
-                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
+                    "data_shape": "1x1",
                     "hz": 16,
+                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz",
                     "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 16,
+                        #the change from topic is drop the data shape time dimension
+                        "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
+                    },
                 },
                 {
                     "platform_uuid": platform_uuid,
@@ -194,10 +219,15 @@ i2c_controller_process_config = {
                     "sensor_type": "air-temperature",
                     "units": "celsius",
                     "data_type": "float",
-                    "data_shape": "1",
-                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
+                    "data_shape": "1x1",
                     "hz": 1,
+                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
                     "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
+                    },
                 },
                 {
                     "platform_uuid": platform_uuid,
@@ -206,10 +236,15 @@ i2c_controller_process_config = {
                     "sensor_type": "relative-humidity",
                     "units": "percent",
                     "data_type": "float",
-                    "data_shape": "1",
-                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_p25hz",
+                    "data_shape": "1x1",
                     "hz": .25,
+                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_p25hz",
                     "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": .25,
+                        "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_p25hz",
+                    },
                 },
             ],
         }
@@ -217,6 +252,36 @@ i2c_controller_process_config = {
 }
 
 
+audio_controller_process_config = {
+    "module_name": "audioController",
+    "module_path": "sensors.processes.audioController",
+    "func_name": "audio_controller",
+    "short_name": "audio",
+    "time_to_shutdown": .6,
+    "debug_lvl": 5,
+    #format is platformUUID_busLocation_deviceName_sensorType_units_dataType_shape_hz
+    "platform_uuid": platform_uuid,
+    "bus_location": "audio-1",
+    "device_name": "generic",
+    "sensor_type": "sound",
+    "units": "int16",
+    "data_type": "int",
+    "shape": "8000x1",
+    "hz": 2,
+    "topic": f"{platform_uuid}_audio-1_generic_sound_int16_int_8000x1_2hz",
+    
+    "sample_rate": 48000,
+    "subsample_ratio": 3,
+
+    "channels": 1,
+    "dtype": "int16",
+    "device": 1,  # USB PnP Sound Device: Audio (hw:3,0) - supports timing
+    "file_writer_config": {
+        "output_module": "audioOutput",
+        "output_hz": 16000,
+        "output_base": f"{platform_uuid}_audio-1_generic_audio_int16_int_1_16000hz",
+    },
+}
 
 video_controller_process_config = {
     "module_name": "videoController",
@@ -230,43 +295,28 @@ video_controller_process_config = {
         "module_name": "piCamera",
         "class_name": "PiCamera",
         "module_path": "sensors.video.piCamera",
+        
         "platform_uuid": platform_uuid,
         "bus_location": "csi-0",
         "device_name": picamv3noirwide,
         "sensor_type": "image",
         "units": "BGR",
         "data_type": "ndarray",
-        "data_shape": "960x540x3",
+        "data_shape": "1x960x540x3",
         "hz": 8,
-        "topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_ndarray_960x540x3_8hz",
+        "topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_ndarray_1x960x540x3_8hz",
+        
         "debug_lvl": 20,
         "camera_index": 0,
         "camera_width": 1920,
         "camera_height": 1080,
-        "format": "RGB888",
         "subsample_ratio": 2,
+        "format": "RGB888",
         "flip_vertical": True,
         "timestamp_images": True,
         },
 }
 
-audio_controller_process_config = {
-    "module_name": "audioController",
-    "module_path": "sensors.processes.audioController",
-    "func_name": "audio_controller",
-    "short_name": "audio",
-    "time_to_shutdown": .6,
-    "debug_lvl": 5,
-    #format is platformUUID_busLocation_deviceName_sensorType_units_dataType_shape_hz
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_audio-1_generic_sound_int16_int_1x8000_2hz.sock",
-    "pub_topic": f"{platform_uuid}_audio-1_generic_sound_int16_int_1x8000_2hz",
-    "sample_rate": 48000,
-    "channels": 1,
-    "hz": 2,
-    "subsample_ratio": 3,
-    "dtype": "int16",
-    "device": 1,  # USB PnP Sound Device: Audio (hw:3,0) - supports timing
-}
 
 # gps_capture_process_config = {
 #     "module_name": "gpsCapture",
@@ -336,54 +386,13 @@ writer_process_configs = {
 
             "configs": [
                 {
-                "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16",
-                "process_name": f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16_writer-process",
+                "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-16kHz_1x8000-int16",
+                "process_name": f"{platform_uuid}_audio-1_generic_audio-1ch-16kHz_1x8000-int16_writer-process",
                 "expected_hz": 2,
                 "bitrate": "16k",
-                "sample_rate": 48000,
-                "channels": 1,
-                "application": "audio",
-                "frame_duration_ms": 40, #this is the frame duration for the opus encoder
-                "loglevel": "debug",
+                "sample_rate": 16000,
                 }
             ],
-        },
-        
-        "wavpak": {
-            "output_module": "wavpakOutput",
-            "output_module_path": "writers.wavpakOutput",
-            "output_class": "wavpak_output",
-
-            "configs": [
-                {
-                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float",
-                "process_name": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_writer-process",
-                "expected_hz": 16,
-                "channels": 1,
-                "bits": 32,
-                "sign": "f",
-                "endian": "le",
-                }, {
-                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float",
-                "process_name": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_writer-process",
-                "expected_hz": 1,
-                "channels": 1,
-                "bits": 32,
-                "sign": "f",
-                "endian": "le",
-                },
-                {
-                "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float",
-                "process_name": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_writer-process",
-                "expected_hz": .25,
-                "channels": 1,
-                "bits": 32,
-                "sign": "f",
-                "endian": "le",
-                },
-
-            ],
-
         },
     }
 }  
@@ -414,10 +423,12 @@ detector_timelapse_writer_process_config = {
     ],
 
     "full_speed_output_config": {
-        "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps",
-        "process_name": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_writer-process",
+        "output_module": "videoOutput",
+        "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-8hz",
         "hz": 8,
         "file_size_check_interval_s_range": (5, 10),
+        "camera_width": 960,
+        "camera_height": 540,
         "gop_interval": 256,
         "preset": "ultrafast",
         "crf": 23,
@@ -428,10 +439,12 @@ detector_timelapse_writer_process_config = {
     },
     
     "timelapse_output_config": {
-        "file_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps",
-        "process_name": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps_writer-process",
+        "output_module": "videoOutput",
+        "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-p25hz",
         "hz": .25,
         "file_size_check_interval_s_range": (30, 60),
+        "camera_width": 960,
+        "camera_height": 540,
         "gop_interval": 1024,
         "preset": "slow",
         "crf": 23,

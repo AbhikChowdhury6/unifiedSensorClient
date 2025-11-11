@@ -44,6 +44,8 @@ class AudioCapture:
         self._first_chunk_dt: datetime | None = None  # First chunk timestamp for validation
 
         self._enabled = False
+        self.subsample_ratio = config.get("subsample_ratio", 1)
+        
 
     def enable(self):
         self._enabled = True
@@ -262,7 +264,7 @@ class AudioCapture:
             self.l.info("audio stream stopped")
             sys.stdout.flush()
 
-    def publish_pending(self):
+    def retrieve_data(self):
         if not self._enabled:
             return
         while True:

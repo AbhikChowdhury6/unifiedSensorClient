@@ -9,26 +9,39 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
 import logging
-
+import importlib
+import multiprocessing as mp
+from writers.processes.writerProcess import writer_process
 
 class Sensor:
-    def __init__(self, config, retrieve_data, is_ready=lambda: True):
+    def __init__(self, 
+                    platform_uuid,
+                    bus_location,
+                    device_name,
+                    sensor_type,
+                    units,
+                    data_type,
+                    shape,
+                    hz,
+                    file_writer_config = {},
+                    debug_lvl = "warning",
+                    retrieve_data = lambda: None,
+                    is_ready=lambda: True):
         #timing
-        self.hz = config['update_hz']
+        self.hz = hz
         self.delay_micros = int(1_000_000/self.hz)
         #self.timestamp_rounding_bits = config['timestamp_rounding_bits']
         #self.trillionths = 1_000_000_000_000/(2**self.timestamp_rounding_bits)
         self.retrive_after = datetime.fromtimestamp(0, tz=timezone.utc)
 
         #data descriptor
-        self.platform_uuid = config['platform_uuid']
-        self.bus_location = config['bus_location']
-        self.device_name = config['device_name'] # manufacturer-model-address
-        self.sensor_type = config['sensor_type']
-        self.units = config['units'] # dash separated units if multiple
-        self.data_type = config['data_type']
-        self.shape = config['shape']
-        self.hz = config['hz']
+        self.platform_uuid = platform_uuid
+        self.bus_location = bus_location
+        self.device_name = device_name # manufacturer-model-address
+        self.sensor_type = sensor_type
+        self.units = units # dash separated units if multiple
+        self.data_type = data_type
+        self.shape = shape # nxn
         #self.float_rounding_precision = config['float_rounding_precision']
 
         #zmq
@@ -39,7 +52,7 @@ class Sensor:
                                 self.units, 
                                 self.data_type,
                                 self.shape,
-                                str(self.hz)])
+                                str(self.hz) + "hz"])
         self.endpoint = f"ipc:///tmp/{self.topic}.sock"
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)
@@ -47,7 +60,7 @@ class Sensor:
 
         #logging setup
         self.l = logging.getLogger(self.topic)
-        self.l.setLevel(config["debug_lvl"])
+        self.l.setLevel(debug_lvl)
         self.l.info(self.topic + " connected to " + self.endpoint)
         time.sleep(.25)
 
@@ -65,6 +78,20 @@ class Sensor:
         self.max_read_micros = (datetime.now(timezone.utc) - ts).total_seconds() * 1_000_000
         self.l.info("estimated read time for " + self.topic + " is " + str(self.max_read_micros) + " microseconds")
 
+        #check if the writer is enabled
+        self.writer_process = None
+        if file_writer_config:
+            wc = file_writer_config
+            writer_args = {"log_queue": wc["log_queue"],
+                           "topic": self.topic,
+                           "hz": self.hz,
+                           "output_hz": wc["output_hz"],
+                           "output_base": wc["output_base"],
+                           "output_module": wc["output_module"],
+                           "additional_output_config": wc["additional_output_config"]}
+            self.writer_process = mp.Process(target=writer_process, name=self.topic + "_writer-process", kwargs=writer_args)
+            self.writer_process.start()
+            self.writer_process.is_alive()
 
     def read_data(self):
         #check if it's the right time to read the data

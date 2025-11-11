@@ -12,35 +12,41 @@ import zmq
 
 from platformUtils.zmq_codec import ZmqCodec
 class Writer:
-    def __init__(self, config, output):
-        self.config = config
-        self.process_name = config["process_name"]
-        self.l = logging.getLogger(self.process_name)
-        self.l.setLevel(config['debug_lvl'])
-        self.l.info(self.process_name + " starting")
+    def __init__(self,
+                    output,
+                    temp_write_location,
+                    completed_write_location,
+                    target_file_size,
+                    file_size_check_interval_s_range,
+                    debug_lvl = "warning",
+                    ):
+        self.output_base = output.output_base
+        self.object_name = self.output_base + "_writer-object"
+        self.temp_write_location = temp_write_location
+        self.completed_write_location = completed_write_location
+        self.target_file_size = target_file_size
+        self.file_size_check_interval_s_range = file_size_check_interval_s_range
+        self.hz = max(1, output.hz)
+        self.output = output
 
-        self.pub_endpoint = f"ipc:///tmp/{self.process_name}.sock"
-        self.pub = zmq.Context().socket(zmq.PUB)
-        self.pub.bind(self.pub_endpoint)
-        self.l.info(self.process_name + " connected to pub topic")
+        self.l = logging.getLogger(self.object_name)
+        self.l.setLevel(debug_lvl)
+        self.l.info(self.object_name + " starting")
 
-        self.persist_location = config["temp_write_location"] + config["topic"] + "_persist" + "/"
+        self.persist_location = temp_write_location + self.output_base + "_persist" + "/"
         os.makedirs(self.persist_location, exist_ok=True)
-        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
+        self.temp_output_location = temp_write_location + self.output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
-        self.completed_output_location = config["completed_write_location"] + config["topic"] + "/"
+        self.completed_output_location = completed_write_location + self.output_base + "/"
         os.makedirs(self.completed_output_location, exist_ok=True)
 
         #deciding to close
         self.last_dt = None
-        self.target_file_size = config["target_file_size"]
         self.next_size_check_dt = datetime.min.replace(tzinfo=timezone.utc)
-        self.size_check_interval_s_range = config["file_size_check_interval_s_range"]
-        self.hz = max(1, config["hz"])
 
         #if the last move or anything else failed, delete all the temp files
-        for file in os.listdir(self.temp_file_location).sorted():
-            os.remove(self.temp_file_location + file)
+        for file in os.listdir(self.temp_write_location).sorted():
+            os.remove(self.temp_write_location + file)
         
         #check for files in cache and recover
         self._recover_from_cache()
@@ -59,10 +65,10 @@ class Writer:
 
         #move the file to the correct location in data
         finished_file_name = self.output_base + self.output_file
-        infile = self.temp_file_location + self.output_file
-        outfile = self.completed_file_location + finished_file_name
+        infile = self.temp_write_location + self.output_file
+        outfile = self.completed_write_location + finished_file_name
         shutil.move(infile, outfile)
-        self.pub.send_multipart(ZmqCodec.encode(self.process_name, [dt, finished_file_name]))
+        self.pub.send_multipart(ZmqCodec.encode(self.object_name, [dt, finished_file_name]))
         self.output_file = None
         self.last_dt = None
         
@@ -84,10 +90,10 @@ class Writer:
         if dt < self.next_size_check_dt:
             return False
         
-        rand_s = random.randint(*self.size_check_interval_s_range)
+        rand_s = random.randint(*self.file_size_check_interval_s_range)
         self.next_size_check_dt = dt + timedelta(seconds=rand_s)
         
-        out_file_and_path = self.temp_file_location + self.output_file
+        out_file_and_path = self.temp_write_location + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:
             return True
@@ -131,7 +137,7 @@ class Writer:
     def close(self):
         if self.output.file_name is not None:
             self._close_file(self.last_dt)
-        self.l.info(self.process_name + " closing")
+        self.l.info(self.object_name + " closing")
         
 
 

@@ -11,28 +11,39 @@ import logging
 
 
 class audio_output:
-    def __init__(self, config):
-        self.log_name = config["topic"] + "_audio-output"
+    def __init__(self, 
+                    output_base,
+                    output_hz = 16000,
+                    temp_write_location = "/home/pi/data/temp/",
+                    debug_lvl = "warning",
+                    
+                    channels = 1,
+                    bitrate = "16k",
+                    frame_duration_ms = 40,
+                    sample_fmt = "s16le",
+                    extension = ".opus"):
+        
+        
+        self.output_base = output_base
+        self.temp_write_location = temp_write_location
+        self.output_hz = max(1, output_hz)
+        self.channels = channels
+        self.bitrate = bitrate
+        self.frame_duration_ms = frame_duration_ms
+        self.sample_fmt = sample_fmt
+        self.extension = extension
+
+
+        self.log_name = output_base + "_audio-output"
         self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(config['debug_lvl'])
+        self.l.setLevel(debug_lvl)
         self.l.info(self.log_name + " starting")
+        
         self.ff = None
         self.file_name = None
-        self.file_base = config["topic"]
-        self.extension = ".opus"
-        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
-        self.persist_location = config["persist_location"] + config["topic"] + "/"
-        self.persist_fn = config["persist_location"] + "persist.pkl"
-        os.makedirs(self.persist_location, exist_ok=True)
+        self.temp_output_location = temp_write_location + output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
 
-
-        self.hz = max(1, config["hz"])
-        self.channels = int(config["channels"])
-        self.bitrate = str(config["bitrate"])
-        self.frame_duration_ms = int(config["frame_duration_ms"])
-        self.loglevel = str(config["loglevel"])
-        self.sample_fmt = "s16le"
 
     
     def persist(self, dt, data):
@@ -58,10 +69,10 @@ class audio_output:
         cmd = [
             "ffmpeg",
             "-hide_banner",
-            "-loglevel", self.loglevel,
+            "-loglevel", self.debug_lvl,
             "-f", self.sample_fmt,
             "-ac", str(self.channels),
-            "-ar", str(self.hz),
+            "-ar", str(self.output_hz),
             "-i", "pipe:0",
             "-c:a", "libopus",
             "-b:a", self.bitrate,
