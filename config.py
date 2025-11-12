@@ -188,16 +188,13 @@ i2c_controller_process_config = {
         {   
             "module_name": "abme280",
             "class_name": "aBME280",
-            "manufacturer": "bosch",
+            "module_path": "sensors.i2c.abme280",
             "device_name": "bosch-bme280",
             "bus_location": "i2c-1-0x76",
             "address": 0x76,
             "debug_lvl": 20,
-            "sensors": [
+            "sensors_config": [
                 {
-                    "platform_uuid": platform_uuid,
-                    "bus_location": "i2c-1-0x76",
-                    "device_name": "bosch-bme280",
                     "sensor_type": "barometric-pressure",
                     "units": "pascal",
                     "data_type": "float",
@@ -213,9 +210,6 @@ i2c_controller_process_config = {
                     },
                 },
                 {
-                    "platform_uuid": platform_uuid,
-                    "bus_location": "i2c-1-0x76",
-                    "device_name": "bosch-bme280",
                     "sensor_type": "air-temperature",
                     "units": "celsius",
                     "data_type": "float",
@@ -230,9 +224,6 @@ i2c_controller_process_config = {
                     },
                 },
                 {
-                    "platform_uuid": platform_uuid,
-                    "bus_location": "i2c-1-0x76",
-                    "device_name": "bosch-bme280",
                     "sensor_type": "relative-humidity",
                     "units": "percent",
                     "data_type": "float",
@@ -252,7 +243,7 @@ i2c_controller_process_config = {
 }
 
 
-audio_controller_process_config = {
+audio_controller_process_1_config = {
     "module_name": "audioController",
     "module_path": "sensors.processes.audioController",
     "func_name": "audio_controller",
@@ -283,38 +274,37 @@ audio_controller_process_config = {
     },
 }
 
-video_controller_process_config = {
+video_controller_process_1_config = {
     "module_name": "videoController",
     "module_path": "sensors.processes.videoController",
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
     "debug_lvl": 20,
-    "fps": 8,
-    "camera_config": {
-        "module_name": "piCamera",
-        "class_name": "PiCamera",
-        "module_path": "sensors.video.piCamera",
-        
-        "platform_uuid": platform_uuid,
-        "bus_location": "csi-0",
-        "device_name": picamv3noirwide,
-        "sensor_type": "image",
-        "units": "BGR",
-        "data_type": "ndarray",
-        "data_shape": "1x960x540x3",
-        "hz": 8,
-        "topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_ndarray_1x960x540x3_8hz",
-        
-        "debug_lvl": 20,
-        "camera_index": 0,
-        "camera_width": 1920,
-        "camera_height": 1080,
-        "subsample_ratio": 2,
-        "format": "RGB888",
-        "flip_vertical": True,
-        "timestamp_images": True,
-        },
+    
+    "camera_module_name": "piCamera",
+    "camera_class_name": "PiCamera",
+    "camera_module_path": "sensors.videoDeviceClasses.piCamera",
+    
+    "platform_uuid": platform_uuid,
+    "bus_location": "csi-0",
+    "device_name": picamv3noirwide,
+    "sensor_type": "image",
+    "units": "BGR",
+    "data_type": "uint8",
+    "data_shape": "1x960x540x3",
+    "hz": 8,
+    "debug_lvl": 20,
+    "file_writer_config": {},
+    "topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz",
+
+    "camera_index": 0,
+    "camera_width": 1920,
+    "camera_height": 1080,
+    "subsample_ratio": 2,
+    "format": "RGB888",
+    "flip_vertical": True,
+    "timestamp_images": True,
 }
 
 

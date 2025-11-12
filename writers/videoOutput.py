@@ -13,11 +13,10 @@ class video_output:
                     output_base,
                     temp_write_location,
                     hz,
-                    debug_lvl = "warning",
                     camera_width,
                     camera_height,
                     fourcc = "avc1",
-                    loglevel = "debug"):
+                    debug_lvl = "warning"):
         
         self.output_base = output_base
         self.temp_write_location = temp_write_location
@@ -25,23 +24,23 @@ class video_output:
         self.camera_width = camera_width
         self.camera_height = camera_height
         self.fourcc = fourcc
-        self.loglevel = loglevel
+        self.debug_lvl = debug_lvl
 
         self.log_name = output_base + "_video-output"
         self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(config['debug_lvl'])
+        self.l.setLevel(debug_lvl)
         self.l.info(self.log_name + " starting")
         self.file_name = None
         self.output = None
-        self.file_base = config["topic"]
-        self.persist_location = config["persist_location"] + config["topic"] + "/"
+        self.file_base = output_base
+        self.persist_location = temp_write_location + output_base + "/"
         os.makedirs(self.persist_location, exist_ok=True)
 
-        self.hz = max(1, config["hz"])
-        self.camera_width = config["camera_width"]
-        self.camera_height = config["camera_height"]
+        self.hz = max(1, hz)
+        self.camera_width = camera_width
+        self.camera_height = camera_height
         self.fourcc = cv2.VideoWriter_fourcc(*'avc1')
-        self.temp_output_location = config["temp_write_location"] + config["topic"] + "/"
+        self.temp_output_location = temp_write_location + output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
     
     def persist(self, dt, data):

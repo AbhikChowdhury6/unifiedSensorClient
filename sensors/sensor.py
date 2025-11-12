@@ -9,7 +9,6 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
 import logging
-import importlib
 import multiprocessing as mp
 from writers.processes.writerProcess import writer_process
 
@@ -27,6 +26,9 @@ class Sensor:
                     debug_lvl = "warning",
                     retrieve_data = lambda: None,
                     is_ready=lambda: True):
+        if retrieve_data is None:
+            raise ValueError("retrieve_data is required")
+        self.retrieve_data = retrieve_data
         #timing
         self.hz = hz
         self.delay_micros = int(1_000_000/self.hz)

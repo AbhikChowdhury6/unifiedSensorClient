@@ -6,39 +6,70 @@ import picamera2
 import cv2
 from datetime import datetime, timezone
 import tzlocal
-import gc
-import qoi
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
 import logging
-from config import dt_to_fnString
 from sensors.sensor import Sensor
 
 
 class PiCamera:
-    def __init__(self, camera_config):
-        self.l = logging.getLogger(camera_config["class_name"] + "-" 
-                                    + camera_config["bus_location"] + "-" 
-                                    + camera_config["device_name"])
-        self.l.setLevel(camera_config['debug_lvl'])
-        self.camera_config = camera_config
-        self.flip_vertical = camera_config['flip_vertical']
-        self.subsample_ratio = camera_config['subsample_ratio']
-        self.timestamp_images = camera_config['timestamp_images']
+    def __init__(self, 
+                    platform_uuid,
+                    bus_location,
+                    device_name,
+                    sensor_type = "image",
+                    units = "BGR",
+                    data_type = "uint8",
+                    data_shape = "1x960x540x3",
+                    hz = 8,
+                    file_writer_config = {},
+                    debug_lvl = "warning",
 
-        self.camera = picamera2.Picamera2(camera_config['camera_index'])
+                    camera_index = 0,
+                    camera_width = 1920,
+                    camera_height = 1080,
+                    subsample_ratio = 2,
+                    format = "RGB888",
+                    flip_vertical = True,
+                    timestamp_images = True,
+                    ):
+        self.device_name = f"{platform_uuid}_{bus_location}_{device_name}"
+
+        self.l = logging.getLogger(self.device_name)
+        self.l.setLevel(debug_lvl)
+        self.l.info(self.device_name + " starting")
+        
+        self.flip_vertical = flip_vertical
+        self.subsample_ratio = subsample_ratio
+        self.timestamp_images = timestamp_images
+
+        self.camera = picamera2.Picamera2(camera_index)
         self.video_config = self.camera.create_video_configuration(main={
-            "size": (camera_config['camera_width'], camera_config['camera_height']), 
-            "format": camera_config['format']})
+            "size": (camera_width, camera_height), 
+            "format": format})
         self.camera.configure(self.video_config)
         self.camera.start()
         
-        self.sensor = Sensor(self.camera_config, self._capture)
+        sensor_config = {
+            "platform_uuid": platform_uuid,
+            "bus_location": bus_location,
+            "device_name": device_name,
+            "sensor_type": sensor_type,
+            "units": units,
+            "data_type": data_type,
+            "data_shape": data_shape,
+            "hz": hz,
+            "file_writer_config": file_writer_config,
+            "debug_lvl": debug_lvl,
+            "retrieve_data": self.capture,
+            "is_ready": lambda: True,
+        }
+        self.sensor = Sensor(**sensor_config)
 
 
-    def _capture(self):
+    def capture(self):
         frame = self.camera.capture_array().astype(np.uint8)
         if self.subsample_ratio > 1:
             frame = frame[::self.subsample_ratio, ::self.subsample_ratio]
