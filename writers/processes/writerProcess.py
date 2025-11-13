@@ -12,14 +12,14 @@ from platformUtils.logUtils import worker_configurer, set_process_title
 from writers.writer import Writer
 import importlib
 
-def writer_process(log_queue, 
-                    topic,
-                    msg_hz,
-                    output_hz,
-                    output_base,
-                    output_module,
+def writer_process(log_queue = None, 
+                    topic = None,
+                    msg_hz = None,
+                    output_hz = None,
+                    output_base = None,
+                    output_module = None,
                     additional_output_config = {},
-                    debug_lvl = "warning",
+                    debug_lvl = 30,
                     **kwargs
                     ):
     process_name = topic + "_writer-process"
