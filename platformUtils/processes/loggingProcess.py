@@ -9,6 +9,9 @@ from platformUtils.zmq_codec import ZmqCodec
 from platformUtils.logUtils import set_process_title, TRACE_LEVEL_NUM
 import colorlog
 import fnmatch
+from config import all_process_configs
+
+max_time_to_shutdown = max(v[1].get("time_to_shutdown") for v in all_process_configs.values())
 
 # define the filter
 class NameAndFunctionFilter(logging.Filter):
