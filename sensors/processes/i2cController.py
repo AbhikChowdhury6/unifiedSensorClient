@@ -10,7 +10,6 @@ import zmq
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-class_loc = repoPath + "unifiedSensorClient/sensorClasses/i2c/"
 from platformUtils.zmq_codec import ZmqCodec
 import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
@@ -18,8 +17,9 @@ from platformUtils.logUtils import worker_configurer, check_apply_level, set_pro
 from config import i2c_controller_process_config, zmq_control_endpoint
 config = i2c_controller_process_config
 
-def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
+def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
+    l.debug("loading class " + class_name + " from " + filepath)
     spec = importlib.util.spec_from_file_location(module_name, filepath)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -47,8 +47,9 @@ def i2c_controller(log_queue):
     platform_uuid = config['platform_uuid']
     for device in config['devices']:
         devices.append(load_class_and_instantiate(
-            class_loc + device['module_name'] + '.py',
+            config['device_class_loc'] + device['module_name'] + '.py',
             device['class_name'],
+            l,
             {"platform_uuid": platform_uuid,
             "bus_location": device['bus_location'],
             "device_name": device['device_name'],

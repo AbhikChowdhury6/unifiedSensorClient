@@ -32,6 +32,8 @@ picamv3noirwide = "picamV3-sony-imx708-noir-120fov-12MP"
 picamv3noir = "picamV3-sony-imx708-noir-80fov-12MP"
 picamv3wide = "picamV3-sony-imx708-120fov-12MP"
 
+repoPath = "/home/pi/Documents/"
+
 ###########################################Platform Utilities###########################################
 
 def dt_to_fnString(dt, decimal_places=3):
@@ -184,7 +186,8 @@ i2c_controller_process_config = {
     "time_to_shutdown": .1,
     "platform_uuid": platform_uuid,
     "bus_number": 1,
-    "debug_lvl": 20,
+    "debug_lvl": 5,
+    "device_class_loc": repoPath + "unifiedSensorClient/sensors/i2cDeviceClasses/",
     "devices": [
         {   
             "module_name": "abme280",
@@ -193,7 +196,7 @@ i2c_controller_process_config = {
             "device_name": "bosch-bme280",
             "bus_location": "i2c-1-0x76",
             "address": 0x76,
-            "debug_lvl": 20,
+            "debug_lvl": 5,
             "sensors_config": [
                 {
                     "sensor_type": "barometric-pressure",
@@ -414,7 +417,6 @@ detector_timelapse_writer_process_config = {
     ],
 
     "full_speed_output_config": {
-        "output_module": "videoOutput",
         "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-8hz",
         "hz": 8,
         "file_size_check_interval_s_range": (5, 10),
@@ -430,7 +432,6 @@ detector_timelapse_writer_process_config = {
     },
     
     "timelapse_output_config": {
-        "output_module": "videoOutput",
         "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-p25hz",
         "hz": .25,
         "file_size_check_interval_s_range": (30, 60),
