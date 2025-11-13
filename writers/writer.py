@@ -15,7 +15,7 @@ class Writer:
     def __init__(self,
                     output,
                     temp_write_location,
-                    completed_write_location,
+                    output_write_location,
                     target_file_size,
                     file_size_check_interval_s_range,
                     debug_lvl = 30,
@@ -24,7 +24,7 @@ class Writer:
         self.output_base = output.output_base
         self.object_name = self.output_base + "_writer-object"
         self.temp_write_location = temp_write_location
-        self.completed_write_location = completed_write_location
+        self.output_write_location = output_write_location
         self.target_file_size = target_file_size
         self.file_size_check_interval_s_range = file_size_check_interval_s_range
         self.hz = max(1, output.hz)
@@ -38,7 +38,7 @@ class Writer:
         os.makedirs(self.persist_location, exist_ok=True)
         self.temp_output_location = temp_write_location + self.output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
-        self.completed_output_location = completed_write_location + self.output_base + "/"
+        self.completed_output_location = output_write_location + self.output_base + "/"
         os.makedirs(self.completed_output_location, exist_ok=True)
 
         #deciding to close
@@ -67,7 +67,7 @@ class Writer:
         #move the file to the correct location in data
         finished_file_name = self.output_base + self.output_file
         infile = self.temp_write_location + self.output_file
-        outfile = self.completed_write_location + finished_file_name
+        outfile = self.output_write_location + finished_file_name
         shutil.move(infile, outfile)
         self.pub.send_multipart(ZmqCodec.encode(self.object_name, [dt, finished_file_name]))
         self.output_file = None

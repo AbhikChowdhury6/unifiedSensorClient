@@ -59,7 +59,7 @@ def writer_process(log_queue,
     
     writer = Writer(output=output,
                     temp_write_location=wc["temp_write_location"],
-                    completed_write_location=wc["completed_write_location"],
+                    output_write_location=wc["output_write_location"],
                     target_file_size=wc["target_file_size"],
                     file_size_check_interval_s_range=wc["file_size_check_interval_s_range"],
                     debug_lvl=debug_lvl)
