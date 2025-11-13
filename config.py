@@ -59,8 +59,8 @@ def fnString_to_dt(s):
     return datetime.fromisoformat(ts_str)
 
 logging_process_config = {
-    "module_name": "logUtils",
-    "module_path": "platformUtils.processes.logUtils",
+    "module_name": "loggingProcess",
+    "module_path": "platformUtils.processes.loggingProcess",
     "func_name": "logging_process",
     "short_name": "logging",
     "time_to_shutdown": .1,
@@ -336,7 +336,7 @@ sqlite_writer_write_location = "/home/pi/data/temp/sqlite_writer/"
 
 sqlite_writer_process_config = {
     "module_name": "sqliteWriter",
-    "module_path": "dataWriters.processes.sqliteWriter",
+    "module_path": "writers.processes.sqliteWriter",
     "func_name": "sqlite_writer",
     "short_name": "sqlite",
     "time_to_shutdown": .1,
@@ -390,7 +390,7 @@ writer_process_configs = {
 
 detector_timelapse_writer_process_config = {
     "module_name": "detectorTimelapseWriter",
-    "module_path": "dataWriters.processes.detectorTimelapseWriter",
+    "module_path": "writers.processes.detectorTimelapseWriter",
     "func_name": "detector_timelapse_writer",
     "short_name": "detector_timelapse",
     "time_to_shutdown": .1,
@@ -448,7 +448,7 @@ detector_timelapse_writer_process_config = {
 # # note all sensors are floats and are in units standard for the sensor
 # person_mp4_writer_process_config = {
 #     "module_name": "personMp4Writer",
-#     "module_path": "dataWriters.processes.personMp4Writer",
+#     "module_path": "writers.processes.personMp4Writer",
 #     "func_name": "person_mp4_writer",
 #     "short_name": "person_mp4",
 #     "time_to_shutdown": .1,
@@ -464,7 +464,7 @@ detector_timelapse_writer_process_config = {
 
 # audio_writer_process_config = {
 #     "module_name": "audioWriter",
-#     "module_path": "dataWriters.processes.audioWriter",
+#     "module_path": "writers.processes.audioWriter",
 #     "func_name": "audio_writer",
 #     "short_name": "opus",
 #     "time_to_shutdown": .1,
