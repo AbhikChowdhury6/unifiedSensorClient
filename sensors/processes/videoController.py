@@ -40,15 +40,33 @@ def video_controller(log_queue):
     camera = load_class_and_instantiate(
         class_loc + config['camera_type_module'] + '.py',
         config['camera_type_class'],
-        config['camera_config'])
+        {"platform_uuid": config['platform_uuid'],
+        "bus_location": config['bus_location'],
+        "device_name": config['device_name'],
+        "sensor_type": config['sensor_type'],
+        "units": config['units'],
+        "data_type": config['data_type'],
+        "data_shape": config['data_shape'],
+        "hz": config['hz'],
+        "file_writer_config": config['file_writer_config'],
+        "debug_lvl": config['debug_lvl'],
+
+        "camera_index": config['camera_index'],
+        "camera_width": config['camera_width'],
+        "camera_height": config['camera_height'],
+        "subsample_ratio": config['subsample_ratio'],
+        "format": config['format'],
+        "flip_vertical": config['flip_vertical'],
+        "timestamp_images": config['timestamp_images'],
+        })
 
     hz = config['fps']
     delay_micros = 1_000_000/hz
     sensor = camera.sensor
 
     while True:
-        sensor.read_data()
-        
+        sensor.retrieve_data()
+
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             topic, obj = ZmqCodec.decode(parts)
