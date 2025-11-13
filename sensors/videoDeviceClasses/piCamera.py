@@ -16,9 +16,9 @@ from sensors.sensor import Sensor
 
 class PiCamera:
     def __init__(self, 
-                    platform_uuid,
-                    bus_location,
-                    device_name,
+                    platform_uuid = None,
+                    bus_location = None,
+                    device_name = None,
                     sensor_type = "image",
                     units = "BGR",
                     data_type = "uint8",

@@ -46,8 +46,8 @@ class Writer:
         self.next_size_check_dt = datetime.min.replace(tzinfo=timezone.utc)
 
         #if the last move or anything else failed, delete all the temp files
-        for file in sorted(os.listdir(self.temp_write_location)):
-            os.remove(self.temp_write_location + file)
+        for file in sorted(os.listdir(self.temp_output_location)):
+            os.remove(self.temp_output_location + file)
         
         #check for files in cache and recover
         self._recover_from_cache()

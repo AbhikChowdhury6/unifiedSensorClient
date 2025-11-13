@@ -46,9 +46,6 @@ def i2c_controller(log_queue):
     devices = []
     platform_uuid = config['platform_uuid']
     for device in config['devices']:
-        sc = device['sensors_config']
-        if sc["file_writer_config"] not in [None, {}]:
-            sc["file_writer_config"]["log_queue"] = log_queue
         devices.append(load_class_and_instantiate(
             config['device_class_loc'] + device['module_name'] + '.py',
             device['class_name'],
@@ -57,10 +54,11 @@ def i2c_controller(log_queue):
             "bus_location": device['bus_location'],
             "device_name": device['device_name'],
             "debug_lvl": device['debug_lvl'],
-            "sensors_config": sc,
+            "sensors_config": device['sensors_config'],
             "device_config": {
                 "bus": I2C_BUS,
                 "address": device['address'],
+                "log_queue": log_queue,
                 },
             },
         ))

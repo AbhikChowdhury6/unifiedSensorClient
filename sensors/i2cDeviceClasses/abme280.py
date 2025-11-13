@@ -21,6 +21,7 @@ class aBME280():
                     device_config = {
                         "bus": None, # will be set by i2cController,
                         "address": 0x76, # default address for bme280
+                        "log_queue": None, # will be set by i2cController,
                     },
                     sensors_config = [
                         {
@@ -68,6 +69,8 @@ class aBME280():
 
         self.sensors = []
         for s in sensors_config: #add the device info to the sensor config
+            if "file_writer_config" in s:
+                s["file_writer_config"]["log_queue"] = device_config["log_queue"]
             s["platform_uuid"] = platform_uuid
             s["bus_location"] = bus_location
             s["device_name"] = device_name
