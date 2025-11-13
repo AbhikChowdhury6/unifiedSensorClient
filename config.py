@@ -402,8 +402,8 @@ detector_timelapse_writer_process_config = {
     "time_before_seconds": 16,
     "time_after_seconds": 16,
     
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
-    "camera_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}",
+    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz.sock",
+    "camera_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz",
     
     "detector_endpoints": [
         f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
@@ -543,13 +543,14 @@ yolo_person_detector_process_config = {
 all_process_configs = {
     "sqlite": [1, sqlite_writer_process_config],
     "i2c": [1, i2c_controller_process_config],
-    "video": [1, video_controller_process_config],
+    "video": [1, video_controller_process_1_config],
+    "detector_timelapse": [1, detector_timelapse_writer_process_config],
     "yolo": [1, yolo_person_detector_process_config],
-    "audio": [1, audio_controller_process_config],
+#    "audio": [1, audio_controller_process_config],
 #    "opus": [1, audio_writer_process_config],
 #    "dark": [0, is_dark_detector_process_config],
 #    "motion": [0, motion_detector_process_config],
 #    "buttons": pigpio_toggle_buttons_process_config,
 #    "led": [0, led_controller_process_config],
-    "file-up": [0, file_uploader_process_config],
+#    "file-up": [0, file_uploader_process_config],
 }
