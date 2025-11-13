@@ -22,7 +22,7 @@ class PiCamera:
                     sensor_type = "image",
                     units = "BGR",
                     data_type = "uint8",
-                    data_shape = "1x960x540x3",
+                    shape = "1x960x540x3",
                     hz = 8,
                     file_writer_config = {},
                     debug_lvl = 30,
@@ -51,6 +51,8 @@ class PiCamera:
             "format": format})
         self.camera.configure(self.video_config)
         self.camera.start()
+
+        fwc = file_writer_config
         
         sensor_config = {
             "platform_uuid": platform_uuid,
@@ -59,7 +61,7 @@ class PiCamera:
             "sensor_type": sensor_type,
             "units": units,
             "data_type": data_type,
-            "data_shape": data_shape,
+            "shape": shape,
             "hz": hz,
             "file_writer_config": file_writer_config,
             "debug_lvl": debug_lvl,

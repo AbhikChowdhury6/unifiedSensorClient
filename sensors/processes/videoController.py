@@ -36,8 +36,11 @@ def video_controller(log_queue):
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     l.info(config["short_name"] + " controller connected to control topic")
 
+    fwc = config['file_writer_config']
+    fwc["log_queue"] = log_queue
+
     camera = load_class_and_instantiate(
-        config['camera_class_loc'] + config['camera_type_module'] + '.py',
+        config['camera_class_loc'] + config['camera_module_name'] + '.py',
         config['camera_class_name'],
         l,
         {"platform_uuid": config['platform_uuid'],
@@ -46,9 +49,9 @@ def video_controller(log_queue):
         "sensor_type": config['sensor_type'],
         "units": config['units'],
         "data_type": config['data_type'],
-        "data_shape": config['data_shape'],
+        "shape": config['shape'],
         "hz": config['hz'],
-        "file_writer_config": config['file_writer_config'],
+        "file_writer_config": fwc,
         "debug_lvl": config['debug_lvl'],
 
         "camera_index": config['camera_index'],

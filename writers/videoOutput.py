@@ -51,7 +51,7 @@ class video_output:
             qoi.write(fn, data[i])
     
     def load(self):
-        files = os.listdir(self.persist_location).sorted()
+        files = sorted(os.listdir(self.persist_location))
         if len(files) == 0:
             return
         self.l.info(self.log_name + " found " + str(len(files)) + " files in cache")

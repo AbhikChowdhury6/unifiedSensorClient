@@ -46,7 +46,7 @@ class Writer:
         self.next_size_check_dt = datetime.min.replace(tzinfo=timezone.utc)
 
         #if the last move or anything else failed, delete all the temp files
-        for file in os.listdir(self.temp_write_location).sorted():
+        for file in sorted(os.listdir(self.temp_write_location)):
             os.remove(self.temp_write_location + file)
         
         #check for files in cache and recover
@@ -74,7 +74,7 @@ class Writer:
         self.last_dt = None
         
         #delete all the cached files , they should all be older than the last dt
-        for file in os.listdir(self.cache_location).sorted():
+        for file in sorted(os.listdir(self.cache_location)):
             os.remove(self.cache_location + file)
 
     def _should_close(self, dt):

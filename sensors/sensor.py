@@ -86,7 +86,7 @@ class Sensor:
         self.writer_process = None
         if file_writer_config:
             wc = file_writer_config
-            writer_args = {"log_queue": wc["log_queue"],
+            writer_args = {
                            "topic": self.topic,
                            "hz": self.hz,
                            "output_hz": wc["output_hz"],
