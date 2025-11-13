@@ -25,7 +25,9 @@ class Sensor:
                     file_writer_config = {},
                     debug_lvl = "warning",
                     retrieve_data = lambda: None,
-                    is_ready=lambda: True):
+                    is_ready=lambda: True,
+                    **kwargs
+                    ):
         if retrieve_data is None:
             raise ValueError("retrieve_data is required")
         self.retrieve_data = retrieve_data

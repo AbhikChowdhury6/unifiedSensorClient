@@ -18,7 +18,8 @@ class Writer:
                     completed_write_location,
                     target_file_size,
                     file_size_check_interval_s_range,
-                    debug_lvl = "warning",
+                    debug_lvl = 30,
+                    **kwargs
                     ):
         self.output_base = output.output_base
         self.object_name = self.output_base + "_writer-object"
