@@ -37,7 +37,8 @@ def video_controller(log_queue):
     l.info(config["short_name"] + " controller connected to control topic")
 
     fwc = config['file_writer_config']
-    fwc["log_queue"] = log_queue
+    if fwc not in [None, {}]:
+        fwc["log_queue"] = log_queue
 
     camera = load_class_and_instantiate(
         config['camera_class_loc'] + config['camera_module_name'] + '.py',
