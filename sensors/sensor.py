@@ -125,7 +125,7 @@ class Sensor:
 
         #read the data
         new_data = self.retrieve_data()
-        read_micros = (datetime.now() - now).total_seconds() * 1_000_000
+        read_micros = (datetime.now(timezone.utc) - now).total_seconds() * 1_000_000
         self.max_read_micros = max(self.max_read_micros, read_micros)
         self.l.trace("read time: " + str(read_micros) + " microseconds")
         self.l.trace("max read time: " + str(self.max_read_micros) + " microseconds")

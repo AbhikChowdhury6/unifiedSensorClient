@@ -20,6 +20,7 @@ def writer_process(log_queue,
                     output_module,
                     additional_output_config = {},
                     debug_lvl = "warning",
+                    **kwargs
                     ):
     process_name = topic + "_writer-process"
     l = logging.getLogger(process_name)
