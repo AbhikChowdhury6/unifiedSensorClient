@@ -189,7 +189,7 @@ i2c_controller_process_config = {
         {   
             "module_name": "abme280",
             "class_name": "aBME280",
-            "module_path": "sensors.i2c.abme280",
+            "module_path": "sensors.i2cDeviceClasses.abme280",
             "device_name": "bosch-bme280",
             "bus_location": "i2c-1-0x76",
             "address": 0x76,

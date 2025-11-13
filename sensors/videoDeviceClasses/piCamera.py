@@ -34,6 +34,7 @@ class PiCamera:
                     format = "RGB888",
                     flip_vertical = True,
                     timestamp_images = True,
+                    **kwargs,
                     ):
         self.device_name = f"{platform_uuid}_{bus_location}_{device_name}"
 
