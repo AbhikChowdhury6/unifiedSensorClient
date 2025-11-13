@@ -286,6 +286,7 @@ video_controller_process_1_config = {
     "time_to_shutdown": .25,
     "debug_lvl": 20,
     
+    "camera_class_loc": repoPath + "unifiedSensorClient/sensors/videoDeviceClasses/",
     "camera_module_name": "piCamera",
     "camera_class_name": "PiCamera",
     "camera_module_path": "sensors.videoDeviceClasses.piCamera",

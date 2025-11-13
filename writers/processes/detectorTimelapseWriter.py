@@ -10,7 +10,7 @@ from config import zmq_control_endpoint, detector_timelapse_writer_process_confi
 import zmq
 import logging
 from platformUtils.logUtils import worker_configurer, set_process_title
-from config import dt_to_fnString, fnString_to_dt
+from config import dt_to_fnString, fnString_to_dt, file_writer_process_info
 from writers.writer import Writer
 from writers.videoOutput import video_output
 import qoi
@@ -38,11 +38,16 @@ def detector_timelapse_writer(log_queue):
     sub.setsockopt(zmq.SUBSCRIBE, config["camera_topic"].encode())
     l.info(config["short_name"] + " writer subscribed to " + config['camera_topic'] + " at " + config['camera_endpoint'])
 
-    full_speed_output = video_output(**config["full_speed_output_config"])
-    timelapse_output = video_output(**config["timelapse_output_config"])
+
+    full_speed_output_config = config["full_speed_output_config"]
+
+    timelapse_output_config = config["timelapse_output_config"]
+
+    full_speed_output = video_output(**full_speed_output_config, **file_writer_process_info)
+    timelapse_output = video_output(**timelapse_output_config, **file_writer_process_info)
     
-    full_speed_writer = Writer(**config["full_speed_output_config"], output=full_speed_output)
-    timelapse_writer = Writer(**config["timelapse_output_config"], output=timelapse_output)
+    full_speed_writer = Writer(**full_speed_output_config, **file_writer_process_info, output=full_speed_output)
+    timelapse_writer = Writer(**timelapse_output_config, **file_writer_process_info, output=timelapse_output)
 
     timelapse_hz = config["timelapse_output_config"]["hz"]
     seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)

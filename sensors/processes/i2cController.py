@@ -50,7 +50,7 @@ def i2c_controller(log_queue):
             config['device_class_loc'] + device['module_name'] + '.py',
             device['class_name'],
             l,
-            {"platform_uuid": platform_uuid,
+            **{"platform_uuid": platform_uuid,
             "bus_location": device['bus_location'],
             "device_name": device['device_name'],
             "debug_lvl": device['debug_lvl'],

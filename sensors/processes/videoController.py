@@ -8,14 +8,13 @@ import zmq
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-class_loc = repoPath + "unifiedSensorClient/cameraClasses/"
 from platformUtils.zmq_codec import ZmqCodec
 import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 from config import video_controller_process_1_config, zmq_control_endpoint
 
 config = video_controller_process_1_config
-def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
+def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(module_name, filepath)
     module = importlib.util.module_from_spec(spec)
@@ -38,8 +37,9 @@ def video_controller(log_queue):
     l.info(config["short_name"] + " controller connected to control topic")
 
     camera = load_class_and_instantiate(
-        class_loc + config['camera_type_module'] + '.py',
-        config['camera_type_class'],
+        config['camera_class_loc'] + config['camera_type_module'] + '.py',
+        config['camera_class_name'],
+        l,
         {"platform_uuid": config['platform_uuid'],
         "bus_location": config['bus_location'],
         "device_name": config['device_name'],
