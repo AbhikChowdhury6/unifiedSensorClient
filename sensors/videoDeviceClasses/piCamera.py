@@ -25,7 +25,7 @@ class PiCamera:
                     data_shape = "1x960x540x3",
                     hz = 8,
                     file_writer_config = {},
-                    debug_lvl = "warning",
+                    debug_lvl = 30,
 
                     camera_index = 0,
                     camera_width = 1920,

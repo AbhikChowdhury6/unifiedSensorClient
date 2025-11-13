@@ -16,7 +16,8 @@ class video_output:
                     camera_width,
                     camera_height,
                     fourcc = "avc1",
-                    debug_lvl = "warning"):
+                    debug_lvl = 30,
+                    **kwargs):
         
         self.output_base = output_base
         self.temp_write_location = temp_write_location

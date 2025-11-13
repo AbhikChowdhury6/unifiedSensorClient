@@ -16,7 +16,7 @@ class aBME280():
                     platform_uuid,
                     bus_location = "i2c-1-0x76",
                     device_name = "bosch-bme280",
-                    debug_lvl = "warning",
+                    debug_lvl = 30,
 
                     device_config = {
                         "bus": None, # will be set by i2cController,
