@@ -30,9 +30,8 @@ class Sensor:
                     **kwargs
                     ):
         
-        self.l = logging.getLogger(self.topic)
+        self.l = logging.getLogger("sensor_startup")
         self.l.setLevel(debug_lvl)
-        self.l.info(self.topic + " connected to " + self.endpoint)
         time.sleep(.25)
         
         if retrieve_data is None:
@@ -78,6 +77,9 @@ class Sensor:
         self.pub.bind(self.endpoint)
 
         #logging setup
+        self.l = logging.getLogger(self.topic)
+        self.l.setLevel(debug_lvl)
+        self.l.info(self.topic + " connected to " + self.endpoint)
 
 
         #ready
