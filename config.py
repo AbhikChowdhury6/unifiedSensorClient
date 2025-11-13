@@ -284,7 +284,7 @@ video_controller_process_1_config = {
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
-    "debug_lvl": 20,
+    "debug_lvl": 5,
     
     "camera_class_loc": repoPath + "unifiedSensorClient/sensors/videoDeviceClasses/",
     "camera_module_name": "piCamera",
@@ -299,7 +299,6 @@ video_controller_process_1_config = {
     "data_type": "uint8",
     "shape": "1x960x540x3",
     "hz": 8,
-    "debug_lvl": 20,
     "file_writer_config": {},
     "topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz",
 

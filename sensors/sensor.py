@@ -22,12 +22,19 @@ class Sensor:
                     data_type,
                     shape,
                     hz,
+                    log_queue = None,
                     file_writer_config = {},
                     debug_lvl = "warning",
                     retrieve_data = lambda: None,
                     is_ready=lambda: True,
                     **kwargs
                     ):
+        
+        self.l = logging.getLogger(self.topic)
+        self.l.setLevel(debug_lvl)
+        self.l.info(self.topic + " connected to " + self.endpoint)
+        time.sleep(.25)
+        
         if retrieve_data is None:
             raise ValueError("retrieve_data is required")
         self.retrieve_data = retrieve_data
@@ -46,6 +53,14 @@ class Sensor:
         self.units = units # dash separated units if multiple
         self.data_type = data_type
         self.shape = shape # nxn
+        self.l.debug(str(self.platform_uuid) + " " +
+                     str(self.bus_location) + " " + 
+                     str(self.device_name) + " " + 
+                     str(self.sensor_type) + " " + 
+                     str(self.units) + " " + 
+                     str(self.data_type) + " " + 
+                     str(self.shape) + " " + 
+                     str(self.hz) + "hz")
         #self.float_rounding_precision = config['float_rounding_precision']
 
         #zmq
@@ -63,10 +78,7 @@ class Sensor:
         self.pub.bind(self.endpoint)
 
         #logging setup
-        self.l = logging.getLogger(self.topic)
-        self.l.setLevel(debug_lvl)
-        self.l.info(self.topic + " connected to " + self.endpoint)
-        time.sleep(.25)
+
 
         #ready
         self.is_ready = is_ready
@@ -86,6 +98,9 @@ class Sensor:
         self.writer_process = None
         if file_writer_config:
             wc = file_writer_config
+            if "additional_output_config" not in wc:
+                wc["additional_output_config"] = {}
+            wc["additional_output_config"]["log_queue"] = log_queue
             writer_args = {
                            "topic": self.topic,
                            "hz": self.hz,
