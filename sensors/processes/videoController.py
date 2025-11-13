@@ -12,9 +12,9 @@ class_loc = repoPath + "unifiedSensorClient/cameraClasses/"
 from platformUtils.zmq_codec import ZmqCodec
 import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
-from config import video_controller_process_config, zmq_control_endpoint
+from config import video_controller_process_1_config, zmq_control_endpoint
 
-config = video_controller_process_config
+config = video_controller_process_1_config
 def load_class_and_instantiate(filepath, class_name, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(module_name, filepath)

@@ -182,6 +182,7 @@ i2c_controller_process_config = {
     "func_name": "i2c_controller",
     "short_name": "i2c",
     "time_to_shutdown": .1,
+    "platform_uuid": platform_uuid,
     "bus_number": 1,
     "debug_lvl": 20,
     "devices": [
