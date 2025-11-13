@@ -38,11 +38,11 @@ def detector_timelapse_writer(log_queue):
     sub.setsockopt(zmq.SUBSCRIBE, config["camera_topic"].encode())
     l.info(config["short_name"] + " writer subscribed to " + config['camera_topic'] + " at " + config['camera_endpoint'])
 
-    full_speed_output = video_output(config["full_speed_output_config"])
-    timelapse_output = video_output(config["timelapse_output_config"])
+    full_speed_output = video_output(**config["full_speed_output_config"])
+    timelapse_output = video_output(**config["timelapse_output_config"])
     
-    full_speed_writer = Writer(config["full_speed_output_config"], full_speed_output)
-    timelapse_writer = Writer(config["timelapse_output_config"], timelapse_output)
+    full_speed_writer = Writer(**config["full_speed_output_config"], output=full_speed_output)
+    timelapse_writer = Writer(**config["timelapse_output_config"], output=timelapse_output)
 
     timelapse_hz = config["timelapse_output_config"]["hz"]
     seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)

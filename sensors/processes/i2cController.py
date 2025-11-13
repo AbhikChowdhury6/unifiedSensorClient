@@ -42,18 +42,16 @@ def i2c_controller(log_queue):
     # init a bus using smbus2
     I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100000) 
     # compile a list of all of the devices
+    
     devices = []
     platform_uuid = config['platform_uuid']
-    bus_location = config['bus_location']
-
-    device_name = config['device_name']
     for device in config['devices']:
         devices.append(load_class_and_instantiate(
             class_loc + device['module_name'] + '.py',
             device['class_name'],
             {"platform_uuid": platform_uuid,
-            "bus_location": bus_location,
-            "device_name": device_name,
+            "bus_location": device['bus_location'],
+            "device_name": device['device_name'],
             "debug_lvl": device['debug_lvl'],
             "sensors_config": device['sensors_config'],
             "device_config": {
