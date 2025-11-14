@@ -29,6 +29,7 @@ class Writer:
         self.file_size_check_interval_s_range = file_size_check_interval_s_range
         self.hz = max(1, output.output_hz)
         self.output = output
+        self.output_file = None
 
         self.l = logging.getLogger(self.object_name)
         self.l.setLevel(debug_lvl)
@@ -80,6 +81,7 @@ class Writer:
     def _should_close(self, dt):
         if self.output.file_name is None:
             return False
+        self.output_file = self.output.file_name
         #new day
         if dt.date() != self.last_dt.date():
             return True
@@ -94,6 +96,8 @@ class Writer:
         rand_s = random.randint(*self.file_size_check_interval_s_range)
         self.next_size_check_dt = dt + timedelta(seconds=rand_s)
         
+        if self.output_file is None:
+            return False
         out_file_and_path = self.temp_write_location + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:

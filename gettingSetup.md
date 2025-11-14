@@ -18,3 +18,8 @@ sudo pip3 install adafruit-circuitpython-neopixel-spi
 #nmcli con down snet5
 #nmcli device wifi connect snet24 password secret
 #nmcli con delete snet 5
+
+
+sudo apt install wavpack
+which wavpack && wavpack --version
+which wvunpack && wvunpack --version
