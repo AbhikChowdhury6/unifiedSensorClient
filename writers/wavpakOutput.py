@@ -18,7 +18,8 @@ class wavpak_output:
                     channels = 1,
                     bits = 16,
                     sign = "s",
-                    endian = "le"):
+                    endian = "le",
+                    **kwargs):
         self.output_base = output_base
         self.temp_write_location = temp_write_location
         self.output_hz = max(1, output_hz)
