@@ -50,15 +50,16 @@ def writer_process(log_queue = None,
 
 
     wc = file_writer_process_info
-
-    output_module_name = file_output_infos[output_module]["module_name"]
-    importlib.import_module(output_module_name)
-    output_class = getattr(output_module_name, output_module_name)
-    output = output_class(**additional_output_config,
-                          output_base=output_base,
-                          output_hz=output_hz,
-                          temp_write_location=wc["temp_write_location"],
-                          debug_lvl=debug_lvl)
+    
+    # Dynamically import the output module using its fully qualified module path
+    output_info = file_output_infos[output_module]
+    output_module = importlib.import_module(output_info["module_path"])
+    output_ctor = getattr(output_module, output_info["func_name"])
+    output = output_ctor(**additional_output_config,
+                         output_base=output_base,
+                         output_hz=output_hz,
+                         temp_write_location=wc["temp_write_location"],
+                         debug_lvl=debug_lvl)
     
     writer = Writer(output=output,
                     temp_write_location=wc["temp_write_location"],

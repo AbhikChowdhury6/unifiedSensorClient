@@ -52,7 +52,7 @@ class Sensor:
         self.units = units # dash separated units if multiple
         self.data_type = data_type
         self.shape = shape # nxn
-        self.l.debug(str(self.platform_uuid) + " " +
+        print(str(self.platform_uuid) + " " +
                      str(self.bus_location) + " " + 
                      str(self.device_name) + " " + 
                      str(self.sensor_type) + " " + 
@@ -60,6 +60,7 @@ class Sensor:
                      str(self.data_type) + " " + 
                      str(self.shape) + " " + 
                      str(self.hz) + "hz")
+        sys.stdout.flush()
         #self.float_rounding_precision = config['float_rounding_precision']
 
         #zmq
