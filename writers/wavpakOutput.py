@@ -28,6 +28,8 @@ class wavpak_output:
         self.sign = sign
         self.endian = endian
 
+        self.file_name = None
+
         self.log_name = output_base + "_wavpak-output"
         self.l = logging.getLogger(self.log_name)
         self.l.setLevel(debug_lvl)
