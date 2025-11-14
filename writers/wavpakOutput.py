@@ -39,8 +39,8 @@ class wavpak_output:
         self.persist_fn = self.persist_location + "persist.pkl"
         #create the pickle file if it doesn't exist
         if not os.path.exists(self.persist_fn):
-            with open(self.persist_fn, "w") as f:
-                f.write("")
+            with open(self.persist_fn, "ab") as f:
+                pickle.dump([], f)
 
         self.extension = ".wavpack"
         self.raw_spec = f"--raw-pcm={self.output_hz},{self.bits}{self.sign},{self.channels},{self.endian}"
@@ -51,9 +51,22 @@ class wavpak_output:
             pickle.dump(obj, f)
     
     def load(self): #I would like this to be an iterator that returns the next line
-        with open(self.persist_fn, "r") as f:
-            for obj in pickle.load(f):
-                yield obj[0], obj[1]
+        if not os.path.exists(self.persist_fn) or os.path.getsize(self.persist_fn) == 0:
+            return
+        try:
+            with open(self.persist_fn, "rb") as f:
+                while True:
+                    try:
+                        obj = pickle.load(f)
+                    except EOFError:
+                        break
+                    except Exception as e:
+                        self.l.warning(self.log_name + " skipping corrupt cache entry: " + str(e))
+                        break
+                    if isinstance(obj, (list, tuple)) and len(obj) == 2:
+                        yield obj[0], obj[1]
+        except FileNotFoundError:
+            return
     
 
     def _stderr_reader(self, p):
