@@ -4,7 +4,7 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from sensors.sensor import Sensor
 import logging
-
+import numpy as np
 # open the config
 from config import i2c_controller_process_config
 config = i2c_controller_process_config
@@ -58,9 +58,10 @@ class aBME280():
         
         self.is_ready = lambda: True
 
-        self.get_air_temperature = lambda: self.bme280.temperature
-        self.get_relative_humidity = lambda: self.bme280.relative_humidity
-        self.get_barometric_pressure = lambda: self.bme280.pressure * 100
+        #wrap these so they return a 1x1 numpy array
+        self.get_air_temperature = lambda: np.array([self.bme280.temperature])  
+        self.get_relative_humidity = lambda: np.array([self.bme280.relative_humidity])
+        self.get_barometric_pressure = lambda: np.array([self.bme280.pressure * 100])
         
         retrieve_datas = {'air-temperature': self.get_air_temperature,
                             'relative-humidity': self.get_relative_humidity,
