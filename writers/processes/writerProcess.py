@@ -41,6 +41,8 @@ def writer_process(log_queue = None,
     interp_seconds = 0
     last_dt = datetime.min.replace(tzinfo=timezone.utc)
     last_data = None
+    if msg_hz is None and output_hz is not None:
+        msg_hz = output_hz
     if msg_hz < 1:
         interp_seconds = 1/msg_hz
         #if it's 800ms into the second, assume the data isn't coming
