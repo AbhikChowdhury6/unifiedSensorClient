@@ -29,6 +29,8 @@ class wavpak_output:
         self.endian = endian
 
         self.file_name = None
+        self.temp_output_location = temp_write_location + output_base + "/"
+        os.makedirs(self.temp_output_location, exist_ok=True)
 
         self.log_name = output_base + "_wavpak-output"
         self.l = logging.getLogger(self.log_name)
