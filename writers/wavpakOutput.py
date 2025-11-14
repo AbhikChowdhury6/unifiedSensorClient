@@ -84,7 +84,7 @@ class wavpak_output:
     
 
     def open(self, dt):
-        self.file_name = self.file_base + "_" + dt_to_fnString(dt) + self.extension
+        self.file_name = self.output_base + "_" + dt_to_fnString(dt) + self.extension
         self.proc = subprocess.Popen(
             ["wavpack", "-hh", self.raw_spec, "-", "-o", self.temp_output_location + self.file_name],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
