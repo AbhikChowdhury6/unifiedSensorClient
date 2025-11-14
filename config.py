@@ -210,6 +210,7 @@ i2c_controller_process_config = {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         #the change from topic is drop the data shape time dimension
+                        "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
                     },
                 },
@@ -224,6 +225,7 @@ i2c_controller_process_config = {
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
                     },
                 },
@@ -238,6 +240,7 @@ i2c_controller_process_config = {
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": .25,
+                        "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz",
                     },
                 },

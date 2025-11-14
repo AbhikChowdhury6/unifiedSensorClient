@@ -44,27 +44,27 @@ def video_controller(log_queue):
         config['camera_class_loc'] + config['camera_module_name'] + '.py',
         config['camera_class_name'],
         l,
-        {"platform_uuid": config['platform_uuid'],
-        "bus_location": config['bus_location'],
-        "device_name": config['device_name'],
-        "sensor_type": config['sensor_type'],
-        "units": config['units'],
-        "data_type": config['data_type'],
-        "shape": config['shape'],
-        "hz": config['hz'],
-        "file_writer_config": fwc,
-        "debug_lvl": config['debug_lvl'],
-
-        "camera_index": config['camera_index'],
-        "camera_width": config['camera_width'],
-        "camera_height": config['camera_height'],
-        "subsample_ratio": config['subsample_ratio'],
-        "format": config['format'],
-        "flip_vertical": config['flip_vertical'],
-        "timestamp_images": config['timestamp_images'],
+        **{
+            "platform_uuid": config['platform_uuid'],
+            "bus_location": config['bus_location'],
+            "device_name": config['device_name'],
+            "sensor_type": config['sensor_type'],
+            "units": config['units'],
+            "data_type": config['data_type'],
+            "shape": config['shape'],
+            "hz": config['hz'],
+            "file_writer_config": fwc,
+            "debug_lvl": config['debug_lvl'],
+            "camera_index": config['camera_index'],
+            "camera_width": config['camera_width'],
+            "camera_height": config['camera_height'],
+            "subsample_ratio": config['subsample_ratio'],
+            "format": config['format'],
+            "flip_vertical": config['flip_vertical'],
+            "timestamp_images": config['timestamp_images'],
         })
 
-    hz = config['fps']
+    hz = config.get('fps', config['hz'])
     delay_micros = 1_000_000/hz
     sensor = camera.sensor
 

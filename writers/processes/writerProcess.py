@@ -18,6 +18,7 @@ def writer_process(log_queue = None,
                     output_hz = None,
                     output_base = None,
                     output_module = None,
+                    file_size_check_interval_s_range = (30, 60),
                     additional_output_config = {},
                     debug_lvl = 30,
                     **kwargs
@@ -65,7 +66,7 @@ def writer_process(log_queue = None,
                     temp_write_location=wc["temp_write_location"],
                     output_write_location=wc["output_write_location"],
                     target_file_size=wc["target_file_size"],
-                    file_size_check_interval_s_range=wc["file_size_check_interval_s_range"],
+                    file_size_check_interval_s_range=file_size_check_interval_s_range,
                     debug_lvl=debug_lvl)
     while True:
         msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())

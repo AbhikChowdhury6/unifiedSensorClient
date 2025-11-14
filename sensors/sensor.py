@@ -110,6 +110,7 @@ class Sensor:
                            "output_hz": wc["output_hz"],
                            "output_base": wc["output_base"],
                            "output_module": wc["output_module"],
+                           "file_size_check_interval_s_range": wc["file_size_check_interval_s_range"],
                            "additional_output_config": wc["additional_output_config"]}
             self.writer_process = mp.Process(target=writer_process, name=self.topic + "_writer-process", kwargs=writer_args)
             self.writer_process.start()
