@@ -27,7 +27,7 @@ class Writer:
         self.output_write_location = output_write_location
         self.target_file_size = target_file_size
         self.file_size_check_interval_s_range = file_size_check_interval_s_range
-        self.hz = max(1, output.hz)
+        self.hz = max(1, output.output_hz)
         self.output = output
 
         self.l = logging.getLogger(self.object_name)
