@@ -34,7 +34,14 @@ class wavpak_output:
         self.l.info(self.log_name + " starting")
 
 
-        self.persist_fn = temp_write_location + output_base + "_persist/persist.pkl"
+        self.persist_location = temp_write_location + output_base + "_persist/"
+        os.makedirs(self.persist_location, exist_ok=True)
+        self.persist_fn = self.persist_location + "persist.pkl"
+        #create the pickle file if it doesn't exist
+        if not os.path.exists(self.persist_fn):
+            with open(self.persist_fn, "w") as f:
+                f.write("")
+
         self.extension = ".wavpack"
         self.raw_spec = f"--raw-pcm={self.output_hz},{self.bits}{self.sign},{self.channels},{self.endian}"
 
@@ -54,11 +61,11 @@ class wavpak_output:
             for raw in iter(p.stderr.readline, b""):
                 line = raw.decode(errors="replace").rstrip()
                 if line:
-                    self.l.debug(self.log_name + " ffmpeg stderr: " + line)
+                    self.l.debug(self.log_name + " wavpack stderr: " + line)
         except Exception as e:
-            self.l.error(self.file_base + " writer: ffmpeg stderr reader error: " + str(e))
+            self.l.error(self.log_name + " wavpack stderr reader error: " + str(e))
         finally:
-            self.l.debug(self.file_base + " writer: ffmpeg stderr: [closed]")
+            self.l.debug(self.log_name + " wavpack stderr: [closed]")
     
 
     def open(self, dt):
