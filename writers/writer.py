@@ -44,7 +44,8 @@ class Writer:
 
         #deciding to close
         self.last_dt = None
-        self.next_size_check_dt = datetime.min.replace(tzinfo=timezone.utc)
+        self.next_size_check_dt = datetime.now(timezone.utc) + \
+            timedelta(seconds=random.randint(*self.file_size_check_interval_s_range))
 
         #if the last move or anything else failed, delete all the temp files
         for file in sorted(os.listdir(self.temp_output_location)):
