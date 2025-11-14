@@ -49,7 +49,7 @@ class wavpak_output:
 
     def persist(self, dt, data):
         obj = [dt, data]
-        with open(self.persist_fn, "a") as f:
+        with open(self.persist_fn, "ab") as f:
             pickle.dump(obj, f)
     
     def load(self): #I would like this to be an iterator that returns the next line
