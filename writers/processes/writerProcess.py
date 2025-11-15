@@ -62,7 +62,8 @@ def writer_process(log_queue = None,
                          output_hz=output_hz,
                          temp_write_location=wc["temp_write_location"],
                          debug_lvl=debug_lvl)
-    l.trace(process_name + " output constructor time: " + str(datetime.now().timestamp() - start_time))
+    if debug_lvl <= 5:
+        l.trace(process_name + " output constructor time: " + str(datetime.now().timestamp() - start_time))
     
     if debug_lvl <= 5: start_time = datetime.now().timestamp()
     writer = Writer(output=output,
@@ -71,11 +72,13 @@ def writer_process(log_queue = None,
                     target_file_size=wc["target_file_size"],
                     file_size_check_interval_s_range=file_size_check_interval_s_range,
                     debug_lvl=debug_lvl)
-    l.trace(process_name + " writer constructor time: " + str(datetime.now().timestamp() - start_time))
+    if debug_lvl <= 5:
+        l.trace(process_name + " writer constructor time: " + str(datetime.now().timestamp() - start_time))
     
     while True:
         msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
-        l.trace(process_name + " got message " + len(msg))
+        if debug_lvl <= 5:
+            l.trace(process_name + " got message " + len(msg))
 
         if msg_topic == "control" and (msg[0] == "exit_all" or 
                 (msg[0] == "exit" and msg[-1] == process_name)):
