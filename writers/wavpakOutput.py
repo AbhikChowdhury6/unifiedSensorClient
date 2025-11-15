@@ -123,10 +123,15 @@ class wavpak_output:
         data = data.flatten()
         self.proc.stdin.write(data.tobytes(order="C"))
 
-    def close(self):
+    def close(self, dt):
         self.proc.stdin.flush()
         self.proc.stdin.close()
         self.proc.wait()
         if self.proc.returncode != 0:
             raise RuntimeError(self.proc.stderr.read().decode("utf-8"))
         os.sync()
+        new_fn = self.file_name.replace(".wv", "_" + dt_to_fnString(dt) + ".wv")
+        os.rename(self.temp_output_location + self.file_name, 
+                  self.temp_output_location + new_fn)
+        self.file_name = None
+        return new_fn
