@@ -23,6 +23,8 @@ def writer_process(log_queue = None,
                     debug_lvl = 30,
                     **kwargs
                     ):
+    if log_queue is None:
+        raise ValueError("log_queue is required")
     process_name = topic + "_writer-process"
     l = logging.getLogger(process_name)
     set_process_title(process_name)
