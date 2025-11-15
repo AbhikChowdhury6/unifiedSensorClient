@@ -11,6 +11,8 @@ from platformUtils.zmq_codec import ZmqCodec
 import logging
 import multiprocessing as mp
 from writers.processes.writerProcess import writer_process
+from config import camera_topic, camera_endpoint
+
 
 class Sensor:
     def __init__(self, 
@@ -84,6 +86,10 @@ class Sensor:
         self.l = logging.getLogger(self.topic)
         self.l.setLevel(debug_lvl)
         self.l.info(self.topic + " connected to " + self.endpoint)
+        self.l.info(self.topic)
+        self.l.info(camera_topic)
+        self.l.info(self.endpoint)
+        self.l.info(camera_endpoint)
 
 
         #ready

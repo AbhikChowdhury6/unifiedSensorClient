@@ -48,7 +48,7 @@ class wavpak_output:
                 pickle.dump([], f)
         
         if os.path.exists(self.persist_recovery_fn):
-            with open(self.persist_recovery_fn, "rb") as f:
+            with open(self.persist_recovery_fn, "ab") as f:
                 pickle.dump([], f)
 
         self.extension = ".wv"

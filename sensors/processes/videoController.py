@@ -65,11 +65,14 @@ def video_controller(log_queue):
             "timestamp_images": config['timestamp_images'],
         })
 
+    l.trace("camera initialized")
     hz = config.get('fps', config['hz'])
     delay_micros = 1_000_000/hz
     sensor = camera.sensor
+    l.trace(delay_micros)
 
     while True:
+        l.trace("retrieving data")
         sensor.retrieve_data()
 
         try:
@@ -88,6 +91,7 @@ def video_controller(log_queue):
         
 
         micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
+        l.trace("sleeping for " + str(micros_to_delay) + " microseconds")
         time.sleep(micros_to_delay/1_000_000)
 
     l.info(config["short_name"] + " controller exiting")
