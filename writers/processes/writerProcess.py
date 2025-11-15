@@ -70,6 +70,7 @@ def writer_process(log_queue = None,
                     debug_lvl=debug_lvl)
     while True:
         msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
+        l.trace(process_name + " got message " + len(msg))
 
         if msg_topic == "control" and (msg[0] == "exit_all" or 
                 (msg[0] == "exit" and msg[-1] == process_name)):

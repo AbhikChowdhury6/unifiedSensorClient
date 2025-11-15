@@ -287,7 +287,7 @@ video_controller_process_1_config = {
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
-    "debug_lvl": 5,
+    "debug_lvl": 20,
     
     "camera_class_loc": repoPath + "unifiedSensorClient/sensors/videoDeviceClasses/",
     "camera_module_name": "piCamera",
@@ -401,7 +401,7 @@ detector_timelapse_writer_process_config = {
     "func_name": "detector_timelapse_writer",
     "short_name": "detector_timelapse",
     "time_to_shutdown": .1,
-    "debug_lvl": 20,
+    "debug_lvl": 5,
     "cache_location": "/home/pi/camera_cache/",
     "temp_file_location": "/home/pi/data/temp/",
     "completed_write_location_base": "/home/pi/data/upload/",
@@ -501,7 +501,7 @@ yolo_person_detector_process_config = {
     "func_name": "yolo_person_detector",
     "short_name": "yolo",
     "time_to_shutdown": 3,
-    "debug_lvl": 10,
+    "debug_lvl": 5,
     "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
     "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
@@ -510,7 +510,7 @@ yolo_person_detector_process_config = {
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,
     "interval_seconds": 4,
-    "verbose": False,
+    "verbose": True,
 }
 
 # is_dark_detector_process_config = {

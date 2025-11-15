@@ -46,7 +46,7 @@ class wavpak_output:
             with open(self.persist_fn, "ab") as f:
                 pickle.dump([], f)
 
-        self.extension = ".wavpack"
+        self.extension = ".wv"
         self.raw_spec = f"--raw-pcm={self.output_hz},{self.bits}{self.sign},{self.channels},{self.endian}"
 
     def persist(self, dt, data):
@@ -86,7 +86,9 @@ class wavpak_output:
     
 
     def open(self, dt):
-        self.file_name = self.output_base + "_" + dt_to_fnString(dt) + self.extension
+        # for some reason, the cli adds the extension
+        self.file_name = self.output_base + "_" + dt_to_fnString(dt)# + self.extension
+        
         self.proc = subprocess.Popen(
             ["wavpack", "-hh", self.raw_spec, "-", "-o", self.temp_output_location + self.file_name],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
@@ -106,3 +108,4 @@ class wavpak_output:
         self.proc.wait()
         if self.proc.returncode != 0:
             raise RuntimeError(self.proc.stderr.read().decode("utf-8"))
+        os.sync()

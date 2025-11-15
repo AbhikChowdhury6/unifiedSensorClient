@@ -129,6 +129,7 @@ class Writer:
 
         
         if self._should_close(end_dt):
+            self.l.info(self.object_name + " should close at " + str(end_dt))
             self._close_file(end_dt)
 
         self.output.persist(dt, data)
