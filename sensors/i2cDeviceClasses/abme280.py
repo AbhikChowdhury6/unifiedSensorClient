@@ -75,6 +75,7 @@ class aBME280():
         for s in sensors_config: #add the device info to the sensor config
             if "file_writer_config" in s:
                 s["file_writer_config"]["log_queue"] = device_config["log_queue"]
+            s["log_queue"] = device_config["log_queue"]
             s["platform_uuid"] = platform_uuid
             s["bus_location"] = bus_location
             s["device_name"] = device_name

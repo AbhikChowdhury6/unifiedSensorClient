@@ -26,7 +26,8 @@ class PiCamera:
                     hz = 8,
                     file_writer_config = {},
                     debug_lvl = 30,
-
+                    log_queue = None,
+                    
                     camera_index = 0,
                     camera_width = 1920,
                     camera_height = 1080,
@@ -35,6 +36,9 @@ class PiCamera:
                     flip_vertical = True,
                     timestamp_images = True,
                     ):
+        if log_queue is None:
+            raise ValueError("log_queue is required")
+        self.log_queue = log_queue
         self.device_name = f"{platform_uuid}_{bus_location}_{device_name}"
 
         self.l = logging.getLogger(self.device_name)
@@ -64,6 +68,7 @@ class PiCamera:
             "shape": shape,
             "hz": hz,
             "file_writer_config": file_writer_config,
+            "log_queue": log_queue,
             "debug_lvl": debug_lvl,
             "retrieve_data": self.capture,
             "is_ready": lambda: True,

@@ -53,6 +53,7 @@ def video_controller(log_queue):
             "data_type": config['data_type'],
             "shape": config['shape'],
             "hz": config['hz'],
+            "log_queue": log_queue,
             "file_writer_config": fwc,
             "debug_lvl": config['debug_lvl'],
             "camera_index": config['camera_index'],
