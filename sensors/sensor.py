@@ -105,6 +105,8 @@ class Sensor:
                 wc["additional_output_config"] = {}
             wc["additional_output_config"]["log_queue"] = log_queue
             writer_args = {
+                           "debug_lvl": debug_lvl,
+                           "log_queue": log_queue,
                            "topic": self.topic,
                            "hz": self.hz,
                            "output_hz": wc["output_hz"],
