@@ -117,6 +117,7 @@ class wavpak_output:
         t = threading.Thread(target=self._stderr_reader, args=(self.proc,), daemon=True)
         t.start()
         self.proc._stderr_thread = t  # attach for lifecycle awareness
+        self.file_name = self.file_name + self.extension
     
     def write(self, data):
         #the array is numsamples x 1 for 1 channel, so we need to flatten it
