@@ -281,6 +281,10 @@ audio_controller_process_1_config = {
     },
 }
 
+#c3dec556_csi-0_picamV3-sony-imx708-noir-120fov-12MP_image_BGR_uint8_1x960x540x3_8hz
+camera_topic = f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz"
+camera_endpoint = f"ipc:///tmp/{camera_topic}.sock"
+
 video_controller_process_1_config = {
     "module_name": "videoController",
     "module_path": "sensors.processes.videoController",
@@ -303,7 +307,7 @@ video_controller_process_1_config = {
     "shape": "1x960x540x3",
     "hz": 8,
     "file_writer_config": {},
-    "topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz",
+    "topic": camera_topic,
 
     "camera_index": 0,
     "camera_width": 1920,
@@ -367,32 +371,32 @@ sqlite_writer_process_config = {
 
 
 
-writer_process_configs = {
-    "module_name": "writerProcess",
-    "module_path": "writers.processes.writerProcess",
-    "func_name": "writer_process",
-    "temp_write_location": "/home/pi/data/temp/",
-    "completed_write_location": "/home/pi/data/upload/",
-    "target_file_size": 10 * 1024 * 1024, #10MB
-    "file_size_check_interval_s_range": (30, 60),
-    "writers": {
-        "audio": {
-            "output_module": "audioOutput",
-            "output_module_path": "writers.audioOutput",
-            "output_class": "audio_output",
+# writer_process_configs = {
+#     "module_name": "writerProcess",
+#     "module_path": "writers.processes.writerProcess",
+#     "func_name": "writer_process",
+#     "temp_write_location": "/home/pi/data/temp/",
+#     "completed_write_location": "/home/pi/data/upload/",
+#     "target_file_size": 10 * 1024 * 1024, #10MB
+#     "file_size_check_interval_s_range": (30, 60),
+#     "writers": {
+#         "audio": {
+#             "output_module": "audioOutput",
+#             "output_module_path": "writers.audioOutput",
+#             "output_class": "audio_output",
 
-            "configs": [
-                {
-                "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-16kHz_1x8000-int16",
-                "process_name": f"{platform_uuid}_audio-1_generic_audio-1ch-16kHz_1x8000-int16_writer-process",
-                "expected_hz": 2,
-                "bitrate": "16k",
-                "sample_rate": 16000,
-                }
-            ],
-        },
-    }
-}  
+#             "configs": [
+#                 {
+#                 "topic": f"{platform_uuid}_audio-1_generic_audio-1ch-16kHz_1x8000-int16",
+#                 "process_name": f"{platform_uuid}_audio-1_generic_audio-1ch-16kHz_1x8000-int16_writer-process",
+#                 "expected_hz": 2,
+#                 "bitrate": "16k",
+#                 "sample_rate": 16000,
+#                 }
+#             ],
+#         },
+#     }
+# }  
 
 
 detector_timelapse_writer_process_config = {
@@ -409,8 +413,8 @@ detector_timelapse_writer_process_config = {
     "time_before_seconds": 16,
     "time_after_seconds": 16,
     
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz.sock",
-    "camera_topic": f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz",
+    "camera_endpoint": camera_endpoint,
+    "camera_topic": camera_topic,
     
     "detector_endpoints": [
         f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
@@ -502,8 +506,8 @@ yolo_person_detector_process_config = {
     "short_name": "yolo",
     "time_to_shutdown": 3,
     "debug_lvl": 5,
-    "camera_name": f"{platform_uuid}_csi-0_{picamv3noirwide}",
-    "camera_endpoint": f"ipc:///tmp/{platform_uuid}_csi-0_{picamv3noirwide}.sock",
+    "camera_name": camera_topic,
+    "camera_endpoint": camera_endpoint,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
     "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
     "model": "yolo11n",

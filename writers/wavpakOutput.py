@@ -61,13 +61,20 @@ class wavpak_output:
     
     def load(self): #I would like this to be an iterator that returns the next line
         if not os.path.exists(self.persist_fn) or os.path.getsize(self.persist_fn) == 0:
+            self.l.info(self.log_name + " no cache found")
             return
+        
         #if there is a persist file there, append it to persistRecovery.pkl
+        self.l.info(self.log_name + " appending cache to recovery file")
         with open(self.persist_recovery_fn, "ab") as f:
             with open(self.persist_fn, "rb") as f2:
                 f.write(f2.read())
+
         #and delete the original file
+        self.l.info(self.log_name + " deleting original cache file")
         os.remove(self.persist_fn)
+
+        self.l.info(self.log_name + " recovering from cache")
         #then load and write the contents of persistRecovery.pkl
         with open(self.persist_recovery_fn, "rb") as f:
             while True:
@@ -83,6 +90,7 @@ class wavpak_output:
 
         
         #then delete persistRecovery.pkl
+        self.l.info(self.log_name + " deleting recovery file")
         os.remove(self.persist_recovery_fn)
     
 
