@@ -41,9 +41,14 @@ class wavpak_output:
         self.persist_location = temp_write_location + output_base + "_persist/"
         os.makedirs(self.persist_location, exist_ok=True)
         self.persist_fn = self.persist_location + "persist.pkl"
+        self.persist_recovery_fn = self.persist_location + "persistRecovery.pkl"
         #create the pickle file if it doesn't exist
         if not os.path.exists(self.persist_fn):
             with open(self.persist_fn, "ab") as f:
+                pickle.dump([], f)
+        
+        if os.path.exists(self.persist_recovery_fn):
+            with open(self.persist_recovery_fn, "rb") as f:
                 pickle.dump([], f)
 
         self.extension = ".wv"
@@ -57,20 +62,28 @@ class wavpak_output:
     def load(self): #I would like this to be an iterator that returns the next line
         if not os.path.exists(self.persist_fn) or os.path.getsize(self.persist_fn) == 0:
             return
-        try:
-            with open(self.persist_fn, "rb") as f:
-                while True:
-                    try:
-                        obj = pickle.load(f)
-                    except EOFError:
-                        break
-                    except Exception as e:
-                        self.l.warning(self.log_name + " skipping corrupt cache entry: " + str(e))
-                        break
-                    if isinstance(obj, (list, tuple)) and len(obj) == 2:
-                        yield obj[0], obj[1]
-        except FileNotFoundError:
-            return
+        #if there is a persist file there, append it to persistRecovery.pkl
+        with open(self.persist_recovery_fn, "ab") as f:
+            with open(self.persist_fn, "rb") as f2:
+                f.write(f2.read())
+        #and delete the original file
+        os.remove(self.persist_fn)
+        #then load and write the contents of persistRecovery.pkl
+        with open(self.persist_recovery_fn, "rb") as f:
+            while True:
+                try:
+                    obj = pickle.load(f)
+                except EOFError:
+                    break
+                except Exception as e:
+                    self.l.warning(self.log_name + " skipping corrupt cache entry: " + str(e))
+                    break
+                if isinstance(obj, (list, tuple)) and len(obj) == 2:
+                    yield obj[0], obj[1]
+
+        
+        #then delete persistRecovery.pkl
+        os.remove(self.persist_recovery_fn)
     
 
     def _stderr_reader(self, p):
