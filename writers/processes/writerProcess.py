@@ -56,18 +56,23 @@ def writer_process(log_queue = None,
     output_info = file_output_infos[output_module]
     output_module = importlib.import_module(output_info["module_path"])
     output_ctor = getattr(output_module, output_info["func_name"])
+    if debug_lvl <= 5: start_time = datetime.now().timestamp()
     output = output_ctor(**additional_output_config,
                          output_base=output_base,
                          output_hz=output_hz,
                          temp_write_location=wc["temp_write_location"],
                          debug_lvl=debug_lvl)
+    l.trace(process_name + " output constructor time: " + str(datetime.now().timestamp() - start_time))
     
+    if debug_lvl <= 5: start_time = datetime.now().timestamp()
     writer = Writer(output=output,
                     temp_write_location=wc["temp_write_location"],
                     output_write_location=wc["output_write_location"],
                     target_file_size=wc["target_file_size"],
                     file_size_check_interval_s_range=file_size_check_interval_s_range,
                     debug_lvl=debug_lvl)
+    l.trace(process_name + " writer constructor time: " + str(datetime.now().timestamp() - start_time))
+    
     while True:
         msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
         l.trace(process_name + " got message " + len(msg))

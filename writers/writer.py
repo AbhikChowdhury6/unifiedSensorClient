@@ -32,6 +32,7 @@ class Writer:
         self.output_file = None
 
         self.l = logging.getLogger(self.object_name)
+        self.debug_lvl = debug_lvl
         self.l.setLevel(debug_lvl)
         self.l.info(self.object_name + " starting")
 
@@ -82,7 +83,7 @@ class Writer:
     def _should_close(self, dt):
         if self.output.file_name is None:
             return False
-        self.output_file = self.output.file_name
+
         #new day
         if dt.date() != self.last_dt.date():
             return True
@@ -97,8 +98,7 @@ class Writer:
         rand_s = random.randint(*self.file_size_check_interval_s_range)
         self.next_size_check_dt = dt + timedelta(seconds=rand_s)
         
-        if self.output_file is None:
-            return False
+        self.output_file = self.output.file_name
         out_file_and_path = self.temp_write_location + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:
@@ -127,23 +127,34 @@ class Writer:
         else:
             end_dt = dt
 
-        
+        if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         if self._should_close(end_dt):
+            self.l.trace(self.object_name + " should close time: " + str(datetime.now().timestamp() - start_time))
             self.l.info(self.object_name + " should close at " + str(end_dt))
+            if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self._close_file(end_dt)
-
+            self.l.trace(self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
+        
+        if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         self.output.persist(dt, data)
+        self.l.trace(self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
         
         if self.output.file_name is None:
+            if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self.output.open(dt)
+            self.l.trace(self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
         
+        if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         self.output.write(data)
+        self.l.trace(self.object_name + " write time: " + str(datetime.now().timestamp() - start_time))
 
         self.last_dt = end_dt
     
     def close(self):
         if self.output.file_name is not None:
+            if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self._close_file(self.last_dt)
+            self.l.trace(self.object_name + " close time: " + str(datetime.now().timestamp() - start_time))
         self.l.info(self.object_name + " closing")
         
 

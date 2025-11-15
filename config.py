@@ -221,7 +221,7 @@ i2c_controller_process_config = {
                     "shape": "1x1",
                     "hz": 1,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
-                    "debug_lvl": 20,
+                    "debug_lvl": 5,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
