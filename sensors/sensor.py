@@ -30,6 +30,9 @@ class Sensor:
                     **kwargs
                     ):
         
+        if log_queue is None:
+            raise ValueError("log_queue is required")
+        self.log_queue = log_queue
         self.l = logging.getLogger("sensor_startup")
         self.l.setLevel(debug_lvl)
         time.sleep(.25)

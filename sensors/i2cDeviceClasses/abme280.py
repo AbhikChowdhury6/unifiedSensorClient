@@ -50,6 +50,9 @@ class aBME280():
                         }
                     ]):
         
+        if device_config['log_queue'] is None:
+            raise ValueError("log_queue is required")
+        self.log_queue = device_config['log_queue']
         self.device_name = f"{platform_uuid}_{bus_location}_{device_name}"
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
