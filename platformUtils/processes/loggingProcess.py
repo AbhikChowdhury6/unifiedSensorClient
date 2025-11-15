@@ -52,7 +52,7 @@ def listener_configurer(config, allow_dict, deny_dict):
     file_handler = logging.FileHandler(config["logfile_path"])
     file_handler.setFormatter(formatter)
     file_handler.setLevel(TRACE_LEVEL_NUM)
-    file_handler.addFilter(NameAndFunctionFilter(allow_dict, deny_dict))
+    #file_handler.addFilter(NameAndFunctionFilter(allow_dict, deny_dict))
 
     # Stream handler (stdout)
     stream_handler = logging.StreamHandler()
@@ -68,7 +68,7 @@ def listener_configurer(config, allow_dict, deny_dict):
         }
     ))
     stream_handler.setLevel(TRACE_LEVEL_NUM)
-    stream_handler.addFilter(NameAndFunctionFilter(allow_dict, deny_dict))
+    #stream_handler.addFilter(NameAndFunctionFilter(allow_dict, deny_dict))
 
     root = logging.getLogger()
     root.handlers = []  # reset in listener
