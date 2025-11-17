@@ -73,7 +73,7 @@ def video_controller(log_queue):
 
     while True:
         l.trace("retrieving data")
-        sensor.retrieve_data()
+        sensor.read_data()
 
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
