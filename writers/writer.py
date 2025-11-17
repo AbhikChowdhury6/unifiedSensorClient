@@ -114,21 +114,23 @@ class Writer:
         
         return False
 
-    def log(self, lvl:int, s:str):
+    def log(self, lvl:int, msg):
         if lvl > self.debug_lvl:
             return
+        if callable(msg):
+            msg = msg()
         if lvl == 5:
-            self.l.trace(s)
+            self.l.trace(msg)
         elif lvl == 10:
-            self.l.debug(s)
+            self.l.debug(msg)
         elif lvl == 20:
-            self.l.info(s)
+            self.l.info(msg)
         elif lvl == 30:
-            self.l.warning(s)
+            self.l.warning(msg)
         elif lvl == 40:
-            self.l.error(s)
+            self.l.error(msg)
         elif lvl == 50:
-            self.l.critical(s)
+            self.l.critical(msg)
 
     def write(self, dt, data):
         
@@ -153,24 +155,24 @@ class Writer:
 
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         if self._should_close(end_dt):
-            self.log(5, self.object_name + " should close time: " + str(datetime.now().timestamp() - start_time))
-            self.log(20, self.object_name + " should close at " + str(end_dt))
+            self.log(5, lambda:self.object_name + " should close time: " + str(datetime.now().timestamp() - start_time))
+            self.log(20, lambda:self.object_name + " should close at " + str(end_dt))
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self._close_file(end_dt)
-            self.log(5, self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
+            self.log(5, lambda:self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         self.output.persist(dt, data)
-        self.log(5, self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
+        self.log(5, lambda:self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
         
         if self.output.file_name is None:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self.output.open(dt)
-            self.log(5, self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
+            self.log(5, lambda:self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         self.output.write(data)
-        self.log(5, self.object_name + " write time: " + str(datetime.now().timestamp() - start_time))
+        self.log(5, lambda:self.object_name + " write time: " + str(datetime.now().timestamp() - start_time))
 
         self.last_dt = end_dt
     
@@ -179,8 +181,8 @@ class Writer:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self._close_file(self.last_dt)
             
-            self.log(5, self.object_name + " close time: " + str(datetime.now().timestamp() - start_time))
-        self.log(20, self.object_name + " closing")
+            self.log(5, lambda:self.object_name + " close time: " + str(datetime.now().timestamp() - start_time))
+        self.log(20, lambda:self.object_name + " closing")
         
 
 
