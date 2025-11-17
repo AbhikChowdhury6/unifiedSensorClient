@@ -40,7 +40,7 @@ def i2c_controller(log_queue):
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     l.info(config["short_name"] + " controller connected to control topic")
     # init a bus using smbus2
-    I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100000) 
+    I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=400_000) 
     # compile a list of all of the devices
     
     devices = []

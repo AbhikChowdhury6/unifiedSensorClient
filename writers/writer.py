@@ -86,13 +86,16 @@ class Writer:
 
     def _should_close(self, dt):
         if self.output.file_name is None:
+            self.log(5, self.object_name + " file is not open")
             return False
 
         #new day
         if dt.date() != self.last_dt.date():
+            self.log(5, self.object_name + " new day")
             return True
         #too long since last write
         if dt - self.last_dt > 2 * timedelta(seconds=1/self.hz):
+            self.log(5, self.object_name + " too long since last write")
             return True
 
         # Get the current size on disk of the output file
@@ -106,9 +109,26 @@ class Writer:
         out_file_and_path = self.temp_write_location + self.output_base + "/" + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:
+            self.log(5, self.object_name + " output size is too large")
             return True
         
         return False
+
+    def log(self, lvl:int, s:str):
+        if lvl > self.debug_lvl:
+            return
+        if lvl == 5:
+            self.l.trace(s)
+        elif lvl == 10:
+            self.l.debug(s)
+        elif lvl == 20:
+            self.l.info(s)
+        elif lvl == 30:
+            self.l.warning(s)
+        elif lvl == 40:
+            self.l.error(s)
+        elif lvl == 50:
+            self.l.critical(s)
 
     def write(self, dt, data):
         
@@ -133,29 +153,24 @@ class Writer:
 
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         if self._should_close(end_dt):
-            if self.debug_lvl <= 5:
-                self.l.trace(self.object_name + " should close time: " + str(datetime.now().timestamp() - start_time))
-            self.l.info(self.object_name + " should close at " + str(end_dt))
+            self.log(5, self.object_name + " should close time: " + str(datetime.now().timestamp() - start_time))
+            self.log(20, self.object_name + " should close at " + str(end_dt))
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self._close_file(end_dt)
-            if self.debug_lvl <= 5:
-                self.l.trace(self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
+            self.log(5, self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         self.output.persist(dt, data)
-        if self.debug_lvl <= 5:
-            self.l.trace(self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
+        self.log(5, self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
         
         if self.output.file_name is None:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self.output.open(dt)
-            if self.debug_lvl <= 5:
-                self.l.trace(self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
+            self.log(5, self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
         self.output.write(data)
-        if self.debug_lvl <= 5:
-            self.l.trace(self.object_name + " write time: " + str(datetime.now().timestamp() - start_time))
+        self.log(5, self.object_name + " write time: " + str(datetime.now().timestamp() - start_time))
 
         self.last_dt = end_dt
     
@@ -164,9 +179,8 @@ class Writer:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self._close_file(self.last_dt)
             
-            if self.debug_lvl <= 5:
-                self.l.trace(self.object_name + " close time: " + str(datetime.now().timestamp() - start_time))
-        self.l.info(self.object_name + " closing")
+            self.log(5, self.object_name + " close time: " + str(datetime.now().timestamp() - start_time))
+        self.log(20, self.object_name + " closing")
         
 
 
