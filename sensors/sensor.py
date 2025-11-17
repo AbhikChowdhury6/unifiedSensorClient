@@ -145,7 +145,7 @@ class Sensor:
         if new_data is None:
             self.l.error("no data read from " + self.topic)
             return
-        self.l.trace("data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
+        self.l.debug("data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
         
         #round ts to the nearest hz seconds
         if self.hz <= 1:

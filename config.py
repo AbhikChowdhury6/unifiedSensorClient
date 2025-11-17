@@ -210,7 +210,7 @@ i2c_controller_process_config = {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         #the change from topic is drop the data shape time dimension
-                        "file_size_check_interval_s_range": (300, 600),
+                        "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
                     },
                 },
@@ -291,7 +291,7 @@ video_controller_process_1_config = {
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
-    "debug_lvl": 20,
+    "debug_lvl": 10,
     
     "camera_class_loc": repoPath + "unifiedSensorClient/sensors/videoDeviceClasses/",
     "camera_module_name": "piCamera",
@@ -506,7 +506,7 @@ yolo_person_detector_process_config = {
     "short_name": "yolo",
     "time_to_shutdown": 3,
     "debug_lvl": 5,
-    "camera_name": camera_topic,
+    "camera_topic": camera_topic,
     "camera_endpoint": camera_endpoint,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
     "pub_topic": f"{platform_uuid}_yolo11m_person_detection",

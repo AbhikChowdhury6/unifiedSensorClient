@@ -118,8 +118,10 @@ def yolo_person_detector(log_queue):
 
 
     #subscribe to camera topic
+    l.info(config["short_name"] + " camera endpoint: " + config["camera_endpoint"])
+    l.info(config["short_name"] + " camera topic: " + config["camera_topic"])
     sub.connect(config["camera_endpoint"])
-    sub.setsockopt(zmq.SUBSCRIBE, config["camera_name"].encode())
+    sub.setsockopt(zmq.SUBSCRIBE, config["camera_topic"].encode())
     l.info(config["short_name"] + " process connected to camera topic")
 
 
@@ -152,7 +154,7 @@ def yolo_person_detector(log_queue):
                 l.info(config["short_name"] + " got control exit")
                 break
             continue
-        if topic != config["camera_name"]:
+        if topic != config["camera_topic"]:
             continue
 
         dt_utc, frame = msg[0], msg[1]
