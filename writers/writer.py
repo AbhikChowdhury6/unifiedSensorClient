@@ -86,16 +86,16 @@ class Writer:
 
     def _should_close(self, dt):
         if self.output.file_name is None:
-            self.log(5, self.object_name + " file is not open")
+            self.log(10, self.object_name + " file is not open")
             return False
 
         #new day
         if dt.date() != self.last_dt.date():
-            self.log(5, self.object_name + " new day")
+            self.log(10, self.object_name + " new day")
             return True
         #too long since last write
         if dt - self.last_dt > 2 * timedelta(seconds=1/self.hz):
-            self.log(5, self.object_name + " too long since last write")
+            self.log(10, self.object_name + " too long since last write")
             return True
 
         # Get the current size on disk of the output file
@@ -109,13 +109,13 @@ class Writer:
         out_file_and_path = self.temp_write_location + self.output_base + "/" + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:
-            self.log(5, self.object_name + " output size is too large")
+            self.log(10, self.object_name + " output size is too large")
             return True
         
         return False
 
     def log(self, lvl:int, msg):
-        if lvl > self.debug_lvl:
+        if lvl < self.debug_lvl:
             return
         if callable(msg):
             msg = msg()
