@@ -68,17 +68,16 @@ class Writer:
         self.output_file = self.output.close(dt)
 
         #move the file to the correct location in data
-        finished_file_name = self.output_base + self.output_file
-        infile = self.temp_write_location + self.output_file
-        outfile = self.output_write_location + finished_file_name
+        infile = self.temp_write_location + self.output_base + "/" + self.output_file
+        outfile = self.output_write_location + self.output_base + "/" + self.output_file
         shutil.move(infile, outfile)
-        self.pub.send_multipart(ZmqCodec.encode(self.object_name, [dt, finished_file_name]))
+        self.pub.send_multipart(ZmqCodec.encode(self.object_name, [dt, outfile]))
         self.output_file = None
         self.last_dt = None
         
         #delete all the cached files , they should all be older than the last dt
-        for file in sorted(os.listdir(self.cache_location)):
-            os.remove(self.cache_location + file)
+        for file in sorted(os.listdir(self.persist_location)):
+            os.remove(self.persist_location + file)
 
     def _should_close(self, dt):
         if self.output.file_name is None:
@@ -99,7 +98,7 @@ class Writer:
         self.next_size_check_dt = dt + timedelta(seconds=rand_s)
         
         self.output_file = self.output.file_name
-        out_file_and_path = self.temp_write_location + self.output_file
+        out_file_and_path = self.temp_write_location + self.output_base + "/" + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:
             return True
