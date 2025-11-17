@@ -42,6 +42,7 @@ def writer_process(log_queue = None,
     l.info(process_name + " subscribed to " + topic)
 
     interp_seconds = 0
+    interped_messages = 0
     last_dt = datetime.min.replace(tzinfo=timezone.utc)
     last_data = None
     if msg_hz is None and output_hz is not None:
@@ -77,44 +78,76 @@ def writer_process(log_queue = None,
     if debug_lvl <= 5:
         l.trace(process_name + " writer constructor time: " + str(datetime.now().timestamp() - start_time))
     
+    def sleep_to_next_second():
+        next_second_ts = datetime.now(timezone.utc).replace(microsecond=0).timestamp() + 1
+        time.sleep(next_second_ts - datetime.now().timestamp())
+
     while True:
-        msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
-        if debug_lvl <= 5:
-            l.trace(process_name + " got message ")
-
-        if msg_topic == "control" and (msg[0] == "exit_all" or 
+        #handle no interploation
+        if not interp_seconds:
+            msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
+            if msg_topic == "control" and (msg[0] == "exit_all" or 
                 (msg[0] == "exit" and msg[-1] == process_name)):
-            l.info(process_name + " exiting")
-            break
+                l.info(process_name + " exiting")
+                break
+            
+            if msg_topic != topic:
+                continue
 
-        if msg_topic != topic:
-            continue
-
-
-        dt, chunk = msg
-
-        if interp_seconds == 0: #if we got new data
+            dt, chunk = msg
             writer.write(dt, chunk)
             continue
 
-        if dt != last_dt:
+
+        #handle interpolating
+        msg_topic = None
+        msg = None
+        try:
+            msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
+        except zmq.Again:
+            l.trace(process_name + " no message available")
+            #if we're interpolating, and we have never gotten data, sleep to the next second
+            if last_data is None:
+                sleep_to_next_second()
+                continue
+        
+        #at this stage, we either got a message, or recev timed out and we should interpolate
+        
+        #if we got a message, handle it
+        if msg_topic is not None: #we either got a control message or new data
+            if msg_topic == "control" and (msg[0] == "exit_all" or 
+                (msg[0] == "exit" and msg[-1] == process_name)):
+                l.info(process_name + " exiting")
+                break
+            
+            if msg_topic != topic: #don't sleep if we didn't get new data
+                continue
+
+            dt, chunk = msg
             writer.write(dt, chunk)
+            interped_messages = 0
             last_dt = dt
             last_data = chunk
-            #if we're interpolating, and got new data, wait till the end of the second
-            # so we don't try to intpolate the same second
-            time.sleep(max(0, (dt.replace(microsecond=0).timestamp() + 1 - datetime.now().timestamp())))
+            sleep_to_next_second()
+            continue
+
+
+        #at this point, we are interpolating, and recev timed out
+        interped_messages += 1
+
+        if interped_messages > interp_seconds:
+            #it's been too long, sleep to the next second and don't write anything
+            sleep_to_next_second()
             continue
         
-        #until the end of the interp_seconds, we'll write the last data
-        curr_dt = datetime.now(timezone.utc).replace(microsecond=0)
-        if curr_dt < last_dt + timedelta(seconds=interp_seconds):
-            writer.write(curr_dt, last_data)
+        #write the interpolated data
+        interp_time = last_dt +timedelta(seconds=interped_messages)
+        writer.write(interp_time, last_data)
         
         #if it for some reason took longer than 200ms to write, don't wait
-        time.sleep(max(0, curr_dt.timestamp() + 1 - datetime.now().timestamp()))
+        next_second_ts = datetime.now(timezone.utc).replace(microsecond=0).timestamp() + 1
+        time.sleep(max(0, next_second_ts - datetime.now().timestamp()))
         
-
 
     l.info(process_name + " exiting")
     writer.close()
