@@ -136,6 +136,7 @@ class Sensor:
         if not self.is_ready():
             return
 
+        self.l.trace("reading data from " + self.topic)
         #read the data
         new_data = self.retrieve_data()
         read_micros = (datetime.now(timezone.utc) - now).total_seconds() * 1_000_000
@@ -145,7 +146,7 @@ class Sensor:
         if new_data is None:
             self.l.error("no data read from " + self.topic)
             return
-        self.l.debug("data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
+        self.l.trace("data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
         
         #round ts to the nearest hz seconds
         if self.hz <= 1:
