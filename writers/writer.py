@@ -36,6 +36,11 @@ class Writer:
         self.l.setLevel(debug_lvl)
         self.l.info(self.object_name + " starting")
 
+        output_endpoint = f"ipc:///tmp/{self.output_base}.sock"
+        self.pub = zmq.Context().socket(zmq.PUB)
+        self.pub.bind(output_endpoint)
+        self.l.info(self.object_name + " publishing to " + output_endpoint)
+
         self.persist_location = temp_write_location + self.output_base + "_persist" + "/"
         os.makedirs(self.persist_location, exist_ok=True)
         self.temp_output_location = temp_write_location + self.output_base + "/"
