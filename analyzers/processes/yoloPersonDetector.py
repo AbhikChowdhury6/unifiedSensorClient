@@ -169,7 +169,7 @@ def yolo_person_detector(log_queue):
 
         l.trace(config["short_name"] + " starting inference")
         start_time = time.time()
-        results = model.predict(frame, verbose=config["verbose"])
+        results = model.predict(frame[0], verbose=config["verbose"])
 
         l.debug(config["short_name"] + " inference completed in " + str(time.time() - start_time) + " seconds")
         

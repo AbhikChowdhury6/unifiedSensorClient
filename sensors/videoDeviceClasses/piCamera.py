@@ -86,6 +86,8 @@ class PiCamera:
         if self.timestamp_images:
             frame = self._add_timestamp(frame)
 
+        #add a time dimension to the frame
+        frame = np.expand_dims(frame, axis=0)
         return frame
     
 
