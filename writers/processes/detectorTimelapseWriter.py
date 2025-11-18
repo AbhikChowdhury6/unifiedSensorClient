@@ -54,6 +54,7 @@ def detector_timelapse_writer(log_queue):
 
 
     persist_location = config["cache_location"] + config["short_name"] + "/"
+    os.makedirs(persist_location, exist_ok=True)
     def persist(dt, frame):
         fn = persist_location + dt_to_fnString(dt) + ".qoi"
         qoi.write(fn, frame)

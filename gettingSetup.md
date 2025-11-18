@@ -23,3 +23,8 @@ sudo pip3 install adafruit-circuitpython-neopixel-spi
 sudo apt install wavpack
 which wavpack && wavpack --version
 which wvunpack && wvunpack --version
+
+
+
+add this to /boot/firmware/config.txt
+dtparam=i2c_arm_baudrate=400000
