@@ -35,6 +35,7 @@ class Sensor:
         if log_queue is None:
             raise ValueError("log_queue is required")
         self.log_queue = log_queue
+        self.debug_lvl = debug_lvl
         self.l = logging.getLogger("sensor_startup")
         self.l.setLevel(debug_lvl)
         time.sleep(.25)
