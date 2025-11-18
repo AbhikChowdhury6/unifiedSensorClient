@@ -102,7 +102,7 @@ class Sensor:
         _ = self.retrieve_data() # a warmup reading
         time.sleep(.25)
 
-        self.last_read_ts = None
+        self.last_read_dt = None
         self.last_read_data = None
         self.grace_period_seconds = (1/self.hz) * (grace_period_samples+1)
         
@@ -188,19 +188,15 @@ class Sensor:
         new_data_np = np.array(new_data)
 
         #handle grace period
-        if self.last_read_ts is not None:
-            time_since_last_read = now.timestamp() - self.last_read_ts
+        if self.last_read_dt is not None:
+            time_since_last_read = (now - self.last_read_dt).total_seconds()
             if time_since_last_read > 1/self.hz:
-                self.log(10, lambda: self.topic + " time since last read is greater than 1/hz")
-                self.log(10, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
-                self.log(10, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
-                self.log(10, lambda: self.topic + " hz: " + str(self.hz) + "hz")
                 #forward fill the missed samples
                 if self.last_read_data is not None:
                     missed_samples = int(time_since_last_read / (1/self.hz)) -1
                     self.log(10, lambda: self.topic + " missed " + str(missed_samples) + " samples")
                     for i in range(missed_samples):
-                        new_dt = now - timedelta(seconds=i/self.hz)
+                        new_dt = self.last_read_dt + timedelta(seconds=i/self.hz)
                         self.log(10, lambda: self.topic + " forwarding fill sample at: " + str(new_dt))
                         self.pub.send_multipart(ZmqCodec.encode(self.topic, [new_dt, self.last_read_data]))
 
@@ -212,6 +208,6 @@ class Sensor:
                 self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
 
 
-        self.last_read_ts = now.timestamp()
+        self.last_read_dt = now
         self.last_read_data = new_data_np
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))
