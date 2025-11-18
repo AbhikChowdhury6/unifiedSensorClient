@@ -21,6 +21,7 @@ def detector_timelapse_writer(log_queue):
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
+    l.setLevel(config["debug_lvl"])
     l.info(config["short_name"] + " writer starting")
 
     ctx = zmq.Context()
@@ -123,6 +124,7 @@ def detector_timelapse_writer(log_queue):
 
         if switch_to_fs:
             #catch up on time before seconds amount of frames
+            l.info(config["short_name"] + " writer catching up on time before seconds amount of frames")
             for dt, fr in load():
                 full_speed_writer.write(dt, fr)
             delete_old_files()
@@ -139,6 +141,7 @@ def detector_timelapse_writer(log_queue):
         persist(dt_utc, frame)
 
         if switch_to_tl:
+            l.info(config["short_name"] + " writer switching to timelapse")
             start_writing_after = dt_utc + seconds_till_irrelvance
             next_timelapse_frame_update = start_writing_after
             switch_to_tl = False
@@ -159,6 +162,7 @@ def detector_timelapse_writer(log_queue):
             delete_old_files()
             next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
 
-
-        timelapse_writer.write(dt_utc - seconds_till_irrelvance, curr_timelapse_frame)
+        frame_dt = dt_utc - seconds_till_irrelvance
+        l.debug(config["short_name"] + " writer writing timelapse frame at " + str(frame_dt))
+        timelapse_writer.write(frame_dt, curr_timelapse_frame)
 

@@ -432,6 +432,7 @@ detector_timelapse_writer_process_config = {
         "gop_interval": 256,
         "preset": "ultrafast",
         "crf": 23,
+        "debug_lvl": 10,
 
         "codec": "libx264",
         "pix_fmt": "yuv420p",
@@ -447,6 +448,7 @@ detector_timelapse_writer_process_config = {
         "gop_interval": 1024,
         "preset": "slow",
         "crf": 23,
+        "debug_lvl": 5,
 
         "codec": "libx264",
         "pix_fmt": "yuv420p",
@@ -510,10 +512,10 @@ yolo_person_detector_process_config = {
     "camera_endpoint": camera_endpoint,
     "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
     "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
-    "model": "yolo11n",
+    "model": "yolo11m",
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,
-    "interval_seconds": 4,
+    "interval_seconds": 8,
     "verbose": True,
 }
 
