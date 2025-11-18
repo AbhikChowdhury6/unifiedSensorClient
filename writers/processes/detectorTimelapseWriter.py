@@ -60,7 +60,7 @@ def detector_timelapse_writer(log_queue):
         qoi.write(fn, frame)
     
     def load():#for when we switch to full speed
-        files = [file for file in os.listdir(persist_location).sorted() 
+        files = [file for file in sorted(os.listdir(persist_location)) 
                     if fnString_to_dt(file) <= datetime.now(timezone.utc) -\
                         timedelta(seconds=config["time_before_seconds"])]
         
@@ -69,7 +69,7 @@ def detector_timelapse_writer(log_queue):
             yield fnString_to_dt(file), data
 
     def delete_old_files():
-        files = os.listdir(persist_location).sorted()
+        files = sorted(os.listdir(persist_location))
         for file in files:
             if fnString_to_dt(file) < datetime.now(timezone.utc) -\
                 seconds_till_irrelvance:
