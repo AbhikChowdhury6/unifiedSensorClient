@@ -126,11 +126,11 @@ def detector_timelapse_writer(log_queue):
         
 
         if is_full_speed:
-            full_speed_writer.write(dt_utc, frame)
+            full_speed_writer.write(dt_utc, frame[0])
             continue
         
         #it's a timelapse, presist in case we need to switch to full speed
-        persist(dt_utc, frame)
+        persist(dt_utc, frame[0])
 
         if switch_to_tl:
             start_writing_after = dt_utc + seconds_till_irrelvance
