@@ -129,6 +129,24 @@ class Sensor:
             self.writer_process.start()
             self.writer_process.is_alive()
 
+    def log(self, lvl:int, msg):
+        if lvl < self.debug_lvl:
+            return
+        if callable(msg):
+            msg = msg()
+        if lvl == 5:
+            self.l.trace(msg)
+        elif lvl == 10:
+            self.l.debug(msg)
+        elif lvl == 20:
+            self.l.info(msg)
+        elif lvl == 30:
+            self.l.warning(msg)
+        elif lvl == 40:
+            self.l.error(msg)
+        elif lvl == 50:
+            self.l.critical(msg)
+    
     def read_data(self):
         #check if it's the right time to read the data
         now = datetime.now(timezone.utc)
@@ -138,17 +156,17 @@ class Sensor:
         if not self.is_ready():
             return
 
-        self.l.trace("reading data from " + self.topic)
+        self.log(5, lambda: "reading data from " + self.topic)
         #read the data
         new_data = self.retrieve_data()
         read_micros = (datetime.now(timezone.utc) - now).total_seconds() * 1_000_000
         self.max_read_micros = max(self.max_read_micros, read_micros)
-        self.l.trace("read time: " + str(read_micros) + " microseconds")
-        self.l.trace("max read time: " + str(self.max_read_micros) + " microseconds")
+        self.log(5, lambda: "read time: " + str(read_micros) + " microseconds")
+        self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
         if new_data is None:
-            self.l.error("no data read from " + self.topic)
+            self.log(40, lambda: "no data read from " + self.topic)
             return
-        self.l.trace("data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
+        self.log(5, lambda: "data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
         
         #round ts to the nearest hz seconds
         if self.hz <= 1:
@@ -160,16 +178,18 @@ class Sensor:
             now = now.replace(microsecond=int(rounded_down_micros))# round down to the nearest delay micros
         
         self.retrive_after = now + timedelta(microseconds=self.delay_micros)
-        self.l.trace("next read after" + str(self.retrive_after))
+        self.log(5, lambda: "next read after" + str(self.retrive_after))
 
         # convert to numpy array before sending
         new_data_np = np.array(new_data)
         if self.last_read_ts is not None:
             time_since_last_read = now.timestamp() - self.last_read_ts
             if time_since_last_read > 1/self.hz:
-                self.l.warning(self.topic + " time since last read is greater than 1/hz")
-                self.l.warning(self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
-                self.l.warning(self.topic + " hz: " + str(self.hz) + "hz")
+                self.log(30, lambda: self.topic + " time since last read is greater than 1/hz")
+                self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
+                self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
+                self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
+
 
         self.last_read_ts = now.timestamp()
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))
