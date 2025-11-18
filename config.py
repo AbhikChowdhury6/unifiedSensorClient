@@ -204,8 +204,9 @@ i2c_controller_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 16,
+                    "grace_period_samples": 1,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz",
-                    "debug_lvl": 5,
+                    "debug_lvl": 10,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
@@ -220,8 +221,9 @@ i2c_controller_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 1,
+                    "grace_period_samples": 0,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
-                    "debug_lvl": 5,
+                    "debug_lvl": 10,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -235,8 +237,9 @@ i2c_controller_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": .25,
+                    "grace_period_samples": 0,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_0p25hz",
-                    "debug_lvl": 5,
+                    "debug_lvl": 10,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": .25,
@@ -306,6 +309,7 @@ video_controller_process_1_config = {
     "data_type": "uint8",
     "shape": "1x960x540x3",
     "hz": 8,
+    "grace_period_samples": 0,
     "file_writer_config": {},
     "topic": camera_topic,
 

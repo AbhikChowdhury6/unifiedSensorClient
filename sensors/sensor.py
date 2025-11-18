@@ -24,6 +24,7 @@ class Sensor:
                     data_type = None,
                     shape = None,
                     hz = None,
+                    grace_period_samples = 0,
                     log_queue = None,
                     file_writer_config = {},
                     debug_lvl = 30,
@@ -102,6 +103,8 @@ class Sensor:
         time.sleep(.25)
 
         self.last_read_ts = None
+        self.last_read_data = None
+        self.grace_period_seconds = (1/self.hz) * (grace_period_samples+1)
         
         #calculate the estimated read time
         ts = datetime.now(timezone.utc)
@@ -183,14 +186,31 @@ class Sensor:
 
         # convert to numpy array before sending
         new_data_np = np.array(new_data)
+
+        #handle grace period
         if self.last_read_ts is not None:
             time_since_last_read = now.timestamp() - self.last_read_ts
             if time_since_last_read > 1/self.hz:
-                self.log(30, lambda: self.topic + " time since last read is greater than 1/hz")
+                self.log(10, lambda: self.topic + " time since last read is greater than 1/hz")
+                self.log(10, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
+                self.log(10, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
+                self.log(10, lambda: self.topic + " hz: " + str(self.hz) + "hz")
+                #forward fill the missed samples
+                if self.last_read_data is not None:
+                    missed_samples = int(time_since_last_read / (1/self.hz))
+                    self.log(10, lambda: self.topic + " missed " + str(missed_samples) + " samples")
+                    for i in range(missed_samples):
+                        new_dt = now - timedelta(seconds=i/self.hz)
+                        self.pub.send_multipart(ZmqCodec.encode(self.topic, [new_dt, self.last_read_data]))
+
+            if time_since_last_read > self.grace_period_seconds:
+                self.log(30, lambda: self.topic + " time since last read is greater than grace period")
+                self.log(30, lambda: self.topic + " grace period: " + str(self.grace_period_seconds) + " seconds")
                 self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
                 self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
                 self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
 
 
         self.last_read_ts = now.timestamp()
+        self.last_read_data = new_data_np
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))

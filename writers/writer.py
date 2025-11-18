@@ -95,7 +95,7 @@ class Writer:
             return True
         
         #too long since last write
-        if dt - self.last_dt > 2 * timedelta(seconds=1/self.hz):
+        if dt - self.last_dt > timedelta(seconds=1/self.hz):
             self.log(10, self.object_name + " too long since last write")
             self.log(10, lambda:self.object_name + " too long since last write: " + str(dt - self.last_dt) + " seconds")
             return True
