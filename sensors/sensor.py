@@ -197,10 +197,11 @@ class Sensor:
                 self.log(10, lambda: self.topic + " hz: " + str(self.hz) + "hz")
                 #forward fill the missed samples
                 if self.last_read_data is not None:
-                    missed_samples = int(time_since_last_read / (1/self.hz))
+                    missed_samples = int(time_since_last_read / (1/self.hz)) -1
                     self.log(10, lambda: self.topic + " missed " + str(missed_samples) + " samples")
                     for i in range(missed_samples):
                         new_dt = now - timedelta(seconds=i/self.hz)
+                        self.log(10, lambda: self.topic + " forwarding fill sample at: " + str(new_dt))
                         self.pub.send_multipart(ZmqCodec.encode(self.topic, [new_dt, self.last_read_data]))
 
             if time_since_last_read > self.grace_period_seconds:
