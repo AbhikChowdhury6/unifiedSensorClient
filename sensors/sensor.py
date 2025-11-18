@@ -165,11 +165,11 @@ class Sensor:
         # convert to numpy array before sending
         new_data_np = np.array(new_data)
         if self.last_read_ts is not None:
-            time_since_last_read = now - self.last_read_ts
-            if time_since_last_read > timedelta(seconds=1/self.hz):
+            time_since_last_read = now.timestamp() - self.last_read_ts
+            if time_since_last_read > 1/self.hz:
                 self.l.warning(self.topic + " time since last read is greater than 1/hz")
-                self.l.warning(self.topic + " time since last read: " + str(time_since_last_read))
-                self.l.warning(self.topic + " hz: " + str(self.hz))
+                self.l.warning(self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
+                self.l.warning(self.topic + " hz: " + str(self.hz) + "hz")
 
-        self.last_read_ts = now
+        self.last_read_ts = now.timestamp()
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))
