@@ -196,7 +196,7 @@ class Sensor:
                     missed_samples = int(time_since_last_read / (1/self.hz)) -1
                     self.log(10, lambda: self.topic + " missed " + str(missed_samples) + " samples")
                     for i in range(missed_samples):
-                        new_dt = self.last_read_dt + timedelta(seconds=i+1/self.hz)
+                        new_dt = self.last_read_dt + timedelta(seconds=(i+1)/self.hz)
                         self.log(10, lambda: self.topic + " forwarding fill sample at: " + str(new_dt))
                         self.pub.send_multipart(ZmqCodec.encode(self.topic, [new_dt, self.last_read_data]))
 

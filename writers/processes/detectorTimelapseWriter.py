@@ -159,6 +159,7 @@ def detector_timelapse_writer(log_queue):
             if curr_timelapse_frame is None:
                 l.error(config["short_name"] + " writer no frame found for " + str(dt_utc - seconds_till_irrelvance))
                 continue
+            l.debug(config["short_name"] + " writer updating timelapse frame for " + str(dt_utc - seconds_till_irrelvance))
             delete_old_files()
             next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
 
