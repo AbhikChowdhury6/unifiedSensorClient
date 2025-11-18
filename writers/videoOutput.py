@@ -3,6 +3,7 @@ import qoi
 import os
 import cv2
 from datetime import datetime, timedelta
+import numpy as np
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 import logging
@@ -57,6 +58,7 @@ class video_output:
         
         for file in files:
             data = qoi.read(self.persist_location + file)
+            data = np.expand_dims(data, axis=0)
             yield fnString_to_dt(file), data
     
     def open(self, dt):

@@ -2,6 +2,7 @@ import sys
 import os
 import time
 from datetime import datetime, timezone, timedelta
+import numpy as np
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -55,9 +56,11 @@ def detector_timelapse_writer(log_queue):
 
     persist_location = config["cache_location"] + config["short_name"] + "/"
     os.makedirs(persist_location, exist_ok=True)
-    def persist(dt, frame):
-        fn = persist_location + dt_to_fnString(dt) + ".qoi"
-        qoi.write(fn, frame)
+    def persist(self, dt, data):
+        for i in range(data.shape[0]):
+            frame_dt = dt + timedelta(seconds=i/self.output_hz)
+            fn = persist_location + dt_to_fnString(frame_dt) + ".qoi"
+            qoi.write(fn, data[i])
     
     def load():#for when we switch to full speed
         files = [file for file in sorted(os.listdir(persist_location)) 
@@ -66,6 +69,7 @@ def detector_timelapse_writer(log_queue):
         
         for file in files:
             data = qoi.read(persist_location + file)
+            data = np.expand_dims(data, axis=0)
             yield fnString_to_dt(file), data
 
     def delete_old_files():
@@ -126,11 +130,11 @@ def detector_timelapse_writer(log_queue):
         
 
         if is_full_speed:
-            full_speed_writer.write(dt_utc, frame[0])
+            full_speed_writer.write(dt_utc, frame)
             continue
         
         #it's a timelapse, presist in case we need to switch to full speed
-        persist(dt_utc, frame[0])
+        persist(dt_utc, frame)
 
         if switch_to_tl:
             start_writing_after = dt_utc + seconds_till_irrelvance
