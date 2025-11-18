@@ -55,7 +55,7 @@ def detector_timelapse_writer(log_queue):
     seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)
 
 
-    persist_location = config["cache_location"] + config["short_name"] + "/"
+    persist_location = config["cache_location"] + config["short_name"] + "-persist/"
     os.makedirs(persist_location, exist_ok=True)
     def persist(dt, data):
         for i in range(data.shape[0]):
@@ -107,7 +107,7 @@ def detector_timelapse_writer(log_queue):
             detected = msg[1]
             if detected:
                 timelapse_after = msg[0] + timedelta(seconds=config["time_after_seconds"])
-                if not switch_to_fs:
+                if not is_full_speed:
                     switch_to_fs = True
                 is_full_speed = True
                 last_detection_ts = msg[0]

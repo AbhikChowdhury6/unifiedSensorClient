@@ -410,8 +410,8 @@ detector_timelapse_writer_process_config = {
     "temp_file_location": "/home/pi/data/temp/",
     "completed_write_location_base": "/home/pi/data/upload/",
     "target_file_size": 10 * 1024 * 1024, #10MB
-    "time_before_seconds": 16,
-    "time_after_seconds": 16,
+    "time_before_seconds": 32,
+    "time_after_seconds": 32,
     
     "camera_endpoint": camera_endpoint,
     "camera_topic": camera_topic,

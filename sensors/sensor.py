@@ -99,6 +99,8 @@ class Sensor:
             time.sleep(self.delay_micros/1_000_000)
         _ = self.retrieve_data() # a warmup reading
         time.sleep(.25)
+
+        self.last_read_ts = None
         
         #calculate the estimated read time
         ts = datetime.now(timezone.utc)
@@ -162,4 +164,12 @@ class Sensor:
 
         # convert to numpy array before sending
         new_data_np = np.array(new_data)
+        if self.last_read_ts is not None:
+            time_since_last_read = now - self.last_read_ts
+            if time_since_last_read > timedelta(seconds=1/self.hz):
+                self.l.warning(self.topic + " time since last read is greater than 1/hz")
+                self.l.warning(self.topic + " time since last read: " + str(time_since_last_read))
+                self.l.warning(self.topic + " hz: " + str(self.hz))
+
+        self.last_read_ts = now
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))
