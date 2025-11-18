@@ -82,7 +82,9 @@ def detector_timelapse_writer(log_queue):
     def get_file(dt):
         fn = dt_to_fnString(dt) + ".qoi"
         if fn in os.listdir(persist_location):
-            return qoi.read(persist_location + fn)
+            data = qoi.read(persist_location + fn)
+            data = np.expand_dims(data, axis=0)
+            return data
         return None
 
     last_detection_ts = datetime.min.replace(tzinfo=timezone.utc)
