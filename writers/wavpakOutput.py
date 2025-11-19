@@ -8,6 +8,7 @@ repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from config import dt_to_fnString, fnString_to_dt
 import logging
+import numpy as np
 
 class wavpak_output:
     def __init__(self,
@@ -59,7 +60,10 @@ class wavpak_output:
         if self.st is None:
             raise ValueError("int16_storage_type is required")
         self.offset = 0 if self.st[0] == "u" else 2**15
-        self.scale = 2**int(self.st.split("-")[1])
+        self.scale = 2**int(self.st.split("-")[1][1:])
+    
+    def convert_to_int16(self, data):
+        return (data * self.scale + self.offset).astype(np.int16)
 
 
     def persist(self, dt, data):
@@ -127,10 +131,14 @@ class wavpak_output:
         self.proc._stderr_thread = t  # attach for lifecycle awareness
         self.file_name = self.file_name + self.extension
     
-    def write(self, data):
-        #the array is numsamples x 1 for 1 channel, so we need to flatten it
-        data = data.flatten()
-        self.proc.stdin.write(data.tobytes(order="C"))
+    def write(self, data):        
+        #this can't handle multiple channels, also we can vectorize the conversion to int16 later
+        for i in range(data.shape[0]):
+            number = self.convert_to_int16(data[i])
+            self.l.trace(self.log_name + " converting " + str(data[i]) + " to int16: " + str(number))
+            to_write = number.tobytes(order="C")
+            self.l.trace(self.log_name + " writing " + str(to_write.hex()) + " bytes")
+            self.proc.stdin.write(to_write)
 
     def close(self, dt):
         self.proc.stdin.flush()

@@ -103,6 +103,18 @@ def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
     return int(math.ceil(now_ts / interval_s) * interval_s)
 
 
+#should we make this more like a senor?
+#like we would want to add
+#timestamp rounding (although it will be the same as the received one)
+#this is one where latency is expected
+
+#for downstream systems, as long as order is preserved,
+#actually nahhh, it also has to be timely
+#but it would just have to show up before time till irrelevance
+#like 32 seconds, we could run the model every n seconds based on the platform
+#like 8 seconds on the pi5 and 8 seconds on the pi4 with a smaller model
+
+
 def yolo_person_detector(log_queue):
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])

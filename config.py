@@ -453,8 +453,8 @@ detector_timelapse_writer_process_config = {
     },
     
     "timelapse_output_config": {
-        "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-p25hz",
-        "hz": .25,
+        "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-1hz",
+        "hz": 1,
         "file_size_check_interval_s_range": (30, 60),
         "camera_width": 960,
         "camera_height": 540,
