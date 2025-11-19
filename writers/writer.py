@@ -137,8 +137,8 @@ class Writer:
     def write(self, dt, data):
         
         # handle if we get a chunk of data that spans 2 days
-        if data.ndim > 1:
-            end_dt = dt + timedelta(seconds=data.shape[0]/self.hz)
+        if data.shape[0] > 1:
+            end_dt = dt + timedelta(seconds=(data.shape[0]-1)/self.hz)
             if end_dt.date() != dt.date():
                 #calc the data index for the end of the day
                 start_of_next_day = end_dt.replace(hour=0, minute=0, second=0, microsecond=0)\

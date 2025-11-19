@@ -204,7 +204,7 @@ i2c_controller_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 16,
-                    "grace_period_samples": 2,
+                    "grace_period_samples": 3,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
@@ -213,6 +213,9 @@ i2c_controller_process_config = {
                         #the change from topic is drop the data shape time dimension
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
+                        "additional_output_config": {
+                            "int16_storage_type": "uint16-f6",
+                        },
                     },
                 },
                 {
@@ -221,7 +224,7 @@ i2c_controller_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 1,
-                    "grace_period_samples": 0,
+                    "grace_period_samples": 1,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
@@ -229,6 +232,9 @@ i2c_controller_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
+                        "additional_output_config": {
+                            "int16_storage_type": "int16-f6",
+                        },
                     },
                 },
                 {
@@ -237,7 +243,7 @@ i2c_controller_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": .25,
-                    "grace_period_samples": 0,
+                    "grace_period_samples": 1,
                     "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_0p25hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
@@ -245,6 +251,9 @@ i2c_controller_process_config = {
                         "output_hz": .25,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz",
+                        "additional_output_config": {
+                            "int16_storage_type": "uint16-f9",
+                        },
                     },
                 },
             ],

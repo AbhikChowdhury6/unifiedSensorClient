@@ -54,6 +54,14 @@ class wavpak_output:
         self.extension = ".wv"
         self.raw_spec = f"--raw-pcm={self.output_hz},{self.bits}{self.sign},{self.channels},{self.endian}"
 
+        self.st = self.additional_output_config.get("int16_storage_type", None)
+        #uint16-f9
+        if self.st is None:
+            raise ValueError("int16_storage_type is required")
+        self.offset = 0 if self.st[0] == "u" else 2**15
+        self.scale = 2**int(self.st.split("-")[1])
+
+
     def persist(self, dt, data):
         obj = [dt, data]
         with open(self.persist_fn, "ab") as f:
