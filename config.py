@@ -76,18 +76,18 @@ file_uploader_process_config = {
     "func_name": "file_uploader",
     "short_name": "file-up",
     "time_to_shutdown": .1,
-    "debug_lvl": 20,
+    "debug_lvl": 10,
     "upload_url": "http://192.168.10.36:/upload",
     "upload_retry_interval": 10,
     "subscription_topics": [
-        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_540x960_8hz_writer-process",
-        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-1fps_540x960_p25hz_writer-process",
-        f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16_2hz_writer-process",
-        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz_writer-process",
-        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz_writer-process",
-        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_p25hz_writer-process",
+#        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_540x960x3_8hz_writer-process",
+#        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-p25fps_540x960x3_1hz_writer-process",
+#        f"{platform_uuid}_audio-1_generic_audio-1ch-48kHz_1x24000-int16_2hz_writer-process",
+#        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz_writer-process",
+#        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz_writer-process",
+#        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz_writer-process",
     ],
-    "time_till_ready": 20, # this has to be longer than the delete process time before
+    "time_till_ready": 1, # just so the move completes I think
     "data_dir": "/home/pi/data/upload/",
 }
 
@@ -576,5 +576,5 @@ all_process_configs = {
 #    "motion": [0, motion_detector_process_config],
 #    "buttons": pigpio_toggle_buttons_process_config,
 #    "led": [0, led_controller_process_config],
-#    "file-up": [0, file_uploader_process_config],
+    "file-up": [1, file_uploader_process_config],
 }
