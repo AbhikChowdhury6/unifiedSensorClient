@@ -17,8 +17,8 @@ class wavpak_output:
                     temp_write_location = "/home/pi/data/temp/",
                     debug_lvl = "warning",
                     channels = 1,
-                    bits = 16,
-                    sign = "s",
+                    bits = 32,
+                    sign = "f",
                     endian = "le",
                     additional_output_config = {},
                     **kwargs):
@@ -57,15 +57,15 @@ class wavpak_output:
         self.extension = ".wv"
         self.raw_spec = f"--raw-pcm={self.output_hz},{self.bits}{self.sign},{self.channels},{self.endian}"
 
-        self.st = self.additional_output_config.get("int16_storage_type", None)
-        #uint16-f9
-        if self.st is None:
-            raise ValueError("int16_storage_type is required")
-        self.offset = 0 if self.st[0] == "u" else 2**15
-        self.scale = 2**int(self.st.split("-")[1][1:])
+        # self.st = self.additional_output_config.get("int16_storage_type", None)
+        # #uint16-f9
+        # if self.st is None:
+        #     raise ValueError("int16_storage_type is required")
+        # self.offset = 0 if self.st[0] == "u" else 2**15
+        # self.scale = 2**int(self.st.split("-")[1][1:])
     
-    def convert_to_int16(self, data):
-        return (data * self.scale + self.offset).astype(np.int16)
+    # def convert_to_int16(self, data):
+    #     return (data * self.scale + self.offset).astype(np.int16)
 
 
     def persist(self, dt, data):
@@ -134,13 +134,11 @@ class wavpak_output:
         self.file_name = self.file_name + self.extension
     
     def write(self, data):        
-        #this can't handle multiple channels, also we can vectorize the conversion to int16 later
-        for i in range(data.shape[0]):
-            number = self.convert_to_int16(data[i])
-            self.l.trace(self.log_name + " converting " + str(data[i]) + " to int16: " + str(number))
-            to_write = number.tobytes(order="C")
-            self.l.trace(self.log_name + " writing " + str(to_write.hex()) + " bytes")
-            self.proc.stdin.write(to_write)
+        # write(): ensure 32-bit float little-endian bytes
+        data = data.flatten()
+        # cast to float32; enforce LE byteorder for the CLI's ',le'
+        data_le = data.astype("<f4", copy=False)
+        self.proc.stdin.write(data_le.tobytes(order="C"))
 
     def close(self, dt):
         self.proc.stdin.flush()
