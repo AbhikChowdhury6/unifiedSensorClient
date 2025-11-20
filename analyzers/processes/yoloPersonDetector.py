@@ -8,6 +8,7 @@ from ultralytics import YOLO
 import numpy as np
 import torch
 import os
+from datetime import datetime
 try:
     import psutil
     _PSUTIL = True
@@ -99,8 +100,8 @@ def memdiag_log(logger, tag: str = "", top_n: int = 15):
     except Exception as e:
         logger.warning(f"[memdiag] failed: {e}")
 
-def _compute_next_capture_ts(now_ts: float, interval_s: float) -> float:
-    return int(math.ceil(now_ts / interval_s) * interval_s)
+def _compute_next_capture_dt(now_dt: datetime, interval_s: float) -> datetime:
+    return int(math.ceil(now_dt.timestamp() / interval_s) * interval_s)
 
 
 #should we make this more like a senor?
@@ -152,11 +153,12 @@ def yolo_person_detector(log_queue):
     l.info(config["short_name"] + " loaded YOLO model " + model_name)
 
 
-    next_capture = _compute_next_capture_ts(time.time(), interval_s)
+    next_capture = None
     l.debug(config["short_name"] + " starting memdiag")
     memdiag_start()
     l.debug(config["short_name"] + " memdiag started")
     iter_count = 0
+    
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -171,11 +173,15 @@ def yolo_person_detector(log_queue):
 
         dt_utc, frame = msg[0], msg[1]
         l.trace(config["short_name"] + " got frame: " + str(dt_utc))
+        
+        if next_capture is None:
+            next_capture = _compute_next_capture_dt(dt_utc, interval_s)
+        
         if dt_utc.timestamp() < next_capture:
             l.trace(config["short_name"] + " frame is too early, skipping")
             continue
 
-        next_capture = _compute_next_capture_ts(dt_utc.timestamp(), interval_s)
+        next_capture = None #it computes the next capture based on the next frame
         l.trace(config["short_name"] + " next capture: " + str(next_capture))
  
 

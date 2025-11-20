@@ -157,7 +157,7 @@ file_writer_process_info = {
     "persist_location": "/home/pi/data/persist/",
     "temp_write_location": "/home/pi/data/temp/",
     "output_write_location": "/home/pi/data/upload/",
-    "target_file_size": 10 * 1024 * 1024, #10MB
+    "target_file_size": 64 * 1024 * 1024, #64MB
 }
 
 file_output_infos = {
