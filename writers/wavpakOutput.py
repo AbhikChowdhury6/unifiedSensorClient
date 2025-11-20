@@ -20,6 +20,7 @@ class wavpak_output:
                     bits = 16,
                     sign = "s",
                     endian = "le",
+                    additional_output_config = {},
                     **kwargs):
         self.output_base = output_base
         self.temp_write_location = temp_write_location
@@ -28,6 +29,7 @@ class wavpak_output:
         self.bits = bits
         self.sign = sign
         self.endian = endian
+        self.additional_output_config = additional_output_config
 
         self.file_name = None
         self.temp_output_location = temp_write_location + output_base + "/"
