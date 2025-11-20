@@ -109,24 +109,23 @@ def file_uploader(log_queue):
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     # Wake up at least once per second if no messages arrive
-    sub.setsockopt(zmq.RCVTIMEO, 1000)
-    for endpoint in config["subscription_endpoints"]:
-        sub.connect(endpoint)
-    for topic in config["subscription_topics"]:
-        sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
-    l.info(config["short_name"] + " process subscribed to " + str(config["subscription_topics"]) + " at " + str(config["subscription_endpoints"]))
+    sub.setsockopt(zmq.RCVTIMEO, 4000)
+    # for endpoint in config["subscription_endpoints"]:
+    #     sub.connect(endpoint)
+    # for topic in config["subscription_topics"]:
+    #     sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
+    # l.info(config["short_name"] + " process subscribed to " + str(config["subscription_topics"]) + " at " + str(config["subscription_endpoints"]))
 
     while True:
-        _upload_files_in_backlog(config["time_till_ready"])
-        time.sleep(4)
-        # try:
-        #     parts = sub.recv_multipart()
-        # except zmq.error.Again:
-        #     # idle tick: check backlog then continue listening
-        #     _upload_files_in_backlog(config["time_till_ready"])
-        #     continue
+        try:
+            parts = None
+            parts = sub.recv_multipart()
+        except zmq.error.Again:
+            # idle tick: check backlog then continue listening
+            _upload_files_in_backlog(config["time_till_ready"])
+            continue
 
-        # topic, msg = ZmqCodec.decode(parts)
+        topic, msg = ZmqCodec.decode(parts)
 
         # # No payload: treat as idle tick; check backlog then continue
         # if msg is None:
@@ -134,11 +133,14 @@ def file_uploader(log_queue):
         #     continue
         # if check_apply_level(msg, config["short_name"]):
         #     continue
-        # if topic == "control":
-        #     if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "file-up"):
-        #         l.info(config["short_name"] + " process got control exit")
-        #         break
-        #     continue
+        if topic == "control":
+            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "file-up"):
+                l.info(config["short_name"] + " process got control exit")
+                break
+            continue
+        
+        
+
         # if topic in config["subscription_topics"]:
         #     # Writers publish [segment_start_dt, path]; accept either structure
         #     completed_path = None
