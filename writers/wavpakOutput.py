@@ -137,7 +137,9 @@ class wavpak_output:
         # write(): ensure 32-bit float little-endian bytes
         data = data.flatten()
         # cast to float32; enforce LE byteorder for the CLI's ',le'
+        self.l.trace(self.log_name + " writing data: " + str(data))
         data_le = data.astype("<f4", copy=False)
+        self.l.trace(self.log_name + " writing " + str(data_le.tobytes(order="C").hex()))
         self.proc.stdin.write(data_le.tobytes(order="C"))
 
     def close(self, dt):
