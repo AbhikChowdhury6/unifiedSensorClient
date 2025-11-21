@@ -56,7 +56,7 @@ def _to_object_key(filename: str):
 
     base = "_".join(split[:-2])
     start_dt = _parse_time_parts(split[-2])
-    key_prefix = f"{base}/{start_dt.strftime("%Y/%m/%d/")}"
+    key_prefix = base + "/" + start_dt.strftime("%Y/%m/%d/")
 
     new_filename = "_".join(split[-2:])
 
