@@ -105,16 +105,20 @@ def detector_timelapse_writer(log_queue):
         
         if topic in config["detector_topics"]:
             detected = msg[1]
+            l.debug(config["short_name"] + " writer detected: " + str(detected))
             if detected:
                 timelapse_after = msg[0] + timedelta(seconds=config["time_after_seconds"])
+                l.trace(config["short_name"] + " writer timelapse after: " + str(timelapse_after))
                 if not is_full_speed:
                     switch_to_fs = True
+                    l.trace(config["short_name"] + " writer switching to full speed")
                 is_full_speed = True
                 last_detection_ts = msg[0]
             
             elif timelapse_after < msg[0]: #switch to timelapse
                 if is_full_speed:
                     switch_to_tl = True
+                    l.trace(config["short_name"] + " writer switching to timelapse")
                 is_full_speed = False
         
         if topic != config["camera_topic"]:
@@ -126,6 +130,7 @@ def detector_timelapse_writer(log_queue):
             #catch up on time before seconds amount of frames
             l.info(config["short_name"] + " writer catching up on time before seconds amount of frames")
             for dt, fr in load():
+                l.trace(config["short_name"] + " writer writing full speed frame: " + str(dt))
                 full_speed_writer.write(dt, fr)
             delete_old_files()
             curr_timelapse_frame = None
@@ -148,13 +153,16 @@ def detector_timelapse_writer(log_queue):
             continue
 
         if dt_utc < start_writing_after:
+            l.trace(config["short_name"] + " writer waiting for frame after: " + str(start_writing_after))
             continue
 
         #upsample writes to every second
         if dt_utc.microsecond != 0:
+            l.trace(config["short_name"] + " writer skipping frame with microsecond: " + str(dt_utc.microsecond))
             continue
 
         if dt_utc >= next_timelapse_frame_update:
+            l.trace(config["short_name"] + " writer updating timelapse frame for " + str(dt_utc - seconds_till_irrelvance))
             curr_timelapse_frame = get_file(dt_utc - seconds_till_irrelvance)
             if curr_timelapse_frame is None:
                 l.error(config["short_name"] + " writer no frame found for " + str(dt_utc - seconds_till_irrelvance))

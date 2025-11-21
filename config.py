@@ -76,7 +76,7 @@ file_uploader_process_config = {
     "func_name": "file_uploader",
     "short_name": "file-up",
     "time_to_shutdown": .1,
-    "debug_lvl": 10,
+    "debug_lvl": 20,
     "upload_url": "http://192.168.10.36:/upload",
     "upload_retry_interval": 10,
     "subscription_topics": [
@@ -87,7 +87,7 @@ file_uploader_process_config = {
 #        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz_writer-process",
 #        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz_writer-process",
     ],
-    "time_till_ready": 1, # just so the move completes I think
+    "time_till_ready": 1, # just so any moves are completed I think
     "data_dir": "/home/pi/data/upload/",
 }
 
@@ -528,7 +528,7 @@ yolo_person_detector_process_config = {
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,
     "interval_seconds": 8,
-    "verbose": True,
+    "verbose": False,
 }
 
 # is_dark_detector_process_config = {

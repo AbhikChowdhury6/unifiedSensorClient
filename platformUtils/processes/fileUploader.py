@@ -109,7 +109,7 @@ def file_uploader(log_queue):
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     # Wake up at least once per second if no messages arrive
-    sub.setsockopt(zmq.RCVTIMEO, 4000)
+    sub.setsockopt(zmq.RCVTIMEO, config["upload_retry_interval"]*1000)
     # for endpoint in config["subscription_endpoints"]:
     #     sub.connect(endpoint)
     # for topic in config["subscription_topics"]:
