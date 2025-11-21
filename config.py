@@ -418,10 +418,8 @@ detector_timelapse_writer_process_config = {
     "short_name": "detector_timelapse",
     "time_to_shutdown": .1,
     "debug_lvl": 5,
-    "cache_location": "/home/pi/camera_cache/",
     "temp_file_location": "/home/pi/data/temp/",
     "completed_write_location_base": "/home/pi/data/upload/",
-    "target_file_size": 10 * 1024 * 1024, #10MB
     "time_before_seconds": 32,
     "time_after_seconds": 32,
     

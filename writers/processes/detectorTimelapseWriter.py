@@ -55,12 +55,13 @@ def detector_timelapse_writer(log_queue):
     seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)
 
 
-    persist_location = config["cache_location"] + config["short_name"] + "-persist/"
+    persist_location = config["temp_file_location"] + config["short_name"] + "-persist/"
     os.makedirs(persist_location, exist_ok=True)
     def persist(dt, data):
         for i in range(data.shape[0]):
             frame_dt = dt + timedelta(seconds=i/full_speed_output_config["hz"])
             fn = persist_location + dt_to_fnString(frame_dt) + ".qoi"
+            l.trace(config["short_name"] + " writer persisting frame: " + str(frame_dt))
             qoi.write(fn, data[i])
     
     def load():#for when we switch to full speed
@@ -78,6 +79,7 @@ def detector_timelapse_writer(log_queue):
         for file in files:
             if fnString_to_dt(file) < datetime.now(timezone.utc) -\
                 seconds_till_irrelvance:
+                l.trace(config["short_name"] + " writer deleting old file: " + str(file))
                 os.remove(persist_location + file)
     
     def get_file(dt):
