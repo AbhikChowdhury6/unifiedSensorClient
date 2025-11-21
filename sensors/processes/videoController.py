@@ -45,7 +45,6 @@ def video_controller(log_queue):
         config['camera_class_name'],
         l,
         **{
-            "platform_uuid": config['platform_uuid'],
             "bus_location": config['bus_location'],
             "device_name": config['device_name'],
             "sensor_type": config['sensor_type'],

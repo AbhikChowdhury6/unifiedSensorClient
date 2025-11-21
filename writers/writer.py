@@ -73,10 +73,10 @@ class Writer:
 
     def _close_file(self, dt):
         self.output_file = self.output.close(dt)
-        self.output_file = self.platform_uuid + "_" + self.output_file
+        infile = self.temp_write_location + self.output_base + "/" + self.output_file
 
         #move the file to the correct location in data
-        infile = self.temp_write_location + self.output_base + "/" + self.output_file
+        self.output_file = self.platform_uuid + "_" + self.output_file
         outfile = self.output_write_location + self.output_base + "/" + self.output_file
         shutil.move(infile, outfile)
         self.pub.send_multipart(ZmqCodec.encode(self.object_name, [dt, outfile]))
