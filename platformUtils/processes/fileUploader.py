@@ -118,7 +118,6 @@ def file_uploader(log_queue):
 
     while True:
         try:
-            parts = None
             parts = sub.recv_multipart()
         except zmq.error.Again:
             # idle tick: check backlog then continue listening
@@ -133,6 +132,7 @@ def file_uploader(log_queue):
         #     continue
         # if check_apply_level(msg, config["short_name"]):
         #     continue
+
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "file-up"):
                 l.info(config["short_name"] + " process got control exit")

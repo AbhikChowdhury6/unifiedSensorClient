@@ -43,61 +43,32 @@ def _ensure_bucket_once(bucket: str):
 _ensure_bucket_once(_S3_BUCKET)
 
 
-def _parse_name_parts(filename: str):
-    """Extract prefix and start timestamp from filenames like
-    {prefix}_{YYYYMMDDTHHMMSS}p{MS}Z.ext or {prefix}_audio_... formats.
-    Returns (prefix, dt_utc, name_root) where name_root is the baseline
-    timestamp string without extension.
-    """
-    print(f"filename: {filename}", flush=True)
-    base = os.path.basename(filename)
-    print(f"base: {base}", flush=True)
-    name, _ext = os.path.splitext(base)
-    parts = name.split("_")
-    print(f"parts: {parts}", flush=True)
-    if len(parts) < 2:
-        return None, None, None
-    # prefix could include multiple underscores except the last time part
-    # Assume time-like string at the end contains 'T' and possibly 'p'
-    time_part = parts[-1]
-    prefix = "_".join(parts[:-1])
-    # Allow optional trailing 'Z' in original name root
-    raw = time_part
-    # Strip trailing 'Z' (Zulu) if present; Postman/uploads may include it in the base name
-    if raw.endswith("Z"):
-        raw = raw[:-1]
-    # Convert pMS to .MS
-    raw = raw.replace("p", ".")
-    try:
-        dt = datetime.strptime(raw, "%Y%m%dT%H%M%S.%f").replace(tzinfo=timezone.utc)
-        # reconstruct canonical name root used for object key filename
-        name_root = dt.strftime("%Y%m%dT%H%M%S") + "p" + str(dt.microsecond // 1000).zfill(3) + "Z"
-        return prefix, dt, name_root
-    except Exception:
-        # try whole-second format (no milliseconds)
-        try:
-            dt = datetime.strptime(raw, "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)
-            name_root = dt.strftime("%Y%m%dT%H%M%S") + "p000Z"
-            return prefix, dt, name_root
-        except Exception:
-            return None, None, None
+def _parse_time_parts(time_str: str):
+    if "p" in time_str:
+        time_str = time_str.replace("p", ".")
+    if "." in time_str:
+        return datetime.strptime(time_str, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)
+    else:
+        return datetime.strptime(time_str, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
 
+def _to_object_key(filename: str):
+    split = filename.split("_")
+
+    base = "_".join(split[:-2])
+    start_dt = _parse_time_parts(split[-2])
+    key_prefix = f"{base}/{start_dt.strftime("%Y/%m/%d/")}"
+
+    new_filename = "_".join(split[-2:])
+
+    object_key = key_prefix + new_filename
+    return object_key
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     # Read file into memory or stream; we'll stream via upload_fileobj
     try:
-        prefix, dt_utc, name_root = _parse_name_parts(file.filename)
-        if prefix is None or dt_utc is None:
-            raise HTTPException(status_code=400, detail="Filename must include timestamp suffix '..._YYYYMMDDTHHMMSSpMSZ.ext'")
-
-        # Build key: {prefix}/YYYY/MM/DD/HH/MM/{name_root}
-        key_prefix = f"{prefix}/" + dt_utc.strftime("%Y/%m/%d/%H/%M/")
-        # Preserve original file extension
-        _base, _ext = os.path.splitext(os.path.basename(file.filename))
-        object_key = key_prefix + name_root + _ext
-
-        # Stream to S3
+        object_key = _to_object_key(file.filename)
+        print(f"object_key: {object_key}", flush=True)
         _s3.upload_fileobj(file.file, _S3_BUCKET, object_key)
         return JSONResponse({"status": "ok", "bucket": _S3_BUCKET, "key": object_key})
     except HTTPException:

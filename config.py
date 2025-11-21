@@ -4,14 +4,14 @@ import os
 from collections import OrderedDict
 
 # this file will evolve based on features
-testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"[-8:]
-testpi4UUID = "ae24c81b-3817-48d0-a6f8-799ec3dec556"[-8:]
+testpi5UUID = "c57d828b-e8d1-433b-ad79-5420d2136d3f"
+testpi4UUID = "ae24c81b-3817-48d0-a6f8-799ec3dec556"
 
-platform_uuid = testpi4UUID
+platform_uuid = testpi5UUID
 
-zmq_control_endpoint = f"ipc:///tmp/{platform_uuid}_control.sock"
+zmq_control_endpoint = f"ipc:///tmp/control.sock"
 # separate inbound requests endpoint (workers PUB -> main SUB)
-zmq_control_requests_endpoint = f"ipc:///tmp/{platform_uuid}_control_requests.sock"
+zmq_control_requests_endpoint = f"ipc:///tmp/control_requests.sock"
 
 # this is the platform name
 platform_name = "raspberry_pi_5"
@@ -157,6 +157,7 @@ file_writer_process_info = {
     "persist_location": "/home/pi/data/persist/",
     "temp_write_location": "/home/pi/data/temp/",
     "output_write_location": "/home/pi/data/upload/",
+    "platform_uuid": platform_uuid,
     "target_file_size": 64 * 1024 * 1024, #64MB
 }
 
@@ -184,7 +185,6 @@ i2c_controller_process_config = {
     "func_name": "i2c_controller",
     "short_name": "i2c",
     "time_to_shutdown": .1,
-    "platform_uuid": platform_uuid,
     "bus_number": 1,
     "debug_lvl": 5,
     "device_class_loc": repoPath + "unifiedSensorClient/sensors/i2cDeviceClasses/",
@@ -205,14 +205,14 @@ i2c_controller_process_config = {
                     "shape": "1x1",
                     "hz": 16,
                     "grace_period_samples": 3,
-                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz",
+                    "topic": f"i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         #the change from topic is drop the data shape time dimension
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
+                        "output_base": f"i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
                         "additional_output_config": {
                             #"int16_storage_type": "uint16-f6",
                         },
@@ -225,13 +225,13 @@ i2c_controller_process_config = {
                     "shape": "1x1",
                     "hz": 1,
                     "grace_period_samples": 1,
-                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
+                    "topic": f"i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
+                        "output_base": f"i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
                         "additional_output_config": {
                             #"int16_storage_type": "int16-f6",
                         },
@@ -244,13 +244,13 @@ i2c_controller_process_config = {
                     "shape": "1x1",
                     "hz": .25,
                     "grace_period_samples": 1,
-                    "topic": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_0p25hz",
+                    "topic": f"i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_0p25hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": .25,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz",
+                        "output_base": f"i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz",
                         "additional_output_config": {
                             #"int16_storage_type": "uint16-f9",
                         },
@@ -270,7 +270,6 @@ audio_controller_process_1_config = {
     "time_to_shutdown": .6,
     "debug_lvl": 5,
     #format is platformUUID_busLocation_deviceName_sensorType_units_dataType_shape_hz
-    "platform_uuid": platform_uuid,
     "bus_location": "audio-1",
     "device_name": "generic",
     "sensor_type": "sound",
@@ -278,7 +277,7 @@ audio_controller_process_1_config = {
     "data_type": "int",
     "shape": "8000x1",
     "hz": 2,
-    "topic": f"{platform_uuid}_audio-1_generic_sound_int16_int_8000x1_2hz",
+    "topic": f"audio-1_generic_sound_int16_int_8000x1_2hz",
     
     "sample_rate": 48000,
     "subsample_ratio": 3,
@@ -289,12 +288,12 @@ audio_controller_process_1_config = {
     "file_writer_config": {
         "output_module": "audioOutput",
         "output_hz": 16000,
-        "output_base": f"{platform_uuid}_audio-1_generic_audio_int16_int_1_16000hz",
+        "output_base": f"audio-1_generic_audio_int16_int_1_16000hz",
     },
 }
 
 #c3dec556_csi-0_picamV3-sony-imx708-noir-120fov-12MP_image_BGR_uint8_1x960x540x3_8hz
-camera_topic = f"{platform_uuid}_csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz"
+camera_topic = f"csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz"
 camera_endpoint = f"ipc:///tmp/{camera_topic}.sock"
 
 video_controller_process_1_config = {
@@ -310,7 +309,6 @@ video_controller_process_1_config = {
     "camera_class_name": "PiCamera",
     "camera_module_path": "sensors.videoDeviceClasses.piCamera",
     
-    "platform_uuid": platform_uuid,
     "bus_location": "csi-0",
     "device_name": picamv3noirwide,
     "sensor_type": "image",
@@ -327,7 +325,7 @@ video_controller_process_1_config = {
     "camera_height": 1080,
     "subsample_ratio": 2,
     "format": "RGB888",
-    "flip_vertical": True,
+    "flip_vertical": False,
     "timestamp_images": True,
 }
 
@@ -368,14 +366,14 @@ sqlite_writer_process_config = {
     "write_location": sqlite_writer_write_location,
     "subscription_endpoints": [
 #        f"ipc:///tmp/{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float.sock",
-        f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+        f"ipc:///tmp/yolo11m_person_detection.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
 #        f"ipc:///tmp/{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
     ],
     "subscription_topics": [
 #        f"{platform_uuid}_i2c-1-0x76_bosch-bme280_relative-humidity_percent_float",
-        f"{platform_uuid}_yolo11m_person_detection",
+        f"yolo11m_person_detection",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gps3dFix",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
 #        f"{platform_uuid}_serial_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
@@ -430,14 +428,14 @@ detector_timelapse_writer_process_config = {
     "camera_topic": camera_topic,
     
     "detector_endpoints": [
-        f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
+        f"ipc:///tmp/yolo11m_person_detection.sock",
     ],
     "detector_topics": [
-        f"{platform_uuid}_yolo11m_person_detection",
+        f"yolo11m_person_detection",
     ],
 
     "full_speed_output_config": {
-        "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-8hz",
+        "output_base": f"csi-0_{picamv3noirwide}_mp4-960x540x3-8hz",
         "hz": 8,
         "file_size_check_interval_s_range": (5, 10),
         "camera_width": 960,
@@ -453,7 +451,7 @@ detector_timelapse_writer_process_config = {
     },
     
     "timelapse_output_config": {
-        "output_base": f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-960x540x3-1hz",
+        "output_base": f"csi-0_{picamv3noirwide}_mp4-960x540x3-1hz",
         "hz": 1,
         "file_size_check_interval_s_range": (30, 60),
         "camera_width": 960,
@@ -523,8 +521,8 @@ yolo_person_detector_process_config = {
     "debug_lvl": 10,
     "camera_topic": camera_topic,
     "camera_endpoint": camera_endpoint,
-    "pub_endpoint": f"ipc:///tmp/{platform_uuid}_yolo11m_person_detection.sock",
-    "pub_topic": f"{platform_uuid}_yolo11m_person_detection",
+    "pub_endpoint": f"ipc:///tmp/yolo11m_person_detection.sock",
+    "pub_topic": f"yolo11m_person_detection",
     "model": "yolo11l",
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,

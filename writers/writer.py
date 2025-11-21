@@ -16,6 +16,7 @@ class Writer:
                     output,
                     temp_write_location,
                     output_write_location,
+                    platform_uuid,
                     target_file_size,
                     file_size_check_interval_s_range,
                     debug_lvl = 30,
@@ -25,6 +26,7 @@ class Writer:
         self.object_name = self.output_base + "_writer-object"
         self.temp_write_location = temp_write_location
         self.output_write_location = output_write_location
+        self.platform_uuid = platform_uuid
         self.target_file_size = target_file_size
         self.file_size_check_interval_s_range = file_size_check_interval_s_range
         self.hz = max(1, output.output_hz)
@@ -71,6 +73,7 @@ class Writer:
 
     def _close_file(self, dt):
         self.output_file = self.output.close(dt)
+        self.output_file = self.platform_uuid + "_" + self.output_file
 
         #move the file to the correct location in data
         infile = self.temp_write_location + self.output_base + "/" + self.output_file
