@@ -16,9 +16,9 @@ class Writer:
                     output,
                     temp_write_location,
                     output_write_location,
-                    platform_uuid,
                     target_file_size,
                     file_size_check_interval_s_range,
+                    platform_uuid,
                     debug_lvl = 30,
                     **kwargs
                     ):

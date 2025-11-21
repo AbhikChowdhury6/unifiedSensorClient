@@ -61,7 +61,6 @@ def writer_process(log_queue = None,
     output_ctor = getattr(output_module, output_info["func_name"])
     if debug_lvl <= 5: start_time = datetime.now().timestamp()
     output = output_ctor(additional_output_config=additional_output_config,
-                         platform_uuid=wc["platform_uuid"],
                          output_base=output_base,
                          output_hz=output_hz,
                          temp_write_location=wc["temp_write_location"],
@@ -75,6 +74,7 @@ def writer_process(log_queue = None,
                     output_write_location=wc["output_write_location"],
                     target_file_size=wc["target_file_size"],
                     file_size_check_interval_s_range=file_size_check_interval_s_range,
+                    platform_uuid=wc["platform_uuid"],
                     debug_lvl=debug_lvl)
     if debug_lvl <= 5:
         l.trace(process_name + " writer constructor time: " + str(datetime.now().timestamp() - start_time))
