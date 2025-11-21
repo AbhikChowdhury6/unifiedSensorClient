@@ -166,4 +166,8 @@ def detector_timelapse_writer(log_queue):
         frame_dt = dt_utc - seconds_till_irrelvance
         l.debug(config["short_name"] + " writer writing timelapse frame at " + str(frame_dt))
         timelapse_writer.write(frame_dt, curr_timelapse_frame)
+    
+    l.info(config["short_name"] + " writer closing")
+    timelapse_writer.close()
+    full_speed_writer.close()
 
