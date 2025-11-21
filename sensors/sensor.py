@@ -16,7 +16,6 @@ from config import camera_topic, camera_endpoint
 
 class Sensor:
     def __init__(self, 
-                    platform_uuid = None,
                     bus_location = None,
                     device_name = None,
                     sensor_type = None,
@@ -52,14 +51,13 @@ class Sensor:
         self.retrive_after = datetime.fromtimestamp(0, tz=timezone.utc)
 
         #data descriptor
-        self.platform_uuid = platform_uuid
         self.bus_location = bus_location
         self.device_name = device_name # manufacturer-model-address
         self.sensor_type = sensor_type
         self.units = units # dash separated units if multiple
         self.data_type = data_type
         self.shape = shape # nxn
-        print(str(self.platform_uuid) + " " +
+        print(
                      str(self.bus_location) + " " + 
                      str(self.device_name) + " " + 
                      str(self.sensor_type) + " " + 
@@ -71,7 +69,7 @@ class Sensor:
         #self.float_rounding_precision = config['float_rounding_precision']
 
         #zmq
-        self.topic = "_".join([self.platform_uuid, 
+        self.topic = "_".join([ 
                                 self.bus_location, 
                                 self.device_name, 
                                 self.sensor_type, 

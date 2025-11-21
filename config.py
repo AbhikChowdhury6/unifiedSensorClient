@@ -286,6 +286,7 @@ audio_controller_process_1_config = {
     "dtype": "int16",
     "device": 1,  # USB PnP Sound Device: Audio (hw:3,0) - supports timing
     "file_writer_config": {
+        "platform_uuid": platform_uuid,
         "output_module": "audioOutput",
         "output_hz": 16000,
         "output_base": f"audio-1_generic_audio_int16_int_1_16000hz",

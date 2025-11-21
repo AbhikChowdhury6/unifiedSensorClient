@@ -44,13 +44,12 @@ def i2c_controller(log_queue):
     # compile a list of all of the devices
     
     devices = []
-    platform_uuid = config['platform_uuid']
     for device in config['devices']:
         devices.append(load_class_and_instantiate(
             config['device_class_loc'] + device['module_name'] + '.py',
             device['class_name'],
             l,
-            **{"platform_uuid": platform_uuid,
+            **{
             "bus_location": device['bus_location'],
             "device_name": device['device_name'],
             "debug_lvl": device['debug_lvl'],

@@ -13,7 +13,6 @@ device_config = [d for d in i2c_controller_process_config['devices'] if d['modul
 
 class aBME280():
     def __init__(self, 
-                    platform_uuid,
                     bus_location = "i2c-1-0x76",
                     device_name = "bosch-bme280",
                     debug_lvl = 30,
@@ -53,7 +52,7 @@ class aBME280():
         if device_config['log_queue'] is None:
             raise ValueError("log_queue is required")
         self.log_queue = device_config['log_queue']
-        self.device_name = f"{platform_uuid}_{bus_location}_{device_name}"
+        self.device_name = f"{bus_location}_{device_name}"
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.device_name + " starting")
@@ -76,7 +75,6 @@ class aBME280():
             if "file_writer_config" in s:
                 s["file_writer_config"]["log_queue"] = device_config["log_queue"]
             s["log_queue"] = device_config["log_queue"]
-            s["platform_uuid"] = platform_uuid
             s["bus_location"] = bus_location
             s["device_name"] = device_name
             if "debug_lvl" not in s:
