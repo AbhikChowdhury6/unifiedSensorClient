@@ -36,7 +36,7 @@ class video_output:
         self.file_name = None
         self.output = None
         self.file_base = output_base
-        self.persist_location = temp_write_location + output_base + "/"
+        self.persist_location = temp_write_location + output_base + "_persist/"
         os.makedirs(self.persist_location, exist_ok=True)
 
         self.camera_width = camera_width
