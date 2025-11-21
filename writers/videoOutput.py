@@ -32,6 +32,7 @@ class video_output:
         self.l = logging.getLogger(self.log_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.log_name + " starting")
+
         self.file_name = None
         self.output = None
         self.file_base = output_base
@@ -70,6 +71,7 @@ class video_output:
         if not self.output.isOpened():
             self.l.error("Failed to open video writer")
             return None
+        self.l.info("opened video writer: " + self.file_name)
 
         return self.file_name
     
@@ -81,6 +83,7 @@ class video_output:
         new_fn = self.file_name.replace(".mp4", "_" + dt_to_fnString(dt) + ".mp4")
         os.rename(self.temp_output_location + self.file_name, 
                   self.temp_output_location + new_fn)
+        self.l.info("closed video writer: " + new_fn)
         self.file_name = None
         return new_fn
 
