@@ -64,6 +64,7 @@ class Writer:
 
     def _recover_from_cache(self):
         for dt, data in self.output.load():
+            self.log(5, lambda:self.object_name + " recovering frame: " + str(dt) + " with shape: " + str(data.shape))
             self.write(dt, data)
 
     def _open_file(self, dt): 
