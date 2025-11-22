@@ -69,6 +69,7 @@ def detector_timelapse_writer(log_queue):
                     if fnString_to_dt(file) <= datetime.now(timezone.utc) -\
                         timedelta(seconds=config["time_before_seconds"])]
         
+        l.trace(config["short_name"] + " writer loading " + str(len(files)) + " files")
         for file in files:
             data = qoi.read(persist_location + file)
             data = np.expand_dims(data, axis=0)
@@ -89,7 +90,15 @@ def detector_timelapse_writer(log_queue):
             data = np.expand_dims(data, axis=0)
             return data
         return None
+    
+    #if there are left over files from the last run, write them to the full speed video
+    for dt, fr in load():
+        l.trace(config["short_name"] + " writer writing full speed frame: " + str(dt))
+        full_speed_writer.write(dt, fr)
+    delete_old_files()
 
+    
+    #if there are
     last_detection_ts = datetime.min.replace(tzinfo=timezone.utc)
     timelapse_after = last_detection_ts + timedelta(seconds=config["time_after_seconds"])
     is_full_speed = False
