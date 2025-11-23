@@ -417,7 +417,7 @@ detector_timelapse_writer_process_config = {
     "func_name": "detector_timelapse_writer",
     "short_name": "detector_timelapse",
     "time_to_shutdown": .1,
-    "debug_lvl": 5,
+    "debug_lvl": 20,
     "temp_file_location": "/home/pi/data/temp/",
     "completed_write_location_base": "/home/pi/data/upload/",
     "time_before_seconds": 32,

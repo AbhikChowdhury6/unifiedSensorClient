@@ -164,11 +164,15 @@ class Writer:
             self.log(5, lambda:self.object_name + " should close time: " + str(datetime.now().timestamp() - start_time))
             self.log(20, lambda:self.object_name + " should close at " + str(end_dt))
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
-            self._close_file(end_dt)
+            
+            self._close_file(self.last_dt)
+            
             self.log(5, lambda:self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
+        
         self.output.persist(dt, data)
+        
         self.log(5, lambda:self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
         
         if self.output.file_name is None:
