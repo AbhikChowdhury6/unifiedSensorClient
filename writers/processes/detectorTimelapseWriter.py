@@ -77,11 +77,16 @@ def detector_timelapse_writer(log_queue):
 
     def delete_old_files():
         files = sorted(os.listdir(persist_location))
+        dts = []
         for file in files:
-            if fnString_to_dt(file) < datetime.now(timezone.utc) -\
+            dt = fnString_to_dt(file)
+            dts.append(dt)
+            if dt < datetime.now(timezone.utc) -\
                 seconds_till_irrelvance:
                 l.trace(config["short_name"] + " writer deleting old file: " + str(file))
                 os.remove(persist_location + file)
+        l.debug(config["short_name"] + " writer deleted " + str(len(dts)) + " old files")
+        l.debug(config["short_name"] + " writer deleted files from: " + str(min(dts)) + " to " + str(max(dts)))
     
     def get_file(dt):
         fn = dt_to_fnString(dt) + ".qoi"
@@ -138,11 +143,16 @@ def detector_timelapse_writer(log_queue):
         dt_utc, frame = msg[0], msg[1]
 
         if switch_to_fs:
+            l.info(config["short_name"] + " writer switching to full speed")
             #catch up on time before seconds amount of frames
-            l.info(config["short_name"] + " writer catching up on time before seconds amount of frames")
+            l.info(config["short_name"] + " writer catching up on " + str(config["time_before_seconds"]) + " seconds of frames")
+            dts = []
             for dt, fr in load():
+                dts.append(dt)
                 l.trace(config["short_name"] + " writer writing full speed frame: " + str(dt))
                 full_speed_writer.write(dt, fr)
+            l.info(config["short_name"] + " writer caught up on " + str(len(dts)) + " frames")
+            l.debug(config["short_name"] + " writer caught up on frames from: " + str(min(dts)) + " to " + str(max(dts)))
             delete_old_files()
             curr_timelapse_frame = None
             switch_to_fs = False
@@ -150,10 +160,12 @@ def detector_timelapse_writer(log_queue):
         
 
         if is_full_speed:
+            l.trace(config["short_name"] + " writer writing full speed frame: " + str(dt_utc))
             full_speed_writer.write(dt_utc, frame)
             continue
         
         #it's a timelapse, presist in case we need to switch to full speed
+        l.trace(config["short_name"] + " writer persisting timelapse frame: " + str(dt_utc))
         persist(dt_utc, frame)
 
         if switch_to_tl:

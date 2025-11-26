@@ -95,13 +95,13 @@ class Writer:
 
         #new day
         if dt.date() != self.last_dt.date():
-            self.log(10, self.object_name + " new day")
+            self.log(20, self.object_name + " new day")
             return True
         
         #too long since last write
         if dt - self.last_dt > timedelta(seconds=1/self.hz):
-            self.log(10, self.object_name + " too long since last write")
-            self.log(10, lambda:self.object_name + " too long since last write: " + str(dt - self.last_dt) + " seconds")
+            self.log(20, self.object_name + " too long since last write")
+            self.log(20, lambda:self.object_name + " too long since last write: " + str(dt - self.last_dt) + " seconds")
             return True
 
         # Get the current size on disk of the output file
@@ -115,7 +115,7 @@ class Writer:
         out_file_and_path = self.temp_write_location + self.output_base + "/" + self.output_file
         output_size = os.path.getsize(out_file_and_path)
         if output_size > self.target_file_size:
-            self.log(10, self.object_name + " output size is too large")
+            self.log(20, self.object_name + " output size is too large")
             return True
         
         return False
@@ -189,13 +189,13 @@ class Writer:
     def close(self):
         if self.output.file_name is not None:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
-            self._close_file(self.last_dt)
+            self.log(20, lambda:self.object_name + " closing file: " + self.output_file + " at: " + str(self.last_dt))
+            self.log(20, lambda: "duration: " + str(self.last_dt - self.output_start_dt))
+            self.log(20, lambda: "size: " + str(os.path.getsize(self.output_write_location + self.output_file)))
+            self.log(20, lambda: "calculated number of frames: " + str(self.hz * (self.last_dt - self.output_start_dt).total_seconds()))
             
-            self.log(5, lambda:self.object_name + " close time: " + str(datetime.now().timestamp() - start_time))
+            self._close_file(self.last_dt)
+            self.log(5, lambda:self.object_name + " time to close file: " + str(datetime.now().timestamp() - start_time))
+            
+
         self.log(20, lambda:self.object_name + " closing")
-        
-
-
-
-
-
