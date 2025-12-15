@@ -96,6 +96,9 @@ def detector_timelapse_writer(log_queue):
             return data
         return None
     
+
+
+    
     #if there are left over files from the last run, write them to the full speed video
     for dt, fr in load():
         l.trace(config["short_name"] + " writer writing full speed frame: " + str(dt))

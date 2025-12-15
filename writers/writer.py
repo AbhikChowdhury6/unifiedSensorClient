@@ -153,6 +153,7 @@ class Writer:
                 self.output.close(start_of_next_day-timedelta(seconds=1/self.hz))
                 self.output.persist(start_of_next_day, data[samples_till_eod:])
                 self.output.open(start_of_next_day)
+                self.output_file = self.output.file_name
                 self.output.write(data[samples_till_eod:])
                 self.last_dt = end_dt
                 return
@@ -178,6 +179,7 @@ class Writer:
         if self.output.file_name is None:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self.output.open(dt)
+            self.output_file = self.output.file_name
             self.log(5, lambda:self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()

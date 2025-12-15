@@ -28,3 +28,7 @@ which wvunpack && wvunpack --version
 
 add this to /boot/firmware/config.txt
 dtparam=i2c_arm_baudrate=400000
+
+
+#libcamera-vid --width 1920 --height 1080 -t 0 --inline --listen -o tcp://0.0.0.0:8888
+#mpv --fps=40 --demuxer-lavf-probesize=32 tcp://192.168.10.67:8888/
