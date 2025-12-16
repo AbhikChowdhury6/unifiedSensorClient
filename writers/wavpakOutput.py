@@ -10,6 +10,13 @@ from config import dt_to_fnString, fnString_to_dt
 import logging
 import numpy as np
 
+
+#float32 sign=f, bits=32, endian=le, channels=1
+#int32 sign=s, bits=32, endian=le, channels=1
+#int16 sign=s, bits=16, endian=le, channels=1
+#int8 sign=s, bits=8, endian=le, channels=1
+#uint8 sign=u, bits=8, endian=le, channels=1
+
 class wavpak_output:
     def __init__(self,
                     output_base,
@@ -31,6 +38,28 @@ class wavpak_output:
         self.endian = endian
         self.additional_output_config = additional_output_config
 
+        if self.sign == "f":
+            self.conversion_code = "<f4"
+        elif self.sign == "s":
+            if self.bits == 16:
+                self.conversion_code = "<i2"
+            elif self.bits == 32:
+                self.conversion_code = "<i4"
+            else:
+                raise ValueError("Invalid bits: " + str(self.bits))
+        elif self.sign == "u":
+            if self.bits == 8:
+                self.conversion_code = "<u1"
+            elif self.bits == 16:
+                self.conversion_code = "<u2"
+            elif self.bits == 32:
+                self.conversion_code = "<u4"
+            else:
+                raise ValueError("Invalid bits: " + str(self.bits))
+        else:
+            raise ValueError("Invalid sign: " + self.sign)
+        
+
         self.file_name = None
         self.temp_output_location = temp_write_location + output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
@@ -39,6 +68,8 @@ class wavpak_output:
         self.l = logging.getLogger(self.log_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.log_name + " starting")
+
+        self.l.info(self.log_name + " conversion code: " + self.conversion_code)
 
 
         self.persist_location = temp_write_location + output_base + "_persist/"
@@ -134,11 +165,11 @@ class wavpak_output:
         self.file_name = self.file_name + self.extension
     
     def write(self, data):        
-        # write(): ensure 32-bit float little-endian bytes
         data = data.flatten()
         # cast to float32; enforce LE byteorder for the CLI's ',le'
         self.l.trace(self.log_name + " writing data: " + str(data))
-        data_le = data.astype("<f4", copy=False)
+        data_le = data.astype(self.conversion_code, copy=False)
+
         self.l.trace(self.log_name + " writing " + str(data_le.tobytes(order="C").hex()))
         self.proc.stdin.write(data_le.tobytes(order="C"))
 
