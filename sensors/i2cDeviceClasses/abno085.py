@@ -10,13 +10,13 @@ from sensors.sensor import Sensor
 
 class aBNO085:
     def __init__(self, 
-                    bus_location = "i2c-1-0x28",
+                    bus_location = "i2c-0-0x4b",
                     device_name = "bosch-bno085",
                     debug_lvl = 30,
 
                     device_config = {
                         "bus": None, # will be set by i2cController,
-                        "address": 0x28, # default address for bno085
+                        "address": 0x4b, # default address for bno085
                         "log_queue": None, # will be set by i2cController,
                     },
                     sensors_config = [

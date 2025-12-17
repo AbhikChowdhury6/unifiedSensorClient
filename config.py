@@ -446,7 +446,7 @@ i2c_controller_1_process_config = {
                 },
                 {
                     "sensor_type": "air-particulate-particle-count",
-                    "units": "greaterthan0p3umD0P1l",
+                    "units": "GT0P3umD0P1l",
                     #expected range
                     #min is 0, max is 100000
                     "data_type": "int",
@@ -456,7 +456,7 @@ i2c_controller_1_process_config = {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_greaterthan0p3umD0P1l_int16-f0_1_1hz",
+                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_GT0P3umD0P1l_int16-f0_1_1hz",
                         "additional_output_config": {
                             "sign": "s",
                             "bits": 16,
@@ -467,7 +467,6 @@ i2c_controller_1_process_config = {
             ],
         },
     ]
-
 }
 
 #naming codes
@@ -592,7 +591,7 @@ audio_controller_process_1_config = {
     "short_name": "audio",
     "time_to_shutdown": .6,
     "debug_lvl": 5,
-    #format is platformUUID_busLocation_deviceName_sensorType_units_dataType_shape_hz
+    #format is busLocation_deviceName_sensorType_units_dataType_shape_hz
     "bus_location": "audio-1",
     "device_name": "generic",
     "sensor_type": "sound",
@@ -885,11 +884,12 @@ yolo_person_detector_process_config = {
 ###########################################Platform Processes###########################################
 
 all_process_configs = {
-    "sqlite": [1, sqlite_writer_process_config],
-    "i2c": [1, i2c_controller_process_config],
-    "video": [1, video_controller_process_1_config],
-    "detector_timelapse": [1, detector_timelapse_writer_process_config],
-    "yolo": [1, yolo_person_detector_process_config],
+    #"sqlite": [1, sqlite_writer_process_config],
+    "i2c0": [1, i2c_controller_0_process_config],
+    "i2c1": [1, i2c_controller_1_process_config],
+    #"video": [1, video_controller_process_1_config],
+    #"detector_timelapse": [1, detector_timelapse_writer_process_config],
+    #"yolo": [1, yolo_person_detector_process_config],
 #    "audio": [1, audio_controller_process_config],
 #    "opus": [1, audio_writer_process_config],
 #    "dark": [0, is_dark_detector_process_config],
