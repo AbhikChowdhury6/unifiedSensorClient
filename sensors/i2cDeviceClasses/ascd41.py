@@ -53,7 +53,8 @@ class aSCD41:
         self.l.info(self.device_name + " starting")
         self.scd4x = adafruit_scd4x.SCD4X(device_config['bus'], address=device_config['address'])
         self.scd4x.start_periodic_measurement()
-        self.is_ready = self.scd4x.data_ready
+        
+        self.is_ready = lambda: self.scd4x.data_ready
         
         self.get_co2 = lambda: self.scd4x.CO2
         self.get_air_temperature = lambda: self.scd4x.temperature
