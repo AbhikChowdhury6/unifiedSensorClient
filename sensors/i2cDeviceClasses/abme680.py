@@ -72,7 +72,7 @@ class aBME680:
         self.get_pressure_kpa = lambda: self.bme680.pressure / 10
         self.get_voc_lnohm = lambda: np.log(self.bme680.gas)
 
-        retrieve_datas = {'air-temprature': self.get_temp_c,
+        retrieve_datas = {'air-temperature': self.get_temp_c,
                           'relative-humidity': self.get_relative_humidity,
                           'barometric-pressure': self.get_pressure_kpa,
                           'volatile-organic-compounds': self.get_voc_lnohm,}
