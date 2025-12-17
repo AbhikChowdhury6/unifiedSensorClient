@@ -13,9 +13,7 @@ from platformUtils.zmq_codec import ZmqCodec
 import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 
-from config import file_uploader_process_config, zmq_control_endpoint, fnString_to_dt
-config = file_uploader_process_config
-l = logging.getLogger(config["short_name"])
+from config import zmq_control_endpoint, fnString_to_dt
 
 
 def _iter_files_recursive(root_dir: str):
@@ -52,7 +50,7 @@ def _iter_files_recursive(root_dir: str):
 #         except Exception as e:
 #             l.warning(config["short_name"] + " process failed to remove directory " + dirpath + ": " + str(e))
 
-def _upload_files_in_backlog(time_till_ready: int):
+def _upload_files_in_backlog(time_till_ready: int, config: dict, l: logging.Logger):
     now_cutoff = datetime.now(timezone.utc).timestamp() - time_till_ready
     candidates = []
     data_root = config["data_dir"]
@@ -80,14 +78,14 @@ def _upload_files_in_backlog(time_till_ready: int):
     l.trace(config["short_name"] + " process candidates: " + str(candidates))
     for _, full_path in candidates:
         l.debug(config["short_name"] + " process uploading file: " + full_path)
-        _upload_file(full_path)
+        _upload_file(full_path, config, l)
     num_uploaded += len(candidates)
     #_remove_empty_dirs(data_root, min_age_seconds=300)
     l.debug(config["short_name"] + " process uploaded files in backlog: " + str(num_uploaded))
     return
 
 
-def _upload_file(path: str):
+def _upload_file(path: str, config: dict, l: logging.Logger):
     # post to the upload url
     response = requests.post(config["upload_url"], files={"file": open(path, "rb")})
     if response.status_code != 200:
@@ -99,7 +97,8 @@ def _upload_file(path: str):
     return
 
 
-def file_uploader(log_queue):
+def file_uploader(log_queue, config):
+    l = logging.getLogger(config["short_name"])
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l.info(config["short_name"] + " process starting")
@@ -121,7 +120,7 @@ def file_uploader(log_queue):
             parts = sub.recv_multipart()
         except zmq.error.Again:
             # idle tick: check backlog then continue listening
-            _upload_files_in_backlog(config["time_till_ready"])
+            _upload_files_in_backlog(config["time_till_ready"], config, l)
             continue
 
         topic, msg = ZmqCodec.decode(parts)

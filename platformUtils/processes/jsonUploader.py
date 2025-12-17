@@ -11,13 +11,11 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
 from platformUtils.logUtils import worker_configurer, set_process_title
 from config import (
-    json_uploader_process_config,
     sqlite_writer_write_location,
     zmq_control_endpoint
 )
-config = json_uploader_process_config
-l = logging.getLogger(config["short_name"])
-def json_uploader(log_queue):
+def json_uploader(log_queue, config):
+    l = logging.getLogger(config["short_name"])
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l.info(config["short_name"] + " process starting")
