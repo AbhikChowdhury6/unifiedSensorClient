@@ -5,13 +5,8 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from sensors.sensor import Sensor
 import logging
 import numpy as np
-# open the config
-from config import i2c_controller_process_config
-config = i2c_controller_process_config
-# find the config for this device
-device_config = [d for d in i2c_controller_process_config['devices'] if d['module_name'] == 'abme280'][0]
 
-class aBME280():
+class aBME280:
     def __init__(self, 
                     bus_location = "i2c-1-0x76",
                     device_name = "bosch-bme280",

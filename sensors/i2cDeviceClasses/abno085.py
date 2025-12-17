@@ -1,27 +1,73 @@
 from adafruit_extended_bus import ExtendedI2C as I2C
 from adafruit_bno08x.i2c import BNO08X_I2C
-
+import logging
 import sys
+
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
-from sensors.i2c.i2cSensor import Sensor
-
-from config import i2c_controller_process_config
-device_config = [d for d in i2c_controller_process_config['devices'] if d['module_name'] == 'abme680'][0]
+from sensors.sensor import Sensor
 
 class aBNO085:
-    def __init__(self, bus):
-        self.bno085 = BNO08X_I2C(I2C(bus))
+    def __init__(self, 
+                    bus_location = "i2c-1-0x28",
+                    device_name = "bosch-bno085",
+                    debug_lvl = 30,
 
-        # we'll be getting raw and calibrated accel and gyro data
+                    device_config = {
+                        "bus": None, # will be set by i2cController,
+                        "address": 0x28, # default address for bno085
+                        "log_queue": None, # will be set by i2cController,
+                    },
+                    sensors_config = [
+                        {
+                            "sensor_type": "acceleration",
+                            "units": "mDsE2",
+                            "data_type": "float",
+                            "shape": "1x3",
+                            "hz": 1,
+                            "file_writer_config": {},
+                        },
+                        {
+                            "sensor_type": "gyroscope",
+                            "units": "radDs",
+                            "data_type": "float",
+                            "shape": "1x3",
+                            "hz": 1,
+                            "file_writer_config": {},
+                        },
+                        {
+                            "sensor_type": "magnetometer",
+                            "units": "gauss",
+                            "data_type": "float",
+                            "shape": "1x3",
+                            "hz": 1,
+                            "file_writer_config": {},
+                        },
+                        {
+                            "sensor_type": "game-rotation",
+                            "units": "quaternion",
+                            "data_type": "float",
+                            "shape": "1x4",
+                            "hz": 1,
+                            "file_writer_config": {},
+                        }
+                    ]):
+        if device_config['log_queue'] is None:
+            raise ValueError("log_queue is required")
+        self.log_queue = device_config['log_queue']
+        self.device_name = f"{bus_location}_{device_name}"
+        self.l = logging.getLogger(self.device_name)
+        self.l.setLevel(debug_lvl)
+        self.l.info(self.device_name + " starting")
 
-        #we'll also get the clabration data
+        #this is different
+        self.bno085 = BNO08X_I2C(device_config['bus'], address=device_config['address'])
         self.bno085.enable_feature(BNO08X_I2C.BNO_REPORT_ACCELEROMETER) #add inetrval micros
         self.bno085.enable_feature(BNO08X_I2C.BNO_REPORT_GYROSCOPE)
         self.bno085.enable_feature(BNO08X_I2C.BNO_REPORT_MAGNETOMETER)
         self.bno085.enable_feature(BNO08X_I2C.BNO_REPORT_GAME_ROTATION_VECTOR)
-
+        
         self.is_ready = lambda: True
 
         self.get_accel = lambda: self.bno085.acceleration
@@ -32,6 +78,18 @@ class aBNO085:
         retrieve_datas = {'accelation-mDs2': self.get_accel,
                           'gyro-radDs2': self.get_gyro,
                           'magnet-gauss': self.get_magnet,
-                          'game-rotation-quaternion': self.get_game_quaternion}
+                          'game-rotation': self.get_game_quaternion}
         
-        sensor_descriptors = device_config['sensors']
+        #this is the same
+        self.sensors = []
+        for s in sensors_config:
+            if "file_writer_config" in s:
+                s["file_writer_config"]["log_queue"] = device_config["log_queue"]
+            s["log_queue"] = device_config["log_queue"]
+            s["bus_location"] = bus_location
+            s["device_name"] = device_name
+            if "debug_lvl" not in s:
+                s["debug_lvl"] = debug_lvl
+            s["retrieve_data"] = retrieve_datas[s['sensor_type']]
+            s["is_ready"] = self.is_ready
+            self.sensors.append(Sensor(**s))

@@ -150,6 +150,17 @@ file_uploader_process_config = {
 
 ###########################################Platform Sensors###########################################
 
+#int16-f0 is 1 sign bit, 15 int bits, 0 decimal bits min is -32768, max is 32767 precision 1/2^0 = 1
+#int16-f4 is 1 sign bit, 11 int bits, 4 decimal bits min is -2048, max is 2048 precision 1/2^4 = 0.0625
+#int16-f5 is 1 sign bit, 10 int bits, 5 decimal bits min is -1024, max is 1024 precision 1/2^5 = 0.03125
+#int16-f6 is 1 sign bit, 9 int bits, 6 decimal bits min value is -512, max value is 512 precision 1/2^6 = 0.015625
+#int16-f7 is 1 sign bit, 8 int bits, 7 decimal bits min value is -256, max value is 256 precision 1/2^7 = 0.0078125
+#int16-f8 is 1 sign bit, 7 int bits, 8 decimal bits min value is -128, max value is 128 precision 1/2^8 = 0.00390625
+#int16-f9 is 1 sign bit, 6 int bits, 9 decimal bits min value is -64, max value is 64 precision 1/2^9 = 0.001953125
+#int16-f10 is 1 sign bit, 5 int bits, 10 decimal bits min value is -32, max value is 32 precision 1/2^10 = 0.0009765625
+#int16-f11 is 1 sign bit, 4 int bits, 11 decimal bits min value is -16, max value is 16 precision 1/2^11 = 0.00048828125
+#int16-f14 is 1 sign bit, 1 int bit, 14 decimal bits min value is -1, max value is 1 precision 1/2^14 = 0.00006103515625
+
 file_writer_process_info = {
     "module_name": "writerProcess",
     "module_path": "writers.processes.writerProcess",
@@ -179,7 +190,7 @@ file_output_infos = {
     },
 }
 
-i2c_controller_process_config = {
+i2c_controller_1_process_config = {
     "module_name": "i2cController",
     "module_path": "sensors.processes.i2cController",
     "func_name": "i2c_controller",
@@ -190,50 +201,58 @@ i2c_controller_process_config = {
     "device_class_loc": repoPath + "unifiedSensorClient/sensors/i2cDeviceClasses/",
     "devices": [
         {   
-            "module_name": "abme280",
-            "class_name": "aBME280",
-            "module_path": "sensors.i2cDeviceClasses.abme280",
-            "device_name": "bosch-bme280",
-            "bus_location": "i2c-1-0x76",
-            "address": 0x76,
+            "module_name": "abme680",
+            "class_name": "aBME680",
+            "module_path": "sensors.i2cDeviceClasses.abme680",
+            "device_name": "bosch-bme680",
+            "bus_location": "i2c-1-0x77",
+            "address": 0x77,
             "debug_lvl": 5,
             "sensors_config": [
                 {
                     "sensor_type": "barometric-pressure",
-                    "units": "pascal",
+                    "units": "kpa",
+                    #expected range
+                    #min is 30, max is 130
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 16,
                     "grace_period_samples": 3,
-                    "topic": f"i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1x1_16hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_float_1x1_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         #the change from topic is drop the data shape time dimension
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-1-0x76_bosch-bme280_barometric-pressure_pascal_float_1_16hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_int16-f7_1_16hz",
                         "additional_output_config": {
-                            #"int16_storage_type": "uint16-f6",
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
                         },
                     },
                 },
                 {
                     "sensor_type": "air-temperature",
                     "units": "celsius",
+                    #expected range
+                    #min is -40, max is 85
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 1,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1x1_1hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_air-temperature_celsius_float_1x1_1hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x76_bosch-bme280_air-temperature_celsius_float_1_1hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_air-temperature_celsius_int16-f8_1_1hz",
                         "additional_output_config": {
-                            #"int16_storage_type": "int16-f6",
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
                         },
                     },
                 },
@@ -241,18 +260,323 @@ i2c_controller_process_config = {
                     "sensor_type": "relative-humidity",
                     "units": "percent",
                     "data_type": "float",
+                    #expected range
+                    #min is 0, max is 100
                     "shape": "1x1",
                     "hz": .25,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1x1_0p25hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_float_1x1_0P25hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": .25,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x76_bosch-bme280_relative-humidity_percent_float_1_0p25hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_int16-f8_1_0P25hz",
                         "additional_output_config": {
-                            #"int16_storage_type": "uint16-f9",
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "volatile-organic-compounds",
+                    "units": "LNohm",
+                    "data_type": "float",
+                    #expected range
+                    #min is -3, max is 13
+                    "shape": "1x1",
+                    "hz": 1,
+                    "grace_period_samples": 1,
+                    "topic": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_lnohm_float_1x1_1hz",
+                    "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_lnohm_int16-f11_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+            ],
+        },
+        {
+            "module_name": "ascd41",
+            "class_name": "aSCD41",
+            "module_path": "sensors.i2cDeviceClasses.ascd41",
+            "device_name": "scd41",
+            "bus_location": "i2c-1-0x62",
+            "address": 0x62,
+            "debug_lvl": 5,
+            "sensors_config": [
+                {
+                    "sensor_type": "co2",
+                    "units": "ppm",
+                    #expected range
+                    #min is 400, max is 10000
+                    "data_type": "int",
+                    "shape": "1x1",
+                    "hz": 1,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x62_scd41_co2_int16-f0_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "air-temperature",
+                    "units": "celsius",
+                    "data_type": "float",
+                    #expected range
+                    #min is -40, max is 85
+                    "shape": "1x1",
+                    "hz": 1,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x62_scd41_air-temperature_int16-f8_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "relative-humidity",
+                    "units": "percent",
+                    "data_type": "float",
+                    #expected range
+                    #min is 0, max is 100
+                    "shape": "1x1",
+                    "hz": 1,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x62_scd41_relative-humidity_int16-f8_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+            ],
+        },
+        {
+            "module_name": "apmsa003i",
+            "class_name": "aPMSA003I",
+            "module_path": "sensors.i2cDeviceClasses.apmsa003i",
+            "device_name": "pmsa003i",
+            "bus_location": "i2c-1-0x12",
+            "address": 0x12,
+            "debug_lvl": 5,
+            "sensors_config": [
+                {
+                    "sensor_type": "air-particulate-pm1",
+                    "units": "ugDmE3",
+                    #expected range
+                    #min is 0, max is 10000
+                    "data_type": "int",
+                    "shape": "1x1",
+                    "hz": 1,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm1-ugDmE3_int16-f0_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "air-particulate-pm2P5",
+                    "units": "ugDmE3",
+                    #expected range
+                    #min is 0, max is 10000
+                    "data_type": "int",
+                    "shape": "1x1",
+                    "hz": 1,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm2P5_ugDmE3_int16-f0_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "air-particulate-pm10",
+                    "units": "ugDmE3",
+                    #expected range
+                    #min is 0, max is 10000
+                    "data_type": "int",
+                    "shape": "1x1",
+                    "hz": 1,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm10_ugDmE3_int16-f0_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "air-particulate-particle-count",
+                    "units": "greaterthan0p3umD0P1l",
+                    #expected range
+                    #min is 0, max is 100000
+                    "data_type": "int",
+                    "shape": "1x1",
+                    "hz": 1,
+                     "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 1,
+                        "file_size_check_interval_s_range": (300, 600),
+                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_greaterthan0p3umD0P1l_int16-f0_1_1hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+            ],
+        },
+    ]
+
+}
+
+#naming codes
+#exponent - E
+#point - P
+#divided by - D
+#natural log - LN
+#units all lowercase
+
+i2c_controller_0_process_config = {
+    "module_name": "i2cController",
+    "module_path": "sensors.processes.i2cController",
+    "func_name": "i2c_controller",
+    "short_name": "i2c",
+    "time_to_shutdown": .1,
+    "bus_number": 0,
+    "debug_lvl": 5,
+    "device_class_loc": repoPath + "unifiedSensorClient/sensors/i2cDeviceClasses/",
+    "devices": [
+        {
+            "module_name": "abno085",
+            "class_name": "aBNO085",
+            "module_path": "sensors.i2cDeviceClasses.abno085",
+            "device_name": "bosch-bno085",
+            "bus_location": "i2c-0-0x4b",
+            "address": 0x4b,
+            "debug_lvl": 5,
+            "sensors_config": [
+                {
+                    "sensor_type": "acceleration",
+                    "units": "mDsE2",
+                    "data_type": "float",
+                    "shape": "1x3",
+                    "hz": 32,
+                    "grace_period_samples": 0,
+                    "topic": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_float_1x3_32hz",
+                    "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 32,
+                        "file_size_check_interval_s_range": (30, 60),
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_int16-f6_1_32hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "gyroscope",
+                    "units": "radDs",
+                    "data_type": "float",
+                    "shape": "1x3",
+                    "hz": 32,
+                    "grace_period_samples": 0,
+                    "topic": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_float_1x3_32hz",
+                    "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 32,
+                        "file_size_check_interval_s_range": (30, 60),
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_int16-f6_1_32hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "magnetometer",
+                    "units": "gauss",
+                    "data_type": "float",
+                    "shape": "1x3",
+                    "hz": 8,
+                    "grace_period_samples": 0,
+                    "topic": f"i2c-0-0x4b_bosch-bno085_magnetometer_gaussE2_float_1x3_8hz",
+                    "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 8,
+                        "file_size_check_interval_s_range": (30, 60),
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_gaussE2_int16-f6_1_8hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
+                        },
+                    },
+                },
+                {
+                    "sensor_type": "game-rotation",
+                    "units": "quaternion",
+                    "data_type": "float",
+                    "shape": "1x4",
+                    "hz": 16,
+                    "grace_period_samples": 0,
+                    "topic": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_float_1x4_16hz",
+                    "debug_lvl": 20,
+                    "file_writer_config": {
+                        "output_module": "wavpakOutput",
+                        "output_hz": 16,
+                        "file_size_check_interval_s_range": (30, 60),
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f14_1_16hz",
+                        "additional_output_config": {
+                            "sign": "s",
+                            "bits": 16,
+                            "endian": "le",
                         },
                     },
                 },
@@ -260,7 +584,6 @@ i2c_controller_process_config = {
         }
     ]
 }
-
 
 audio_controller_process_1_config = {
     "module_name": "audioController",

@@ -170,6 +170,7 @@ class wavpak_output:
         self.l.trace(self.log_name + " writing data: " + str(data))
         data_le = data.astype(self.conversion_code, copy=False)
 
+        #order="C" is for ???
         self.l.trace(self.log_name + " writing " + str(data_le.tobytes(order="C").hex()))
         self.proc.stdin.write(data_le.tobytes(order="C"))
 
