@@ -80,9 +80,9 @@ class aBNO085:
         self.get_magnet = lambda: self.bno085.magnetic
         self.get_game_quaternion = lambda: self.bno085.game_quaternion
 
-        retrieve_datas = {'accelation-mDs2': self.get_accel,
-                          'gyro-radDs2': self.get_gyro,
-                          'magnet-gauss': self.get_magnet,
+        retrieve_datas = {'accelation': self.get_accel,
+                          'gyroscope': self.get_gyro,
+                          'magnetometer': self.get_magnet,
                           'game-rotation': self.get_game_quaternion}
         
         #this is the same
