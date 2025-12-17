@@ -69,7 +69,6 @@ class Writer:
 
     def _open_file(self, dt): 
         self.output_start_dt = dt
-       
         self.output_file = self.output.open(dt)
 
     def _close_file(self, dt):
@@ -170,16 +169,16 @@ class Writer:
             
             self.log(5, lambda:self.object_name + " close file time: " + str(datetime.now().timestamp() - start_time))
         
+
+
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
-        
         self.output.persist(dt, data)
-        
         self.log(5, lambda:self.object_name + " persist time: " + str(datetime.now().timestamp() - start_time))
         
+
         if self.output.file_name is None:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
-            self.output.open(dt)
-            self.output_file = self.output.file_name
+            self._open_file(dt)
             self.log(5, lambda:self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
