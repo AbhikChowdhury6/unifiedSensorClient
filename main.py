@@ -35,7 +35,7 @@ def _start_processes_dynamically():
             module_path = cfg.get("module_path")
             module = importlib.import_module(module_path)
             target = getattr(module, cfg.get("func_name"))
-            p = mp.Process(target=target, name=cfg.get("short_name"), args=(q,))
+            p = mp.Process(target=target, name=cfg.get("short_name"), args=(q,cfg))
             p.start()
             processes[name] = p
     return processes

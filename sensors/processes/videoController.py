@@ -11,9 +11,8 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
 import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
-from config import video_controller_process_1_config, zmq_control_endpoint
+from config import zmq_control_endpoint
 
-config = video_controller_process_1_config
 def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
     spec = importlib.util.spec_from_file_location(module_name, filepath)
@@ -24,7 +23,7 @@ def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def video_controller(log_queue):
+def video_controller(log_queue, config):
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
