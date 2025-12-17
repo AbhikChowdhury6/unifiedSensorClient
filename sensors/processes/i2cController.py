@@ -15,6 +15,7 @@ import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 #import the config
 from config import zmq_control_endpoint
+from adafruit_extended_bus import ExtendedI2C as I2C
 
 def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
@@ -38,11 +39,13 @@ def i2c_controller(log_queue, config):
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     l.info(config["short_name"] + " controller connected to control topic")
-    # init a bus using smbus2
-    if config['bus_number'] == 0:
-        I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100_000) 
-    else:
-        I2C_BUS = busio.I2C(board.SCL1, board.SDA1, frequency=100_000)
+    # initialize I2C bus by bus number (e.g., /dev/i2c-1) using ExtendedI2C
+    try:
+        I2C_BUS = I2C(config['bus_number'])
+        l.debug(f"{config['short_name']} using /dev/i2c-{config['bus_number']}")
+    except Exception as e:
+        l.error(f"Failed to open /dev/i2c-{config['bus_number']}: {e}")
+        raise
     # compile a list of all of the devices
     
     

@@ -1,4 +1,3 @@
-from adafruit_extended_bus import ExtendedI2C as I2C
 from adafruit_bno08x.i2c import BNO08X_I2C
 import logging
 import sys
