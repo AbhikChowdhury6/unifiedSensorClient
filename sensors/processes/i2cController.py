@@ -14,8 +14,7 @@ from platformUtils.zmq_codec import ZmqCodec
 import logging
 from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
 #import the config
-from config import i2c_controller_process_config, zmq_control_endpoint
-config = i2c_controller_process_config
+from config import zmq_control_endpoint
 
 def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
@@ -28,7 +27,7 @@ def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def i2c_controller(log_queue):
+def i2c_controller(config, log_queue):
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
@@ -40,8 +39,12 @@ def i2c_controller(log_queue):
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     l.info(config["short_name"] + " controller connected to control topic")
     # init a bus using smbus2
-    I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=400_000) 
+    if config['bus_number'] == 0:
+        I2C_BUS = busio.I2C(board.SCL, board.SDA, frequency=100_000) 
+    else:
+        I2C_BUS = busio.I2C(board.SCL1, board.SDA1, frequency=100_000)
     # compile a list of all of the devices
+    
     
     devices = []
     for device in config['devices']:
