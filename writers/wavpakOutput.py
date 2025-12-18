@@ -58,6 +58,26 @@ class wavpak_output:
             raise ValueError("Invalid sign: " + self.sign)
         
 
+        self.rounding_function = None
+        #parse the output base and get the data type
+        self.data_type = output_base.split("_")[-3]
+        if "-" in self.data_type:
+            target_type = self.data_type.split("-")[0]
+            try:
+                self.target_dtype = getattr(np, target_type)
+            except AttributeError:
+                raise ValueError("Invalid target type: " + target_type)
+            
+            f_bits_str = self.data_type.split("-")[1][1:]
+            float_bits = int(f_bits_str)
+            float_scale = 2**float_bits
+            #apply this to every element in the array without changing the shape
+            self.rounding_function = lambda x: np.round(x * float_scale).astype(self.target_dtype)
+
+            
+        
+        
+        
         self.file_name = None
         self.temp_output_location = temp_write_location + output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
@@ -98,7 +118,10 @@ class wavpak_output:
     #     return (data * self.scale + self.offset).astype(np.int16)
 
 
+    
     def persist(self, dt, data):
+        if self.rounding_function is not None:
+            data = self.rounding_function(data)
         obj = [dt, data]
         with open(self.persist_fn, "ab") as f:
             pickle.dump(obj, f)

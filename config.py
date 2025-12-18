@@ -300,83 +300,83 @@ i2c_controller_1_process_config = {
                 },
             ],
         },
-        {
-            "module_name": "ascd41",
-            "class_name": "aSCD41",
-            "module_path": "sensors.i2cDeviceClasses.ascd41",
-            "device_name": "scd41",
-            "bus_location": "i2c-1-0x62",
-            "address": 0x62,
-            "debug_lvl": 5,
-            "sensors_config": [
-                {
-                    "sensor_type": "co2",
-                    "units": "ppm",
-                    #expected range
-                    #min is 400, max is 10000
-                    "data_type": "int",
-                    "shape": "1x1",
-                    "hz": .2,
-                    "grace_period_samples": 6,
-                    "topic": f"i2c-1-0x62_scd41_co2_ppm_int_1x1_0P2hz",
-                    "debug_lvl": 5,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x62_scd41_co2_ppm_int16-f0_1_0P2hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-                {
-                    "sensor_type": "air-temperature",
-                    "units": "celsius",
-                    "data_type": "float",
-                    #expected range
-                    #min is -40, max is 85
-                    "shape": "1x1",
-                    "hz": .2,
-                    "grace_period_samples": 6,
-                    "topic": f"i2c-1-0x62_scd41_air-temperature_celsius_float_1x1_0P2hz",
-                    "debug_lvl": 5,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x62_scd41_air-temperature_celsius_int16-f8_1_0P2hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-                {
-                    "sensor_type": "relative-humidity",
-                    "units": "percent",
-                    "data_type": "float",
-                    #expected range
-                    #min is 0, max is 100
-                    "shape": "1x1",
-                    "hz": .2,
-                    "grace_period_samples": 6,
-                    "topic": f"i2c-1-0x62_scd41_relative-humidity_percent_float_1x1_0P2hz",
-                    "debug_lvl": 20,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x62_scd41_relative-humidity_percent_int16-f8_1_0P2hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-            ],
-        },
+        # {
+        #     "module_name": "ascd41",
+        #     "class_name": "aSCD41",
+        #     "module_path": "sensors.i2cDeviceClasses.ascd41",
+        #     "device_name": "scd41",
+        #     "bus_location": "i2c-1-0x62",
+        #     "address": 0x62,
+        #     "debug_lvl": 5,
+        #     "sensors_config": [
+        #         {
+        #             "sensor_type": "co2",
+        #             "units": "ppm",
+        #             #expected range
+        #             #min is 400, max is 10000
+        #             "data_type": "int",
+        #             "shape": "1x1",
+        #             "hz": .2,
+        #             "grace_period_samples": 6,
+        #             "topic": f"i2c-1-0x62_scd41_co2_ppm_int_1x1_0P2hz",
+        #             "debug_lvl": 5,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x62_scd41_co2_ppm_int16-f0_1_0P2hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #         {
+        #             "sensor_type": "air-temperature",
+        #             "units": "celsius",
+        #             "data_type": "float",
+        #             #expected range
+        #             #min is -40, max is 85
+        #             "shape": "1x1",
+        #             "hz": .2,
+        #             "grace_period_samples": 6,
+        #             "topic": f"i2c-1-0x62_scd41_air-temperature_celsius_float_1x1_0P2hz",
+        #             "debug_lvl": 5,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x62_scd41_air-temperature_celsius_int16-f8_1_0P2hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #         {
+        #             "sensor_type": "relative-humidity",
+        #             "units": "percent",
+        #             "data_type": "float",
+        #             #expected range
+        #             #min is 0, max is 100
+        #             "shape": "1x1",
+        #             "hz": .2,
+        #             "grace_period_samples": 6,
+        #             "topic": f"i2c-1-0x62_scd41_relative-humidity_percent_float_1x1_0P2hz",
+        #             "debug_lvl": 20,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x62_scd41_relative-humidity_percent_int16-f8_1_0P2hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #     ],
+        # },
         {
             "module_name": "apmsa003i",
             "class_name": "aPMSA003I",
