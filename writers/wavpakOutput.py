@@ -27,7 +27,6 @@ class wavpak_output:
                     bits = 32,
                     sign = "f",
                     endian = "le",
-                    additional_output_config = {},
                     **kwargs):
         self.output_base = output_base
         self.temp_write_location = temp_write_location
@@ -36,7 +35,6 @@ class wavpak_output:
         self.bits = bits
         self.sign = sign
         self.endian = endian
-        self.additional_output_config = additional_output_config
 
         if self.sign == "f":
             self.conversion_code = "<f4"
@@ -69,6 +67,7 @@ class wavpak_output:
         self.l.setLevel(debug_lvl)
         self.l.info(self.log_name + " starting")
 
+        self.l.info(self.sign + " " + str(self.bits))
         self.l.info(self.log_name + " conversion code: " + self.conversion_code)
 
 
@@ -154,11 +153,10 @@ class wavpak_output:
     def open(self, dt):
         # for some reason, the cli adds the extension
         self.file_name = self.output_base + "_" + dt_to_fnString(dt)# + self.extension
-        
-        self.proc = subprocess.Popen(
-            ["wavpack", "-hh", self.raw_spec, "-", "-o", self.temp_output_location + self.file_name],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0
-        )
+
+        wavpack_cmd = ["wavpack", "-hh", self.raw_spec, "-", "-o", self.temp_output_location + self.file_name]
+        self.l.debug(self.log_name + " wavpack command: " + " ".join(wavpack_cmd))
+        self.proc = subprocess.Popen(wavpack_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
         t = threading.Thread(target=self._stderr_reader, args=(self.proc,), daemon=True)
         t.start()
         self.proc._stderr_thread = t  # attach for lifecycle awareness

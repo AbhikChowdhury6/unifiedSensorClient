@@ -60,7 +60,7 @@ def writer_process(log_queue = None,
     output_module = importlib.import_module(output_info["module_path"])
     output_ctor = getattr(output_module, output_info["func_name"])
     if debug_lvl <= 5: start_time = datetime.now().timestamp()
-    output = output_ctor(additional_output_config=additional_output_config,
+    output = output_ctor(**additional_output_config,
                          output_base=output_base,
                          output_hz=output_hz,
                          temp_write_location=wc["temp_write_location"],

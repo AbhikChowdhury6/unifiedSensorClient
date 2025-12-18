@@ -309,6 +309,7 @@ i2c_controller_1_process_config = {
                     "data_type": "int",
                     "shape": "1x1",
                     "hz": .2,
+                    "grace_period_samples": 6,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -326,6 +327,7 @@ i2c_controller_1_process_config = {
                     #min is -40, max is 85
                     "shape": "1x1",
                     "hz": .2,
+                    "grace_period_samples": 6,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -343,6 +345,7 @@ i2c_controller_1_process_config = {
                     #min is 0, max is 100
                     "shape": "1x1",
                     "hz": .2,
+                    "grace_period_samples": 6,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -371,6 +374,7 @@ i2c_controller_1_process_config = {
                     "data_type": "int",
                     "shape": "1x1",
                     "hz": 1,
+                    "grace_period_samples": 1,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -388,6 +392,7 @@ i2c_controller_1_process_config = {
                     "data_type": "int",
                     "shape": "1x1",
                     "hz": 1,
+                    "grace_period_samples": 1,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -405,6 +410,7 @@ i2c_controller_1_process_config = {
                     "data_type": "int",
                     "shape": "1x1",
                     "hz": 1,
+                    "grace_period_samples": 1,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -422,7 +428,8 @@ i2c_controller_1_process_config = {
                     "data_type": "int",
                     "shape": "1x1",
                     "hz": 1,
-                     "file_writer_config": {
+                    "grace_period_samples": 1,
+                    "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
@@ -468,7 +475,7 @@ i2c_controller_0_process_config = {
                     "data_type": "float",
                     "shape": "1x3",
                     "hz": 32,
-                    "grace_period_samples": 0,
+                    "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_float_1x3_32hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
@@ -486,7 +493,7 @@ i2c_controller_0_process_config = {
                     "data_type": "float",
                     "shape": "1x3",
                     "hz": 32,
-                    "grace_period_samples": 0,
+                    "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_float_1x3_32hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
@@ -504,7 +511,7 @@ i2c_controller_0_process_config = {
                     "data_type": "float",
                     "shape": "1x3",
                     "hz": 8,
-                    "grace_period_samples": 0,
+                    "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_magnetometer_gauss_float_1x3_8hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
@@ -522,7 +529,7 @@ i2c_controller_0_process_config = {
                     "data_type": "float",
                     "shape": "1x4",
                     "hz": 16,
-                    "grace_period_samples": 0,
+                    "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_float_1x4_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
