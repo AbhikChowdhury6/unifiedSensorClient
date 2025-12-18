@@ -77,6 +77,13 @@ class Sensor:
                                 self.data_type,
                                 self.shape,
                                 str(self.hz) + "hz"])
+
+        #if topic was passed in 
+        if "topic" in kwargs:
+            if self.topic != kwargs["topic"]:
+                self.l.error("topic mismatch: generated topic: " + self.topic + 
+                " != passed in topic: " + kwargs["topic"])
+
         self.endpoint = f"ipc:///tmp/{self.topic}.sock"
         self.ctx = zmq.Context()
         self.pub = self.ctx.socket(zmq.PUB)

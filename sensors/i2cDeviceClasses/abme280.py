@@ -47,7 +47,7 @@ class aBME280:
         if device_config['log_queue'] is None:
             raise ValueError("log_queue is required")
         self.log_queue = device_config['log_queue']
-        self.device_name = f"{bus_location}_{device_name}"
+        self.device_name = f"{bus_location}-{device_name}"
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.device_name + " starting")

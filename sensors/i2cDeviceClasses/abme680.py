@@ -1,5 +1,4 @@
 import adafruit_bme680
-
 import sys
 
 repoPath = "/home/pi/Documents/"
@@ -56,10 +55,10 @@ class aBME680:
         if device_config['log_queue'] is None:
             raise ValueError("log_queue is required")
         self.log_queue = device_config['log_queue']
-        self.device_name = f"{bus_location}_{device_name}"
-        self.l = logging.getLogger(self.device_name)
+        self.logger_name = f"{bus_location}-{device_name}"
+        self.l = logging.getLogger(self.logger_name)
         self.l.setLevel(debug_lvl)
-        self.l.info(self.device_name + " starting")
+        self.l.info(self.logger_name + " starting")
 
 
 
@@ -67,10 +66,10 @@ class aBME680:
 
         self.is_ready = lambda: True
 
-        self.get_temp_c = lambda: self.bme680.temperature
-        self.get_relative_humidity = lambda: self.bme680.relative_humidity
-        self.get_pressure_kpa = lambda: self.bme680.pressure / 10
-        self.get_voc_lnohm = lambda: np.log(self.bme680.gas)
+        self.get_temp_c = lambda: np.array([self.bme680.temperature])
+        self.get_relative_humidity = lambda: np.array([self.bme680.relative_humidity])
+        self.get_pressure_kpa = lambda: np.array([self.bme680.pressure / 10])
+        self.get_voc_lnohm = lambda: np.array([np.log(self.bme680.gas)])
 
         retrieve_datas = {'air-temperature': self.get_temp_c,
                           'relative-humidity': self.get_relative_humidity,

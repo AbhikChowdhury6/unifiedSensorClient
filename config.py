@@ -226,11 +226,8 @@ i2c_controller_1_process_config = {
                         #the change from topic is drop the data shape time dimension
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_int16-f7_1_16hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -249,11 +246,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x77_bosch-bme680_air-temperature_celsius_int16-f8_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -272,11 +266,8 @@ i2c_controller_1_process_config = {
                         "output_hz": .25,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_int16-f8_1_0P25hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -295,11 +286,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_lnohm_int16-f11_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
             ],
@@ -326,11 +314,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x62_scd41_co2_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -346,11 +331,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x62_scd41_air-temperature_int16-f8_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -366,11 +348,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x62_scd41_relative-humidity_int16-f8_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
             ],
@@ -397,11 +376,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm1-ugDmE3_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -417,11 +393,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm2P5_ugDmE3_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -437,11 +410,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm10_ugDmE3_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -457,11 +427,8 @@ i2c_controller_1_process_config = {
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_GT0P3umD0P1l_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
             ],
@@ -509,11 +476,8 @@ i2c_controller_0_process_config = {
                         "output_hz": 32,
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_int16-f6_1_32hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -530,11 +494,8 @@ i2c_controller_0_process_config = {
                         "output_hz": 32,
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_int16-f6_1_32hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -551,11 +512,8 @@ i2c_controller_0_process_config = {
                         "output_hz": 8,
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_gaussE2_int16-f6_1_8hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
                 {
@@ -572,11 +530,8 @@ i2c_controller_0_process_config = {
                         "output_hz": 16,
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f14_1_16hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                            "endian": "le",
-                        },
+                        "sign": "s",
+                        "bits": 16,
                     },
                 },
             ],

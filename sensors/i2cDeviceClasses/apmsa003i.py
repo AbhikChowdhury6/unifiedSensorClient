@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from adafruit_pm25.i2c import PM25_I2C
-
+import numpy as np
 import sys
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -55,7 +55,7 @@ class aPMSA003I:
         if device_config['log_queue'] is None:
             raise ValueError("log_queue is required")
         self.log_queue = device_config['log_queue']
-        self.device_name = f"{bus_location}_{device_name}"
+        self.device_name = f"{bus_location}-{device_name}"
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.device_name + " starting")
@@ -79,10 +79,10 @@ class aPMSA003I:
                 return None
             return self.aqdata[s]
 
-        self.get_pm1 = lambda: get_aqdata_field("pm10 env")
-        self.get_pm2P5 = lambda: get_aqdata_field("pm25 env")
-        self.get_pm10 = lambda: get_aqdata_field("pm100 env")
-        self.get_particle_count = lambda: get_aqdata_field("particles 03um")
+        self.get_pm1 = lambda: np.array([get_aqdata_field("pm10 env")])
+        self.get_pm2P5 = lambda: np.array([get_aqdata_field("pm25 env")])
+        self.get_pm10 = lambda: np.array([get_aqdata_field("pm100 env")])
+        self.get_particle_count = lambda: np.array([get_aqdata_field("particles 03um")])
         
         retrieve_datas = {'air-particulate-pm1': self.get_pm1,
                             'air-particulate-pm2P5': self.get_pm2P5,

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import adafruit_scd4x
 import sys
 import logging
+import numpy as np
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from sensors.sensor import Sensor
@@ -47,7 +48,7 @@ class aSCD41:
         if device_config['log_queue'] is None:
             raise ValueError("log_queue is required")
         self.log_queue = device_config['log_queue']
-        self.device_name = f"{bus_location}_{device_name}"
+        self.device_name = f"{bus_location}-{device_name}"
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.device_name + " starting")
@@ -56,9 +57,9 @@ class aSCD41:
         
         self.is_ready = lambda: self.scd4x.data_ready
         
-        self.get_co2 = lambda: self.scd4x.CO2
-        self.get_air_temperature = lambda: self.scd4x.temperature
-        self.get_relative_humidity = lambda: self.scd4x.relative_humidity
+        self.get_co2 = lambda: np.array([self.scd4x.CO2])
+        self.get_air_temperature = lambda: np.array([self.scd4x.temperature])
+        self.get_relative_humidity = lambda: np.array([self.scd4x.relative_humidity])
         
         retrieve_datas = {'co2': self.get_co2,
                             'air-temperature': self.get_air_temperature,

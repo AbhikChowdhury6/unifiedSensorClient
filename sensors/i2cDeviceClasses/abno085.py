@@ -7,7 +7,7 @@ from adafruit_bno08x import (
 )
 import logging
 import sys
-
+import numpy as np
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -61,7 +61,7 @@ class aBNO085:
         if device_config['log_queue'] is None:
             raise ValueError("log_queue is required")
         self.log_queue = device_config['log_queue']
-        self.device_name = f"{bus_location}_{device_name}"
+        self.device_name = f"{bus_location}-{device_name}"
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
         self.l.info(self.device_name + " starting")
@@ -75,10 +75,10 @@ class aBNO085:
         
         self.is_ready = lambda: True
 
-        self.get_accel = lambda: self.bno085.acceleration
-        self.get_gyro = lambda: self.bno085.gyro
-        self.get_magnet = lambda: self.bno085.magnetic
-        self.get_game_quaternion = lambda: self.bno085.game_quaternion
+        self.get_accel = lambda: np.array([self.bno085.acceleration])
+        self.get_gyro = lambda: np.array([self.bno085.gyro])
+        self.get_magnet = lambda: np.array([self.bno085.magnetic])
+        self.get_game_quaternion = lambda: np.array([self.bno085.game_quaternion])
 
         retrieve_datas = {'acceleration': self.get_accel,
                           'gyroscope': self.get_gyro,
