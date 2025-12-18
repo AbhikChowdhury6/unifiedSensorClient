@@ -54,6 +54,8 @@ def writer_process(log_queue = None,
 
 
     wc = file_writer_process_info
+
+    l.debug(process_name + " additional_output_config: " + str(additional_output_config))
     
     # Dynamically import the output module using its fully qualified module path
     output_info = file_output_infos[output_module]

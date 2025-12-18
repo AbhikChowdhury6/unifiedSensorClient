@@ -197,7 +197,7 @@ class Writer:
             if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
             self.log(20, lambda:self.object_name + " closing file: " + self.output_file + " at: " + str(self.last_dt))
             self.log(20, lambda: "duration: " + str(self.last_dt - self.output_start_dt))
-            self.log(20, lambda: "size: " + str(os.path.getsize(self.output_write_location + self.output_file)))
+            self.log(20, lambda: "size: " + str(os.path.getsize(self.temp_write_location + self.output_base + "/" + self.output_file)))
             self.log(20, lambda: "calculated number of frames: " + str(self.hz * (self.last_dt - self.output_start_dt).total_seconds()))
             
             self._close_file(self.last_dt)
