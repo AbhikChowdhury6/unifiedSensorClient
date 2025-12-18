@@ -58,6 +58,7 @@ class wavpak_output:
             raise ValueError("Invalid sign: " + self.sign)
         
 
+        #this will be called casting and not rounding
         self.rounding_function = None
         #parse the output base and get the data type
         self.data_type = output_base.split("_")[-3]
@@ -73,6 +74,9 @@ class wavpak_output:
             float_scale = 2**float_bits
             #apply this to every element in the array without changing the shape
             self.rounding_function = lambda x: np.round(x * float_scale).astype(self.target_dtype)
+
+
+        #rounding will do a similar process
 
             
         
