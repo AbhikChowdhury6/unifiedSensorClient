@@ -59,7 +59,7 @@ class wavpak_output:
         
 
         #this will be called casting and not rounding
-        self.rounding_function = None
+        self._casting_function = None
         #parse the output base and get the data type
         self.data_type = output_base.split("_")[-3]
         if "-" in self.data_type:
@@ -72,14 +72,18 @@ class wavpak_output:
             f_bits_str = self.data_type.split("-")[1][1:]
             float_bits = int(f_bits_str)
             float_scale = 2**float_bits
-            #apply this to every element in the array without changing the shape
-            self.rounding_function = lambda x: np.round(x * float_scale).astype(self.target_dtype)
 
+            info = np.iinfo(self.target_dtype)
 
-        #rounding will do a similar process
+            def _casting_function(data):
+                # Compute in float to avoid overflow during scaling
+                y = np.rint(np.asarray(data, dtype=np.float64) * float_scale)
+                # Clamp before casting to prevent wraparound
+                y = np.clip(y, info.min, info.max)
+                return y.astype(self.target_dtype)
 
-            
-        
+            self._casting_function = _casting_function
+                    
         
         
         self.file_name = None
@@ -124,8 +128,8 @@ class wavpak_output:
 
     
     def persist(self, dt, data):
-        if self.rounding_function is not None:
-            data = self.rounding_function(data)
+        if self._casting_function is not None:
+            data = self._casting_function(data)
         obj = [dt, data]
         with open(self.persist_fn, "ab") as f:
             pickle.dump(obj, f)
@@ -192,8 +196,11 @@ class wavpak_output:
         return self.file_name
     
     def write(self, data):        
+        if self._casting_function is not None:
+            data = self._casting_function(data)
+        
+        # I think flatten will put all of the values in the right order
         data = data.flatten()
-        # cast to float32; enforce LE byteorder for the CLI's ',le'
         self.l.trace(self.log_name + " writing data: " + str(data))
         data_le = data.astype(self.conversion_code, copy=False)
 

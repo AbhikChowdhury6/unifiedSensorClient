@@ -573,7 +573,8 @@ i2c_controller_0_process_config = {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f14_1_16hz",
+                        #could be f14, but we don't need that much precision
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_1_16hz",
                         "additional_output_config": {
                             "channels": 4,
                             "sign": "s",
