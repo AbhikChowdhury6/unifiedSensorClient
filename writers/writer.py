@@ -36,12 +36,12 @@ class Writer:
         self.l = logging.getLogger(self.object_name)
         self.debug_lvl = debug_lvl
         self.l.setLevel(debug_lvl)
-        self.l.info(self.object_name + " starting")
+        self.l.debug(self.object_name + " starting")
 
         output_endpoint = f"ipc:///tmp/{self.output_base}.sock"
         self.pub = zmq.Context().socket(zmq.PUB)
         self.pub.bind(output_endpoint)
-        self.l.info(self.object_name + " publishing to " + output_endpoint)
+        self.l.debug(self.object_name + " publishing to " + output_endpoint)
 
         self.persist_location = temp_write_location + self.output_base + "_persist" + "/"
         os.makedirs(self.persist_location, exist_ok=True)
@@ -62,6 +62,8 @@ class Writer:
         #check for files in cache and recover
         self._recover_from_cache()
 
+        self.log(20, lambda: self.object_name + " initialized")
+
     def _recover_from_cache(self):
         for dt, data in self.output.load():
             self.log(5, lambda:self.object_name + " recovering frame: " + str(dt) + " with shape: " + str(data.shape))
@@ -70,15 +72,17 @@ class Writer:
     def _open_file(self, dt): 
         self.output_start_dt = dt
         self.output_file = self.output.open(dt)
+        self.log(20, lambda: self.object_name + " opened file: " + self.output_file)
 
     def _close_file(self, dt):
         self.output_file = self.output.close(dt)
         infile = self.temp_write_location + self.output_base + "/" + self.output_file
-
+        self.log(20, lambda: self.object_name + " closing file: " + self.output_file)
         #move the file to the correct location in data
         self.output_file = self.platform_uuid + "_" + self.output_file
         outfile = self.output_write_location + self.output_base + "/" + self.output_file
         shutil.move(infile, outfile)
+        self.log(10, lambda: self.object_name + " moved file to: " + outfile)
         self.pub.send_multipart(ZmqCodec.encode(self.object_name, [dt, outfile]))
         self.output_file = None
         self.last_dt = None
@@ -86,6 +90,7 @@ class Writer:
         #delete all the cached files , they should all be older than the last dt
         for file in sorted(os.listdir(self.persist_location)):
             os.remove(self.persist_location + file)
+        self.log(10, lambda: self.object_name + " deleted all cached files")
 
     def _should_close(self, dt):
         if self.output.file_name is None:

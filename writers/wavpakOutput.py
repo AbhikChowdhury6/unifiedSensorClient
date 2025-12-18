@@ -163,6 +163,8 @@ class wavpak_output:
         t.start()
         self.proc._stderr_thread = t  # attach for lifecycle awareness
         self.file_name = self.file_name + self.extension
+        self.l.info(self.log_name + " opened wavpack writer: " + self.file_name)
+        return self.file_name
     
     def write(self, data):        
         data = data.flatten()

@@ -207,7 +207,7 @@ i2c_controller_1_process_config = {
             "device_name": "bosch-bme680",
             "bus_location": "i2c-1-0x77",
             "address": 0x77,
-            "debug_lvl": 5,
+            "debug_lvl": 20,
             "sensors_config": [
                 {
                     "sensor_type": "barometric-pressure",
@@ -279,13 +279,13 @@ i2c_controller_1_process_config = {
                     "shape": "1x1",
                     "hz": 1,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_lnohm_float_1x1_1hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_LNohm_float_1x1_1hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_lnohm_int16-f11_1_1hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_LNohm_int16-f11_1_1hz",
                         "sign": "s",
                         "bits": 16,
                     },
@@ -299,7 +299,7 @@ i2c_controller_1_process_config = {
             "device_name": "scd41",
             "bus_location": "i2c-1-0x62",
             "address": 0x62,
-            "debug_lvl": 5,
+            "debug_lvl": 20,
             "sensors_config": [
                 {
                     "sensor_type": "co2",
@@ -308,7 +308,7 @@ i2c_controller_1_process_config = {
                     #min is 400, max is 10000
                     "data_type": "int",
                     "shape": "1x1",
-                    "hz": 1,
+                    "hz": .2,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -325,7 +325,7 @@ i2c_controller_1_process_config = {
                     #expected range
                     #min is -40, max is 85
                     "shape": "1x1",
-                    "hz": 1,
+                    "hz": .2,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -342,7 +342,7 @@ i2c_controller_1_process_config = {
                     #expected range
                     #min is 0, max is 100
                     "shape": "1x1",
-                    "hz": 1,
+                    "hz": .2,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
@@ -361,7 +361,7 @@ i2c_controller_1_process_config = {
             "device_name": "pmsa003i",
             "bus_location": "i2c-1-0x12",
             "address": 0x12,
-            "debug_lvl": 5,
+            "debug_lvl": 20,
             "sensors_config": [
                 {
                     "sensor_type": "air-particulate-pm1",
@@ -460,7 +460,7 @@ i2c_controller_0_process_config = {
             "device_name": "bosch-bno085",
             "bus_location": "i2c-0-0x4b",
             "address": 0x4b,
-            "debug_lvl": 5,
+            "debug_lvl": 20,
             "sensors_config": [
                 {
                     "sensor_type": "acceleration",
@@ -505,13 +505,13 @@ i2c_controller_0_process_config = {
                     "shape": "1x3",
                     "hz": 8,
                     "grace_period_samples": 0,
-                    "topic": f"i2c-0-0x4b_bosch-bno085_magnetometer_gaussE2_float_1x3_8hz",
+                    "topic": f"i2c-0-0x4b_bosch-bno085_magnetometer_gauss_float_1x3_8hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 8,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_gaussE2_int16-f6_1_8hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_gauss_int16-f6_1_8hz",
                         "sign": "s",
                         "bits": 16,
                     },

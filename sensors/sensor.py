@@ -64,7 +64,7 @@ class Sensor:
                      str(self.units) + " " + 
                      str(self.data_type) + " " + 
                      str(self.shape) + " " + 
-                     str(self.hz) + "hz")
+                     str(self.hz).replace(".", "P") + "hz")
         sys.stdout.flush()
         #self.float_rounding_precision = config['float_rounding_precision']
 
@@ -76,7 +76,7 @@ class Sensor:
                                 self.units, 
                                 self.data_type,
                                 self.shape,
-                                str(self.hz) + "hz"])
+                                str(self.hz).replace(".", "P") + "hz"])
 
         #if topic was passed in 
         if "topic" in kwargs:
@@ -92,17 +92,17 @@ class Sensor:
         #logging setup
         self.l = logging.getLogger(self.topic)
         self.l.setLevel(debug_lvl)
-        self.l.info(self.topic + " connected to " + self.endpoint)
-        self.l.info(self.topic)
-        self.l.info(camera_topic)
-        self.l.info(self.endpoint)
-        self.l.info(camera_endpoint)
+        self.l.debug(self.topic + " connected to " + self.endpoint)
+        self.l.debug(self.topic)
+        self.l.debug(camera_topic)
+        self.l.debug(self.endpoint)
+        self.l.debug(camera_endpoint)
 
 
         #ready
         self.is_ready = is_ready
         while not self.is_ready():
-            self.l.info(self.topic + " waiting for data...")
+            self.l.debug(self.topic + " waiting for data...")
             time.sleep(self.delay_micros/1_000_000)
         _ = self.retrieve_data() # a warmup reading
         time.sleep(.25)
@@ -115,7 +115,7 @@ class Sensor:
         ts = datetime.now(timezone.utc)
         _ = self.retrieve_data()
         self.max_read_micros = (datetime.now(timezone.utc) - ts).total_seconds() * 1_000_000
-        self.l.info("estimated read time for " + self.topic + " is " + str(self.max_read_micros) + " microseconds")
+        self.l.debug("estimated read time for " + self.topic + " is " + str(self.max_read_micros) + " microseconds")
 
         #check if the writer is enabled
         self.writer_process = None
@@ -137,6 +137,7 @@ class Sensor:
             self.writer_process = mp.Process(target=writer_process, name=self.topic + "_writer-process", kwargs=writer_args)
             self.writer_process.start()
             self.writer_process.is_alive()
+        self.log(20, lambda: self.topic + " initialized")
 
     def log(self, lvl:int, msg):
         if lvl < self.debug_lvl:
