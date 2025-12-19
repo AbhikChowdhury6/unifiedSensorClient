@@ -216,5 +216,6 @@ class Sensor:
 
         self.last_read_dt = now
         self.last_read_data = new_data_np
+        self.log(10, lambda: "read time: " + str(now))
         self.log(5, lambda: "sending data " + str(new_data_np))
         self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))
