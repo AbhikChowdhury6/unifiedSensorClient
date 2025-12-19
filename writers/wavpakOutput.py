@@ -80,7 +80,9 @@ class wavpak_output:
                 y = np.rint(np.asarray(data, dtype=np.float64) * float_scale)
                 # Clamp before casting to prevent wraparound
                 y = np.clip(y, info.min, info.max)
-                return y.astype(self.target_dtype)
+                y = y.astype(self.target_dtype)
+                self.l.trace(self.log_name + " casted data: " + str(y))
+                return y
 
             self._casting_function = _casting_function
                     
