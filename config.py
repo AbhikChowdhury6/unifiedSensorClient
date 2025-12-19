@@ -377,97 +377,97 @@ i2c_controller_1_process_config = {
         #         },
         #     ],
         # },
-        {
-            "module_name": "apmsa003i",
-            "class_name": "aPMSA003I",
-            "module_path": "sensors.i2cDeviceClasses.apmsa003i",
-            "device_name": "pmsa003i",
-            "bus_location": "i2c-1-0x12",
-            "address": 0x12,
-            "debug_lvl": 20,
-            "sensors_config": [
-                {
-                    "sensor_type": "air-particulate-pm1",
-                    "units": "ugDmE3",
-                    #expected range
-                    #min is 0, max is 10000
-                    "data_type": "int",
-                    "shape": "1x1",
-                    "hz": 1,
-                    "grace_period_samples": 1,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm1-ugDmE3_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-                {
-                    "sensor_type": "air-particulate-pm2P5",
-                    "units": "ugDmE3",
-                    #expected range
-                    #min is 0, max is 10000
-                    "data_type": "int",
-                    "shape": "1x1",
-                    "hz": 1,
-                    "grace_period_samples": 1,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm2P5_ugDmE3_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-                {
-                    "sensor_type": "air-particulate-pm10",
-                    "units": "ugDmE3",
-                    #expected range
-                    #min is 0, max is 10000
-                    "data_type": "int",
-                    "shape": "1x1",
-                    "hz": 1,
-                    "grace_period_samples": 1,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm10_ugDmE3_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-                {
-                    "sensor_type": "air-particulate-particle-count",
-                    "units": "GT0P3umD0P1l",
-                    #expected range
-                    #min is 0, max is 100000
-                    "data_type": "int",
-                    "shape": "1x1",
-                    "hz": 1,
-                    "grace_period_samples": 1,
-                    "file_writer_config": {
-                        "output_module": "wavpakOutput",
-                        "output_hz": 1,
-                        "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_GT0P3umD0P1l_int16-f0_1_1hz",
-                        "additional_output_config": {
-                            "sign": "s",
-                            "bits": 16,
-                        },
-                    },
-                },
-            ],
-        },
+        # {
+        #     "module_name": "apmsa003i",
+        #     "class_name": "aPMSA003I",
+        #     "module_path": "sensors.i2cDeviceClasses.apmsa003i",
+        #     "device_name": "pmsa003i",
+        #     "bus_location": "i2c-1-0x12",
+        #     "address": 0x12,
+        #     "debug_lvl": 20,
+        #     "sensors_config": [
+        #         {
+        #             "sensor_type": "air-particulate-pm1",
+        #             "units": "ugDmE3",
+        #             #expected range
+        #             #min is 0, max is 10000
+        #             "data_type": "int",
+        #             "shape": "1x1",
+        #             "hz": 1,
+        #             "grace_period_samples": 1,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm1-ugDmE3_int16-f0_1_1hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #         {
+        #             "sensor_type": "air-particulate-pm2P5",
+        #             "units": "ugDmE3",
+        #             #expected range
+        #             #min is 0, max is 10000
+        #             "data_type": "int",
+        #             "shape": "1x1",
+        #             "hz": 1,
+        #             "grace_period_samples": 1,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm2P5_ugDmE3_int16-f0_1_1hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #         {
+        #             "sensor_type": "air-particulate-pm10",
+        #             "units": "ugDmE3",
+        #             #expected range
+        #             #min is 0, max is 10000
+        #             "data_type": "int",
+        #             "shape": "1x1",
+        #             "hz": 1,
+        #             "grace_period_samples": 1,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm10_ugDmE3_int16-f0_1_1hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #         {
+        #             "sensor_type": "air-particulate-particle-count",
+        #             "units": "GT0P3umD0P1l",
+        #             #expected range
+        #             #min is 0, max is 100000
+        #             "data_type": "int",
+        #             "shape": "1x1",
+        #             "hz": 1,
+        #             "grace_period_samples": 1,
+        #             "file_writer_config": {
+        #                 "output_module": "wavpakOutput",
+        #                 "output_hz": 1,
+        #                 "file_size_check_interval_s_range": (300, 600),
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_GT0P3umD0P1l_int16-f0_1_1hz",
+        #                 "additional_output_config": {
+        #                     "sign": "s",
+        #                     "bits": 16,
+        #                 },
+        #             },
+        #         },
+        #     ],
+        # },
     ]
 }
 
@@ -502,15 +502,15 @@ i2c_controller_0_process_config = {
                     "units": "mDsE2",
                     "data_type": "float",
                     "shape": "1x3",
-                    "hz": 4,
+                    "hz": 32,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_float_1x3_4hz",
-                    "debug_lvl": 5,
+                    "topic": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_float_1x3_32hz",
+                    "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
-                        "output_hz": 4,
+                        "output_hz": 32,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_int16-f6_1_4hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_int16-f6_1_32hz",
                         "additional_output_config": {
                             "channels": 3,
                             "sign": "s",
