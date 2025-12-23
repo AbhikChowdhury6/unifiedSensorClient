@@ -20,7 +20,7 @@ import numpy as np
 class wavpak_output:
     def __init__(self,
                     output_base,
-                    output_hz = 1,
+                    output_hz = "1",
                     temp_write_location = "/home/pi/data/temp/",
                     debug_lvl = "warning",
                     channels = 1,
@@ -30,32 +30,21 @@ class wavpak_output:
                     **kwargs):
         self.output_base = output_base
         self.temp_write_location = temp_write_location
-        self.output_hz = max(1, output_hz)
         self.channels = channels
         self.bits = bits
         self.sign = sign
         self.endian = endian
 
-        if self.sign == "f":
-            self.conversion_code = "<f4"
-        elif self.sign == "s":
-            if self.bits == 16:
-                self.conversion_code = "<i2"
-            elif self.bits == 32:
-                self.conversion_code = "<i4"
-            else:
-                raise ValueError("Invalid bits: " + str(self.bits))
-        elif self.sign == "u":
-            if self.bits == 8:
-                self.conversion_code = "<u1"
-            elif self.bits == 16:
-                self.conversion_code = "<u2"
-            elif self.bits == 32:
-                self.conversion_code = "<u4"
-            else:
-                raise ValueError("Invalid bits: " + str(self.bits))
+        if output_hz == "variable":
+            self.output_hz = 48000
+            self.bits = 32
+            self.sign = "u"
+            self.endian = "le"
+            self.conversion_code = "<u4" #uint32
         else:
-            raise ValueError("Invalid sign: " + self.sign)
+            self.output_hz = max(1, int(output_hz))
+            self.conversion_code = self.get_conversion_code()
+
         
 
         #this will be called casting and not rounding
@@ -85,8 +74,9 @@ class wavpak_output:
                 return y
 
             self._casting_function = _casting_function
+
+            #now check if we are adding time or datetime channels
                     
-        
         
         self.file_name = None
         self.temp_output_location = temp_write_location + output_base + "/"
@@ -128,6 +118,38 @@ class wavpak_output:
     #     return (data * self.scale + self.offset).astype(np.int16)
 
 
+    
+    def get_conversion_code(self):
+        #float16, float32, float64
+        if self.sign == "f":
+            if self.bits == 16:
+                return "<f2"
+            elif self.bits == 32:
+                return "<f4"
+            else:
+                raise ValueError("Invalid bits: " + str(self.bits))
+        
+        #int16, int32, int64
+        elif self.sign == "s":
+            if self.bits == 16:
+                return "<i2"
+            elif self.bits == 32:
+                return "<i4"
+            else:
+                raise ValueError("Invalid bits: " + str(self.bits))
+        
+        #uint8, uint16, uint32
+        elif self.sign == "u":
+            if self.bits == 8:
+                return "<u1"
+            elif self.bits == 16:
+                return "<u2"
+            elif self.bits == 32:
+                return "<u4"
+            else:
+                raise ValueError("Invalid bits: " + str(self.bits))
+        else:
+            raise ValueError("Invalid sign: " + self.sign)
     
     def persist(self, dt, data):
         if self._casting_function is not None:
