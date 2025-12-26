@@ -531,7 +531,7 @@ i2c_controller_0_process_config = {
                         "output_module": "wavpakOutput",
                         "output_hz": 32,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_int16-f6_XYZ-3_32hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_int16-f6_XxYxZ-3_32hz",
                         "additional_output_config": {
                             "channels": 3,
                             "sign": "s",
@@ -552,7 +552,7 @@ i2c_controller_0_process_config = {
                         "output_module": "wavpakOutput",
                         "output_hz": 8,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_ut_int16-f6_XYZ-3_8hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_ut_int16-f6_XxYxZ-3_8hz",
                         "additional_output_config": {
                             "channels": 3,
                             "sign": "s",
@@ -574,7 +574,7 @@ i2c_controller_0_process_config = {
                         "output_hz": 16,
                         "file_size_check_interval_s_range": (30, 60),
                         #could be f14, but we don't need that much precision
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_WXYZ-4_16hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_WxXxYxZ-4_16hz",
                         "additional_output_config": {
                             "channels": 4,
                             "sign": "s",
@@ -663,51 +663,60 @@ gps_capture_process_config = {
     "short_name": "gps",
     "time_to_shutdown": 1,
     "debug_lvl": 20,
+    "bus_location": "ttyUSB0",
+    "device_name": "cdtop-tech_PA1616S",
     "baudrate": 9600,
     "timeout": 10,
-    "update_hz": 1,
-    "serial_port": "ttyUSB0",
-    "baudrate": 9600,
-    "timeout": 10,
-    "update_hz": 1,
     "sensors": [
         {
             "sensor_type": "3dFix",
-            "units": "float",
+            "units": "wgs84",
             "data_type": "float",
             "shape": "1x3",
             "hz": 1,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
-                "output_hz": 1,
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gps3dFix_int16-f6_XYZ-3_1hz",
+                "output_hz": "variable",
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gps3dFix_wgs84_float64_latxlonxalt-3_variable",
                 "additional_output_config": {
-                    "sign": "s",
-                    "bits": 16,
+                    "channels": 3,
                 },
             },
         },
         {
             "sensor_type": "speed",
-            "units": "kmh",
+            "units": "kmDh",
+            #expected range
+            #min is 0, max is 1000
             "data_type": "float",
             "shape": "1x1",
             "hz": 1,
+            "file_writer_config": {
+                "output_module": "wavpakOutput",
+                "output_hz": "variable",
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsSpeed_kmDh_uint32-f10_NA-1_variable",
+                "additional_output_config": {
+                    "channels": 1,
+                },
+            },
         },
         {
             "sensor_type": "epe",
-            "units": "m",
+            "units": "m-kmDh",
             "data_type": "float",
             "shape": "1x4",
             "hz": 1,
+            "file_writer_config": {
+                "output_module": "wavpakOutput",
+                "output_hz": "variable",
+                #V is vertical, S is speed
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsEPEP_m-kmDh_uint32-f10_XxYxVxS-4_variable",
+                "additional_output_config": {
+                    "channels": 4,
+                },
+            },
         },
     ],
-    "pub_topic_3dFix": f"{platform_uuid}_ttyUSB0_cdtopTech-PA1616S_gps3dFix",
-    "pub_endpoint_3dFix": f"ipc:///tmp/{platform_uuid}_ttyUSB0_adafruit_PA1616S_gps3dFix.sock",
-    "pub_topic_speed": f"{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed",
-    "pub_endpoint_speed": f"ipc:///tmp/{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsSpeed.sock",
-    "pub_topic_epe": f"{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP",
-    "pub_endpoint_epe": f"ipc:///tmp/{platform_uuid}_ttyUSB0_cdtop-tech_PA1616S_gpsEPEP.sock",
 }
 
 ###########################################Platform Data Writers###########################################
