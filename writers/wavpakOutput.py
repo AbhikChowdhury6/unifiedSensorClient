@@ -4,6 +4,7 @@ import os
 import subprocess
 import threading
 from datetime import datetime
+from tkinter import Y
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from config import dt_to_fnString, fnString_to_dt
@@ -34,13 +35,16 @@ class wavpak_output:
         self.bits = bits
         self.sign = sign
         self.endian = endian
+        self.variable_hz = False
 
         if output_hz == "variable":
+            self.variable_hz = True
             self.output_hz = 48000
             self.bits = 32
             self.sign = "u"
             self.endian = "le"
             self.conversion_code = "<u4" #uint32
+            self.channels += 2
         else:
             self.output_hz = max(1, int(output_hz))
             self.conversion_code = self.get_conversion_code()
@@ -117,14 +121,103 @@ class wavpak_output:
     # def convert_to_int16(self, data):
     #     return (data * self.scale + self.offset).astype(np.int16)
 
+    def _get_casting_function(self, input_dtype_str, output_dtype_str, float_bits=None):
+        input_ints = ["int16", "int32", "int64"]
+        output_ints = ["int16", "int24", "int32"]
+        input_floats = ["float32", "float64"]
+        output_floats = ["float32"]
+        input_uints = ["uint8", "uint16", "uint32", "uint64"]
+        output_uints = ["uint8", "uint16", "uint32"]
 
+        output_dtype = getattr(np, output_dtype_str)
+        
+        if input_dtype_str in input_ints and output_dtype_str in output_ints:
+            return lambda x: self.int_to_int(x, output_dtype)
+
+        elif input_dtype_str in input_floats and output_dtype_str in output_floats:
+            return lambda x: self.float_to_float(x, output_dtype)
+
+        elif input_dtype_str in input_uints and output_dtype_str in output_uints:
+            return lambda x: self.int_to_int(x, output_dtype)
+        
+        elif input_dtype_str in input_ints and output_dtype_str in output_uints:
+            return lambda x: self.int_to_uint(x, output_dtype)
+
+        elif input_dtype_str in input_floats and output_dtype_str in output_ints: #add the bits
+            return lambda x: self.float_to_int(x, output_dtype, float_bits)
+
+        elif input_dtype_str in input_floats and output_dtype_str in output_uints:
+            return lambda x: self.int_to_uint(self.float_to_int(x, np.int64, float_bits), output_dtype)
+
+        else:
+            raise ValueError("Invalid input or output dtype: " + input_dtype_str + " or " + output_dtype_str)
+    
+    def float_to_float(self, data, target_dtype):
+        info = np.finfo(target_dtype)
+        y = np.asarray(data, dtype=np.float64)
+        y = np.clip(y, info.min, info.max)
+        y = y.astype(target_dtype)
+        
+        if np.any(y < info.min) or np.any(y > info.max):
+            self.l.warning(self.log_name + " float_to_float: values outside range: " + str(y) + " for data: " + str(data))
+        return y
+
+
+    def int_to_int(self, data, target_dtype):
+        info = np.iinfo(target_dtype)
+        y = np.asarray(data, dtype=np.int64)
+        y = np.clip(y, info.min, info.max)
+        y = y.astype(target_dtype)
+        
+        #log a warning if any values are outside the range
+        if np.any(y < info.min) or np.any(y > info.max):
+            self.l.warning(self.log_name + " int_to_int: values outside range: " + str(y) + " for data: " + str(data))
+        return y
+
+    def float_to_int(self, data, target_dtype, float_bits):
+        if float_bits is None:
+            raise ValueError("float_bits is required")
+
+        float_scale = 2**float_bits
+        info = np.iinfo(target_dtype)
+        
+        
+        y = np.asarray(data, dtype=np.float64)
+        y = y * float_scale
+        y = np.rint(y)
+        y = np.clip(y, info.min, info.max)
+        y = y.astype(target_dtype)
+        
+        #log a warning if any values are outside the range
+        if np.any(y < info.min) or np.any(y > info.max):
+            self.l.warning(self.log_name + " float_to_int: values outside range: " + str(y) + " for data: " + str(data))
+
+        return y
+
+    def int_to_uint(self, data, target_dtype):
+        #put data in an int64 for now
+        y = data.astype(np.int64)
+
+        #get target dtype info
+        info = np.iinfo(target_dtype)
+        range = info.max - info.min
+        offset = int(range/2)
+        
+        #add the offset and convert to the target dtype
+        y = y + offset
+        y = np.clip(y, info.min, info.max)
+        y = y.astype(target_dtype)
+
+        #log a warning if any values are outside the range
+        if np.any(y < info.min) or np.any(y > info.max):
+            self.l.warning(self.log_name + " int_to_uint: values outside range: " + str(y))
+        
+        return y
     
     def get_conversion_code(self):
         #float16, float32, float64
         if self.sign == "f":
-            if self.bits == 16:
-                return "<f2"
-            elif self.bits == 32:
+            if self.bits == 32:
                 return "<f4"
             else:
                 raise ValueError("Invalid bits: " + str(self.bits))
@@ -133,6 +226,8 @@ class wavpak_output:
         elif self.sign == "s":
             if self.bits == 16:
                 return "<i2"
+            elif self.bits == 24:
+                return "<i3"
             elif self.bits == 32:
                 return "<i4"
             else:
