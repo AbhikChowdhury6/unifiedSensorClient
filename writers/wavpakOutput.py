@@ -65,7 +65,6 @@ class wavpak_output:
         self.l.info(self.log_name + " starting")
 
         self.l.info(self.sign + " " + str(self.bits))
-        self.l.info(self.log_name + " conversion code: " + self.conversion_code)
 
 
         self.persist_location = temp_write_location + output_base + "_persist/"
