@@ -147,16 +147,24 @@ class wavpak_output:
             return lambda x: self.float_to_int(x, output_dtype, float_bits)
 
         elif input_dtype_str in input_floats and output_dtype_str in output_uints:
-            return lambda x: self.int_to_uint(self.float_to_int(x, np.int64, float_bits), output_dtype)
+            return lambda x: self.float_to_uint(x, output_dtype, float_bits)
 
         else:
             raise ValueError("Invalid input or output dtype: " + input_dtype_str + " or " + output_dtype_str)
     
+    def float_to_uint(self, data, target_dtype, float_bits):
+        as_int = self.float_to_int(data, np.int64, float_bits)
+        as_uint = self.int_to_uint(as_int, target_dtype)
+        return as_uint
+
+
     def float_to_float(self, data, target_dtype):
-        info = np.finfo(target_dtype)
+        dtype_le = np.dtype(target_dtype).newbyteorder('<')
+        info = np.finfo(dtype_le)
         y = np.asarray(data, dtype=np.float64)
         y = np.clip(y, info.min, info.max)
-        y = y.astype(target_dtype)
+        y = y.astype(dtype_le, copy=False)
+        y = np.ascontiguousarray(y)
         
         if np.any(y < info.min) or np.any(y > info.max):
             self.l.warning(self.log_name + " float_to_float: values outside range: " + str(y) + " for data: " + str(data))
@@ -164,10 +172,12 @@ class wavpak_output:
 
 
     def int_to_int(self, data, target_dtype):
-        info = np.iinfo(target_dtype)
+        dtype_le = np.dtype(target_dtype).newbyteorder('<')
+        info = np.iinfo(dtype_le)
         y = np.asarray(data, dtype=np.int64)
         y = np.clip(y, info.min, info.max)
-        y = y.astype(target_dtype)
+        y = y.astype(dtype_le, copy=False)
+        y = np.ascontiguousarray(y)
         
         #log a warning if any values are outside the range
         if np.any(y < info.min) or np.any(y > info.max):
@@ -178,15 +188,17 @@ class wavpak_output:
         if float_bits is None:
             raise ValueError("float_bits is required")
 
+        dtype_le = np.dtype(target_dtype).newbyteorder('<')
         float_scale = 2**float_bits
-        info = np.iinfo(target_dtype)
+        info = np.iinfo(dtype_le)
         
         
         y = np.asarray(data, dtype=np.float64)
         y = y * float_scale
         y = np.rint(y)
         y = np.clip(y, info.min, info.max)
-        y = y.astype(target_dtype)
+        y = y.astype(dtype_le, copy=False)
+        y = np.ascontiguousarray(y)
         
         #log a warning if any values are outside the range
         if np.any(y < info.min) or np.any(y > info.max):
@@ -199,52 +211,22 @@ class wavpak_output:
         y = data.astype(np.int64)
 
         #get target dtype info
-        info = np.iinfo(target_dtype)
+        dtype_le = np.dtype(target_dtype).newbyteorder('<')
+        info = np.iinfo(dtype_le)
         range = info.max - info.min
         offset = int(range/2)
         
         #add the offset and convert to the target dtype
         y = y + offset
         y = np.clip(y, info.min, info.max)
-        y = y.astype(target_dtype)
+        y = y.astype(dtype_le, copy=False)
+        y = np.ascontiguousarray(y)
 
         #log a warning if any values are outside the range
         if np.any(y < info.min) or np.any(y > info.max):
             self.l.warning(self.log_name + " int_to_uint: values outside range: " + str(y))
         
         return y
-    
-    def get_conversion_code(self):
-        #float16, float32, float64
-        if self.sign == "f":
-            if self.bits == 32:
-                return "<f4"
-            else:
-                raise ValueError("Invalid bits: " + str(self.bits))
-        
-        #int16, int32, int64
-        elif self.sign == "s":
-            if self.bits == 16:
-                return "<i2"
-            elif self.bits == 24:
-                return "<i3"
-            elif self.bits == 32:
-                return "<i4"
-            else:
-                raise ValueError("Invalid bits: " + str(self.bits))
-        
-        #uint8, uint16, uint32
-        elif self.sign == "u":
-            if self.bits == 8:
-                return "<u1"
-            elif self.bits == 16:
-                return "<u2"
-            elif self.bits == 32:
-                return "<u4"
-            else:
-                raise ValueError("Invalid bits: " + str(self.bits))
-        else:
-            raise ValueError("Invalid sign: " + self.sign)
     
     def persist(self, dt, data):
         if self._casting_function is not None:
@@ -318,14 +300,10 @@ class wavpak_output:
         if self._casting_function is not None:
             data = self._casting_function(data)
         
-        # I think flatten will put all of the values in the right order
-        data = data.flatten()
-        self.l.trace(self.log_name + " writing data: " + str(data))
-        data_le = data.astype(self.conversion_code, copy=False)
-
-        #order="C" is for ???
-        self.l.trace(self.log_name + " writing " + str(data_le.tobytes(order="C").hex()))
-        self.proc.stdin.write(data_le.tobytes(order="C"))
+        
+        #order="C" is for row major order, bytes come out row by row
+        self.l.trace(self.log_name + " writing " + str(data.tobytes(order="C").hex()))
+        self.proc.stdin.write(data.tobytes(order="C"))
 
     def close(self, dt):
         self.proc.stdin.flush()
