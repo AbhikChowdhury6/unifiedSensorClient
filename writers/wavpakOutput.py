@@ -39,6 +39,7 @@ class wavpak_output:
         self.sign = sign
         self.endian = endian
 
+        self.variable_hz = False
         if output_hz == "variable":
             self.variable_hz = True
             self.output_hz = 48000
