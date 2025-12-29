@@ -227,6 +227,9 @@ i2c_controller_1_process_config = {
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_int16-f7_NA-1_16hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 7,
                             "sign": "s",
                             "bits": 16,
                         },
@@ -249,6 +252,9 @@ i2c_controller_1_process_config = {
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x77_bosch-bme680_air-temperature_celsius_int16-f8_NA-1_1hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 8,
                             "sign": "s",
                             "bits": 16,
                         },
@@ -271,6 +277,9 @@ i2c_controller_1_process_config = {
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_int16-f8_NA-1_0P25hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 8,
                             "sign": "s",
                             "bits": 16,
                         },
@@ -293,6 +302,9 @@ i2c_controller_1_process_config = {
                         "file_size_check_interval_s_range": (300, 600),
                         "output_base": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_LNohm_int16-f11_NA-1_1hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 11,
                             "sign": "s",
                             "bits": 16,
                         },
@@ -512,6 +524,9 @@ i2c_controller_0_process_config = {
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_int16-f6_XYZ-3_32hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 6,
                             "channels": 3,
                             "sign": "s",
                             "bits": 16,
@@ -554,6 +569,9 @@ i2c_controller_0_process_config = {
                         "file_size_check_interval_s_range": (30, 60),
                         "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_ut_int16-f6_XxYxZ-3_8hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 6,
                             "channels": 3,
                             "sign": "s",
                             "bits": 16,
@@ -576,6 +594,9 @@ i2c_controller_0_process_config = {
                         #could be f14, but we don't need that much precision
                         "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_WxXxYxZ-4_16hz",
                         "additional_output_config": {
+                            "input_dtype_str": "float32",
+                            "output_dtype_str": "int16",
+                            "float_bits": 10,
                             "channels": 4,
                             "sign": "s",
                             "bits": 16,

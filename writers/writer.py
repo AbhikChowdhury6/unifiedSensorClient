@@ -153,7 +153,7 @@ class Writer:
                      + timedelta(days=1)
                 samples_till_eod = (start_of_next_day.timestamp() - dt.timestamp()) * self.hz
                 self.output.persist(dt, data[:samples_till_eod])
-                self.output.write(data[:samples_till_eod])
+                self.output.write(dt, data[:samples_till_eod])
                 self.output.close(start_of_next_day-timedelta(seconds=1/self.hz))
                 self.output.persist(start_of_next_day, data[samples_till_eod:])
                 self.output.open(start_of_next_day)
@@ -187,7 +187,7 @@ class Writer:
             self.log(5, lambda:self.object_name + " open time: " + str(datetime.now().timestamp() - start_time))
         
         if self.debug_lvl <= 5: start_time = datetime.now().timestamp()
-        self.output.write(data)
+        self.output.write(dt, data)
         self.log(5, lambda:self.object_name + " write time: " + str(datetime.now().timestamp() - start_time))
 
         self.last_dt = end_dt

@@ -21,10 +21,13 @@ import numpy as np
 class wavpak_output:
     def __init__(self,
                     output_base,
-                    output_hz = "1",
+                    output_hz = 1,
                     temp_write_location = "/home/pi/data/temp/",
                     debug_lvl = "warning",
                     channels = 1,
+                    input_dtype_str = "float32",
+                    output_dtype_str = "float32",
+                    float_bits = 0,
                     bits = 32,
                     sign = "f",
                     endian = "le",
@@ -35,7 +38,6 @@ class wavpak_output:
         self.bits = bits
         self.sign = sign
         self.endian = endian
-        self.variable_hz = False
 
         if output_hz == "variable":
             self.variable_hz = True
@@ -43,44 +45,15 @@ class wavpak_output:
             self.bits = 32
             self.sign = "u"
             self.endian = "le"
-            self.conversion_code = "<u4" #uint32
             self.channels += 2
+            self.output_dtype_str = "uint32"
         else:
             self.output_hz = max(1, int(output_hz))
-            self.conversion_code = self.get_conversion_code()
+            self.output_dtype_str = output_dtype_str
 
-        
 
-        #this will be called casting and not rounding
-        self._casting_function = None
-        #parse the output base and get the data type
-        self.data_type = output_base.split("_")[-3]
-        if "-" in self.data_type:
-            target_type = self.data_type.split("-")[0]
-            try:
-                self.target_dtype = getattr(np, target_type)
-            except AttributeError:
-                raise ValueError("Invalid target type: " + target_type)
-            
-            f_bits_str = self.data_type.split("-")[1][1:]
-            float_bits = int(f_bits_str)
-            float_scale = 2**float_bits
-
-            info = np.iinfo(self.target_dtype)
-
-            def _casting_function(data):
-                # Compute in float to avoid overflow during scaling
-                y = np.rint(np.asarray(data, dtype=np.float64) * float_scale)
-                # Clamp before casting to prevent wraparound
-                y = np.clip(y, info.min, info.max)
-                y = y.astype(self.target_dtype)
-                self.l.trace(self.log_name + " casted data: " + str(y))
-                return y
-
-            self._casting_function = _casting_function
-
-            #now check if we are adding time or datetime channels
-                    
+        self._casting_function = self._get_casting_function(input_dtype_str, output_dtype_str, float_bits)
+          
         
         self.file_name = None
         self.temp_output_location = temp_write_location + output_base + "/"
@@ -121,7 +94,10 @@ class wavpak_output:
     # def convert_to_int16(self, data):
     #     return (data * self.scale + self.offset).astype(np.int16)
 
-    def _get_casting_function(self, input_dtype_str, output_dtype_str, float_bits=None):
+    def _get_casting_function(self, input_dtype_str, output_dtype_str, float_bits=0):
+        if input_dtype_str == output_dtype_str:
+            return lambda x: self.le_and_contiguous(x, output_dtype_str)
+        
         input_ints = ["int16", "int32", "int64"]
         output_ints = ["int16", "int24", "int32"]
         input_floats = ["float32", "float64"]
@@ -151,6 +127,12 @@ class wavpak_output:
 
         else:
             raise ValueError("Invalid input or output dtype: " + input_dtype_str + " or " + output_dtype_str)
+    
+    def le_and_contiguous(self, data, target_dtype):
+        dtype_le = np.dtype(target_dtype).newbyteorder('<')
+        data = data.astype(dtype_le)
+        data = np.ascontiguousarray(data)
+        return data
     
     def float_to_uint(self, data, target_dtype, float_bits):
         as_int = self.float_to_int(data, np.int64, float_bits)
@@ -185,8 +167,6 @@ class wavpak_output:
         return y
 
     def float_to_int(self, data, target_dtype, float_bits):
-        if float_bits is None:
-            raise ValueError("float_bits is required")
 
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
         float_scale = 2**float_bits
@@ -296,11 +276,30 @@ class wavpak_output:
         self.l.info(self.log_name + " opened wavpack writer: " + self.file_name)
         return self.file_name
     
-    def write(self, data):        
-        if self._casting_function is not None:
-            data = self._casting_function(data)
-        
-        
+    def write(self, dt, data):        
+        data = self._casting_function(data)
+
+        if self.variable_hz:
+            if dt is None:
+                raise ValueError("dt is required for variable hz")
+            #yes we are writing a 2's complement integer and telling 
+            #wavpack to see it as 2 32 bit unsigned integers
+            #we are taking the compression hit
+            #but the high bits should change slow enough
+            #and the low bits should have enough rounding
+            #and there is at most one 0 crossing in the file
+            
+            #convert to int64ns 
+            dt = dt.timestamp() * 1e9
+            
+            #convert to 8 byte little endian 
+            dt = dt.to_bytes(8, "little")
+            
+            #prepend the dt to the data and ensure the data is contiguous
+            data = np.concatenate([dt, data])
+            data = np.ascontiguousarray(data)
+
+
         #order="C" is for row major order, bytes come out row by row
         self.l.trace(self.log_name + " writing " + str(data.tobytes(order="C").hex()))
         self.proc.stdin.write(data.tobytes(order="C"))
