@@ -173,8 +173,12 @@ class Sensor:
         self.max_read_micros = max(self.max_read_micros, read_micros)
         self.log(5, lambda: "read time: " + str(read_micros) + " microseconds")
         self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
+        
+        self.retrive_after = now + timedelta(microseconds=self.delay_micros)
+        self.log(5, lambda: "next read after" + str(self.retrive_after))
+        
         if new_data is None:
-            self.log(40, lambda: "no data read from " + self.topic)
+            #self.log(40, lambda: "no data read from " + self.topic)
             return
         self.log(5, lambda: "data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
         
@@ -187,8 +191,7 @@ class Sensor:
             rounded_down_micros = (now.microsecond//self.delay_micros) * self.delay_micros
             now = now.replace(microsecond=int(rounded_down_micros))# round down to the nearest delay micros
         
-        self.retrive_after = now + timedelta(microseconds=self.delay_micros)
-        self.log(5, lambda: "next read after" + str(self.retrive_after))
+        
 
         # convert to numpy array before sending
         new_data_np = np.array(new_data)
