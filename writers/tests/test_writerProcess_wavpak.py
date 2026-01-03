@@ -12,7 +12,7 @@ from logging.handlers import QueueListener
 # - I could check that the file opened in the right spot, nahh we can do that later
 
 from writers.processes.writerProcess import writer_process
-from config import zmq_control_endpoint
+from config import zmq_control_endpoint, dt_to_fnString
 import pandas as pd
 import numpy as np
 import os
@@ -35,20 +35,22 @@ def generate_wavpak_test_data(data_loc, data_hz, start_time, duration_seconds):
 
 @pytest.mark.parametrize(
     "debug_lvl, topic, hz, output_hz, file_size_check_interval_s_range, additional_output_config", [
-    (5, "wavpak_output_test", 16, 16, (1, 10), 
+    (10, "wavpak_output_test", 8, 8, (1, 10), 
     {"input_dtype_str": "float32", "output_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
 ])
 
 def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_check_interval_s_range, additional_output_config):
+    print(tmp_path)
     log_queue = mp.Queue()
 
+    output_location = tmp_path / "output"
     file_writer_process_info = {
         "module_name": "writerProcess",
         "module_path": "writers.processes.writerProcess",
         "func_name": "writer_process",
         "persist_location": str(tmp_path / "persist"),
         "temp_write_location": str(tmp_path / "temp"),
-        "output_write_location": str(tmp_path / "upload"),
+        "output_write_location": str(output_location),
         "platform_uuid": "test",
         "target_file_size": 64 * 1024 * 1024, #64MB
     }
@@ -95,6 +97,8 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     #let's get our publishing going
     pub_socket = zmq.Context().socket(zmq.PUB)
     pub_socket.bind(f"ipc:///tmp/{topic}.sock")
+    print("pub_socket bound to " + f"ipc:///tmp/{topic}.sock")
+    print("publising to topic: " + topic)
 
     #now lets get our data going
     test_data_folder = "/home/chowder/Documents/unifiedSensorClient/writers/tests/test_humidity_data/"
@@ -108,6 +112,7 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
 
     #now I would like to publish each row, sleeping for the appropriate amount of time
     for index, row in data.iterrows():
+        print("publishing message: ", row['timestamp'], np.array([row['data']]))
         pub_socket.send_multipart(ZmqCodec.encode(topic, [row['timestamp'], np.array([row['data']])]))
         time.sleep(1/hz)
 
@@ -116,24 +121,28 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     control_pub = zmq.Context().socket(zmq.PUB)
     control_pub.bind(zmq_control_endpoint)
     # small sleep to allow bind
-    time.sleep(0.05)
+    time.sleep(0.2)
     control_pub.send_multipart(ZmqCodec.encode("control", ["exit_all"]))
-    writer_proc.join(timeout=10)
+    print("sent control exit all")
+    # give time for delivery
+    time.sleep(0.2)
+    writer_proc.join(timeout=5)
     # stop log listener once the worker has exited (or timeout elapsed)
     log_listener.stop()
-    time.sleep(10)
+    time.sleep(2)
     assert not writer_proc.is_alive()
 
-    #list the files in the temp write location
-    temp_write_location = file_writer_process_info["temp_write_location"]
-    files = os.listdir(temp_write_location)
+    completed_dir = file_writer_process_info["output_write_location"] + topic
+    files = os.listdir(completed_dir)
     print(files)
     
+    #now lets check that the data is in the file (moved with platform_uuid prefix)
+    expected_fn = f"test_{topic}_{dt_to_fnString(start_dt)}_{dt_to_fnString(end_dt)}.wv"
+    assert os.path.exists(os.path.join(completed_dir, expected_fn))
+ 
     #now lets check that the data is in the file
-    assert os.path.exists(tmp_path / f"{topic}_{start_dt.strftime('%Y%m%dT%H%M%Sp%fZ')}_{end_dt.strftime('%Y%m%dT%H%M%Sp%fZ')}.wv")
-
-    #now lets check that the data is in the file
-    wvunpack_cmd = ["wvunpack", "--raw", tmp_path / f"{topic}_{start_dt.strftime('%Y%m%dT%H%M%Sp%fZ')}_{end_dt.strftime('%Y%m%dT%H%M%Sp%fZ')}.wv", "-o", "-"]
+    target_file = os.path.join(completed_dir, expected_fn)
+    wvunpack_cmd = ["wvunpack", "--raw", target_file, "-o", "-"]
     result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
     raw_data = result.stdout
     data_array = np.frombuffer(raw_data, dtype=getattr(np, additional_output_config["output_dtype_str"]))

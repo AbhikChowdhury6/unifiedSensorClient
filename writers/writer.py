@@ -23,7 +23,13 @@ class Writer:
                     **kwargs
                     ):
         self.output_base = output.output_base
-        self.object_name = self.output_base + "_writer-object"
+        self.object_name = self.output_base + "_writer_object"
+        self.l = logging.getLogger(self.object_name)
+        self.debug_lvl = debug_lvl
+        self.l.setLevel(debug_lvl)
+        self.l.debug(self.object_name + " starting")
+        
+        
         self.temp_write_location = temp_write_location
         self.output_write_location = output_write_location
         self.platform_uuid = platform_uuid
@@ -33,23 +39,26 @@ class Writer:
         self.output = output
         self.output_file = None
 
-        self.l = logging.getLogger(self.object_name)
-        self.debug_lvl = debug_lvl
-        self.l.setLevel(debug_lvl)
-        self.l.debug(self.object_name + " starting")
+        
 
-        output_endpoint = f"ipc:///tmp/{self.output_base}.sock"
+        output_endpoint = f"ipc:///tmp/{self.object_name}.sock"
         self.pub = zmq.Context().socket(zmq.PUB)
         self.pub.bind(output_endpoint)
         self.l.debug(self.object_name + " publishing to " + output_endpoint)
 
         self.persist_location = temp_write_location + self.output_base + "_persist" + "/"
         os.makedirs(self.persist_location, exist_ok=True)
+        self.l.debug(self.object_name + " persist location: " + self.persist_location)
+        
         self.temp_output_location = temp_write_location + self.output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
+        self.l.debug(self.object_name + " temp output location: " + self.temp_output_location)  
+        
         self.completed_output_location = output_write_location + self.output_base + "/"
         os.makedirs(self.completed_output_location, exist_ok=True)
-
+        self.l.debug(self.object_name + " completed output location: " + self.completed_output_location)
+        
+        
         #deciding to close
         self.last_dt = None
         self.next_size_check_dt = datetime.now(timezone.utc) + \

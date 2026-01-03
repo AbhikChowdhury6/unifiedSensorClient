@@ -32,6 +32,12 @@ class wavpak_output:
                     sign = "f",
                     endian = "le",
                     **kwargs):
+        self.log_name = output_base + "_wavpak-output"
+        self.l = logging.getLogger(self.log_name)
+        self.l.setLevel(debug_lvl)
+        self.l.info(self.log_name + " starting")
+        
+        
         self.output_base = output_base
         self.temp_write_location = temp_write_location
         self.channels = channels
@@ -60,15 +66,15 @@ class wavpak_output:
         self.temp_output_location = temp_write_location + output_base + "/"
         os.makedirs(self.temp_output_location, exist_ok=True)
 
-        self.log_name = output_base + "_wavpak-output"
-        self.l = logging.getLogger(self.log_name)
-        self.l.setLevel(debug_lvl)
-        self.l.info(self.log_name + " starting")
+        
+        self.l.debug(self.log_name + " temp output location: " + self.temp_output_location)
 
         self.l.info(self.sign + " " + str(self.bits))
 
 
         self.persist_location = temp_write_location + output_base + "_persist/"
+        self.l.debug(self.log_name + " persist location: " + self.persist_location)
+
         os.makedirs(self.persist_location, exist_ok=True)
         self.persist_fn = self.persist_location + "persist.pkl"
         self.persist_recovery_fn = self.persist_location + "persistRecovery.pkl"
@@ -94,39 +100,39 @@ class wavpak_output:
     # def convert_to_int16(self, data):
     #     return (data * self.scale + self.offset).astype(np.int16)
 
-    def _get_casting_function(self, input_dtype_str, output_dtype_str, float_bits=0):
-        if input_dtype_str == output_dtype_str:
-            return lambda x: self.le_and_contiguous(x, output_dtype_str)
+    def _get_casting_function(self, input_dtype_str, wv_dtype_str, float_bits=0):
+        if input_dtype_str == wv_dtype_str:
+            return lambda x: self.le_and_contiguous(x, wv_dtype_str)
         
         input_ints = ["int16", "int32", "int64"]
-        output_ints = ["int16", "int24", "int32"]
+        wv_ints = ["int16", "int24", "int32"]
         input_floats = ["float32", "float64"]
-        output_floats = ["float32"]
+        wv_floats = ["float32"]
         input_uints = ["uint8", "uint16", "uint32", "uint64"]
-        output_uints = ["uint8", "uint16", "uint32"]
+        wv_uints = ["uint8", "uint16", "uint32"]
 
-        output_dtype = getattr(np, output_dtype_str)
+        wv_dtype = getattr(np, wv_dtype_str)
         
-        if input_dtype_str in input_ints and output_dtype_str in output_ints:
-            return lambda x: self.int_to_int(x, output_dtype)
+        if input_dtype_str in input_ints and wv_dtype_str in wv_ints:
+            return lambda x: self.int_to_wv_int(x, wv_dtype)
 
-        elif input_dtype_str in input_floats and output_dtype_str in output_floats:
-            return lambda x: self.float_to_float(x, output_dtype)
+        elif input_dtype_str in input_floats and wv_dtype_str in wv_floats:
+            return lambda x: self.float_to_wv_float(x, wv_dtype)
 
-        elif input_dtype_str in input_uints and output_dtype_str in output_uints:
-            return lambda x: self.int_to_int(x, output_dtype)
+        elif input_dtype_str in input_uints and wv_dtype_str in wv_uints:
+            return lambda x: self.int_to_wv_int(x, wv_dtype)
         
-        elif input_dtype_str in input_ints and output_dtype_str in output_uints:
-            return lambda x: self.int_to_uint(x, output_dtype)
+        elif input_dtype_str in input_ints and wv_dtype_str in wv_uints:
+            return lambda x: self.int_to_wv_uint(x, wv_dtype)
 
-        elif input_dtype_str in input_floats and output_dtype_str in output_ints: #add the bits
-            return lambda x: self.float_to_int(x, output_dtype, float_bits)
+        elif input_dtype_str in input_floats and wv_dtype_str in wv_ints: #add the bits
+            return lambda x: self.float_to_wv_int(x, wv_dtype, float_bits)
 
-        elif input_dtype_str in input_floats and output_dtype_str in output_uints:
-            return lambda x: self.float_to_uint(x, output_dtype, float_bits)
+        elif input_dtype_str in input_floats and wv_dtype_str in wv_uints:
+            return lambda x: self.float_to_wv_uint(x, wv_dtype, float_bits)
 
         else:
-            raise ValueError("Invalid input or output dtype: " + input_dtype_str + " or " + output_dtype_str)
+            raise ValueError("Invalid input or output dtype: " + input_dtype_str + " or " + wv_dtype_str)
     
     def le_and_contiguous(self, data, target_dtype):
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
@@ -134,13 +140,13 @@ class wavpak_output:
         data = np.ascontiguousarray(data)
         return data
     
-    def float_to_uint(self, data, target_dtype, float_bits):
-        as_int = self.float_to_int(data, np.int64, float_bits)
-        as_uint = self.int_to_uint(as_int, target_dtype)
+    def float_to_wv_uint(self, data, target_dtype, float_bits):
+        as_int = self.float_to_wv_int(data, np.int64, float_bits)
+        as_uint = self.int_to_wv_uint(as_int, target_dtype)
         return as_uint
 
 
-    def float_to_float(self, data, target_dtype):
+    def float_to_wv_float(self, data, target_dtype):
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
         info = np.finfo(dtype_le)
         y = np.asarray(data, dtype=np.float64)
@@ -153,7 +159,7 @@ class wavpak_output:
         return y
 
 
-    def int_to_int(self, data, target_dtype):
+    def int_to_wv_int(self, data, target_dtype):
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
         info = np.iinfo(dtype_le)
         y = np.asarray(data, dtype=np.int64)
@@ -166,7 +172,7 @@ class wavpak_output:
             self.l.warning(self.log_name + " int_to_int: values outside range: " + str(y) + " for data: " + str(data))
         return y
 
-    def float_to_int(self, data, target_dtype, float_bits):
+    def float_to_wv_int(self, data, target_dtype, float_bits):
 
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
         float_scale = 2**float_bits
@@ -186,7 +192,7 @@ class wavpak_output:
 
         return y
 
-    def int_to_uint(self, data, target_dtype):
+    def int_to_wv_uint(self, data, target_dtype):
         #put data in an int64 for now
         y = data.astype(np.int64)
 
@@ -208,6 +214,35 @@ class wavpak_output:
         
         return y
     
+    
+    def wv_uint_to_int(self, data, target_dtype):
+        pass
+    
+    def get_recasting_function(self, input_dtype_str, wv_dtype_str, float_bits=0):
+        pass
+    
+    def load_file(self, fn):
+        wvunpack_cmd = ["wvunpack", "--raw", fn, "-o", "-"]
+        result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
+        raw_data = result.stdout
+        arr = np.frombuffer(raw_data, dtype=self.output_dtype_str).reshape(-1, self.channels)
+
+        #get a int64 numpy array of the timestamps based on the start_dt and the hz
+        if not self.variable_hz:
+            start_dt = fnString_to_dt(fn.split("_")[-2])
+            end_dt = fnString_to_dt(fn.split("_")[-1].replace(".wv", ""))
+
+            timestamps = np.arange(start_dt.timestamp() * 1e9, end_dt.timestamp() * 1e9, 1e9 / self.output_hz)
+            return timestamps, arr
+        
+        #we're going to get the first 2 columns of the uint32 arr
+        #and then combine the bits to get an int64ns array
+        timestamps = np.concatenate([arr[:, 0], arr[:, 1]])
+        timestamps = timestamps.astype(np.int64)
+        return timestamps, arr[:, 2:]
+        
+
+    
     def persist(self, dt, data):
         if self._casting_function is not None:
             data = self._casting_function(data)
@@ -217,6 +252,13 @@ class wavpak_output:
     
     def load(self): #I would like this to be an iterator that returns the next line
         if not os.path.exists(self.persist_fn) or os.path.getsize(self.persist_fn) == 0:
+            self.l.info(self.log_name + " no cache found")
+            return
+        
+        # check the number of bytes in the persist file
+        num_bytes = os.path.getsize(self.persist_fn)
+        self.l.debug(self.log_name + " persist file size: " + str(num_bytes))
+        if num_bytes == 0:
             self.l.info(self.log_name + " no cache found")
             return
         
@@ -277,8 +319,10 @@ class wavpak_output:
         return self.file_name
     
     def write(self, dt, data):        
+        self.l.trace("input data: " + str(data))
         data = self._casting_function(data)
-
+        self.l.trace("casted data: " + str(data))
+        
         if self.variable_hz:
             if dt is None:
                 raise ValueError("dt is required for variable hz")
@@ -291,9 +335,11 @@ class wavpak_output:
             
             #convert to int64ns 
             dt = dt.timestamp() * 1e9
+            self.l.trace("dt: " + str(dt))
             
             #convert to 8 byte little endian 
             dt = dt.to_bytes(8, "little")
+            self.l.trace("dt bytes: 0x" + str(dt.hex()))
             
             #prepend the dt to the data and ensure the data is contiguous
             data = np.concatenate([dt, data])
@@ -301,7 +347,7 @@ class wavpak_output:
 
 
         #order="C" is for row major order, bytes come out row by row
-        self.l.trace(self.log_name + " writing " + str(data.tobytes(order="C").hex()))
+        self.l.trace(self.log_name + " writing 0x" + str(data.tobytes(order="C").hex()))
         self.proc.stdin.write(data.tobytes(order="C"))
 
     def close(self, dt):
