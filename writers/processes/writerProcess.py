@@ -35,6 +35,7 @@ def writer_process(log_queue = None,
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
+    l.debug(process_name + " subscribed to control on endpoint: " + zmq_control_endpoint)
     
     sensor_endpoint = f"ipc:///tmp/{topic}.sock"
     sub.connect(sensor_endpoint)
@@ -53,9 +54,17 @@ def writer_process(log_queue = None,
         sub.setsockopt(zmq.RCVTIMEO, 800) 
 
 
-    wc = file_writer_process_info
+    if "file_writer_process_info" in kwargs:
+        wc = kwargs["file_writer_process_info"]
+    else:
+        wc = file_writer_process_info
 
     l.debug(process_name + " additional_output_config: " + str(additional_output_config))
+    
+    if "output_info" in kwargs:
+        output_info = kwargs["output_info"][output_module]
+    else:
+        output_info = file_output_infos[output_module]
     
     # Dynamically import the output module using its fully qualified module path
     output_info = file_output_infos[output_module]

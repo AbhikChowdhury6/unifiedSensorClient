@@ -2,7 +2,20 @@ import msgpack
 import numpy as np
 import zmq
 from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
+from typing import Optional
+try:
+    from zoneinfo import ZoneInfo  # type: ignore
+    def _get_zoneinfo(tz_key: Optional[str]):
+        if not tz_key:
+            return timezone.utc
+        try:
+            return ZoneInfo(tz_key)
+        except Exception:
+            return timezone.utc
+except Exception:
+    # Fallback when zoneinfo isn't available in the environment
+    def _get_zoneinfo(tz_key: Optional[str]):
+        return timezone.utc
 
 
 class ZmqCodec:
@@ -69,7 +82,7 @@ class ZmqCodec:
             def ext_hook(code, data):
                 if code == EXT_DATETIME:
                     epoch_ns, tz_key = msgpack.unpackb(data, raw=False)
-                    tz = ZoneInfo(tz_key) if tz_key else timezone.utc
+                    tz = _get_zoneinfo(tz_key)
                     return datetime.fromtimestamp(epoch_ns / 1_000_000_000, tz=tz)
                 if code == EXT_NDARRAY:
                     shape, dtype_str, raw = msgpack.unpackb(data, raw=False)
