@@ -138,20 +138,28 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     
     #now lets check that the data is in the file (moved with platform_uuid prefix)
     expected_fn = f"test_{topic}_{dt_to_fnString(start_dt)}_{dt_to_fnString(end_dt)}.wv"
-    assert os.path.exists(os.path.join(completed_dir, expected_fn))
+    file_path = os.path.join(completed_dir, expected_fn)
+    assert os.path.exists(file_path)
  
 
-    #let's instantiate a wavpak output object
+    #let's instantiate a wavpak output object to load the file
     wavpak_output_obj = wavpak_output( 
             output_base=topic,
             output_hz=output_hz, 
             temp_write_location=file_writer_process_info["temp_write_location"],
             debug_lvl=debug_lvl,
             additional_output_config=additional_output_config)
-    timestamps, data_array = wavpak_output_obj.load_file(os.path.join(completed_dir, expected_fn))
+    
+    timestamps, data_array = wavpak_output_obj.load_file(file_path)
     # reshape expected to match loaded array dimensionality
     expected = data['data'].values.reshape((-1, 1)) if getattr(data_array, "ndim", 1) == 2 else data['data'].values.reshape(-1)
     assert np.all(data_array == expected)
+
+    #convert my int64ns timestamps to datetimes
+    loaded_idx = pd.to_datetime(timestamps, unit='ns', utc=True)
+    expected_idx = pd.DatetimeIndex(data['timestamp'])
+    assert loaded_idx.equals(expected_idx)
+    
 
 
 

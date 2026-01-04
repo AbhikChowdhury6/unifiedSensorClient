@@ -257,16 +257,25 @@ class wavpak_output:
         raw_data = result.stdout
         self.l.debug(self.log_name + " wv dtype: " + self.wv_dtype_str)
         arr = np.frombuffer(raw_data, dtype=self.wv_dtype_str).reshape(-1, self.channels)
-        self.l.debug(self.log_name + " wv unpacked data: " + str(arr))
+        #self.l.debug(self.log_name + " wv unpacked data: " + str(arr))
         arr = self._uncasting_function(arr)
-        self.l.debug(self.log_name + " uncasted data: " + str(arr))
+        #self.l.debug(self.log_name + " uncasted data: " + str(arr))
         
         #get a int64 numpy array of the timestamps based on the start_dt and the hz
         if not self.variable_hz:
             start_dt = fnString_to_dt(fn.split("_")[-2])
-            end_dt = fnString_to_dt(fn.split("_")[-1].replace(".wv", ""))
-
-            timestamps = np.arange(start_dt.timestamp() * 1e9, end_dt.timestamp() * 1e9, 1e9 / self.output_hz)
+            # derive start time in integer nanoseconds (UTC) without float drift
+            try:
+                from datetime import timezone as _tz
+                epoch = datetime(1970, 1, 1, tzinfo=_tz.utc)
+                dt_utc = start_dt if start_dt.tzinfo is not None else start_dt.replace(tzinfo=_tz.utc)
+                delta = dt_utc.astimezone(_tz.utc) - epoch
+                start_ns = (delta.days * 86400 + delta.seconds) * 1_000_000_000 + delta.microseconds * 1_000
+            except Exception:
+                start_ns = int(round(start_dt.timestamp() * 1e9))
+            step_ns = int(1_000_000_000 // self.output_hz)
+            num_samples = int(arr.shape[0])
+            timestamps = start_ns + np.arange(num_samples, dtype=np.int64) * step_ns
             return timestamps, arr
         
         #we're going to get the first 2 columns of the uint32 arr
