@@ -140,14 +140,18 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     expected_fn = f"test_{topic}_{dt_to_fnString(start_dt)}_{dt_to_fnString(end_dt)}.wv"
     assert os.path.exists(os.path.join(completed_dir, expected_fn))
  
-    #now lets check that the data is in the file
-    target_file = os.path.join(completed_dir, expected_fn)
-    wvunpack_cmd = ["wvunpack", "--raw", target_file, "-o", "-"]
-    result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
-    raw_data = result.stdout
-    data_array = np.frombuffer(raw_data, dtype=getattr(np, additional_output_config["output_dtype_str"]))
-    #assert all values are equal
-    assert np.all(data_array == data['data'].values)
+
+    #let's instantiate a wavpak output object
+    wavpak_output_obj = wavpak_output( 
+            output_base=topic,
+            output_hz=output_hz, 
+            temp_write_location=file_writer_process_info["temp_write_location"],
+            debug_lvl=debug_lvl,
+            additional_output_config=additional_output_config)
+    timestamps, data_array = wavpak_output_obj.load_file(os.path.join(completed_dir, expected_fn))
+    # reshape expected to match loaded array dimensionality
+    expected = data['data'].values.reshape((-1, 1)) if getattr(data_array, "ndim", 1) == 2 else data['data'].values.reshape(-1)
+    assert np.all(data_array == expected)
 
 
 

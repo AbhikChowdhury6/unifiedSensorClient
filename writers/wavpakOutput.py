@@ -26,7 +26,7 @@ class wavpak_output:
                     debug_lvl = "warning",
                     channels = 1,
                     input_dtype_str = "float32",
-                    output_dtype_str = "float32",
+                    wv_dtype_str = "float32",
                     float_bits = 0,
                     bits = 32,
                     sign = "f",
@@ -53,13 +53,13 @@ class wavpak_output:
             self.sign = "u"
             self.endian = "le"
             self.channels += 2
-            self.output_dtype_str = "uint32"
+            self.wv_dtype_str = "uint32"
         else:
             self.output_hz = max(1, int(output_hz))
-            self.output_dtype_str = output_dtype_str
+            self.wv_dtype_str = wv_dtype_str
 
 
-        self._casting_function = self._get_casting_function(input_dtype_str, output_dtype_str, float_bits)
+        self._casting_function, self._uncasting_function = self._get_casting_function(input_dtype_str, wv_dtype_str, float_bits)
           
         
         self.file_name = None
@@ -102,7 +102,9 @@ class wavpak_output:
 
     def _get_casting_function(self, input_dtype_str, wv_dtype_str, float_bits=0):
         if input_dtype_str == wv_dtype_str:
-            return lambda x: self.le_and_contiguous(x, wv_dtype_str)
+            casting_function = lambda x: self.le_and_contiguous(x, wv_dtype_str)
+            uncasting_function = lambda x: self.le_and_contiguous(x, wv_dtype_str)
+            return casting_function, uncasting_function
         
         input_ints = ["int16", "int32", "int64"]
         wv_ints = ["int16", "int24", "int32"]
@@ -114,22 +116,34 @@ class wavpak_output:
         wv_dtype = getattr(np, wv_dtype_str)
         
         if input_dtype_str in input_ints and wv_dtype_str in wv_ints:
-            return lambda x: self.int_to_wv_int(x, wv_dtype)
+            casting_function = lambda x: self.int_to_wv_int(x, wv_dtype)
+            uncasting_function = lambda x: x
+            return casting_function, uncasting_function
 
         elif input_dtype_str in input_floats and wv_dtype_str in wv_floats:
-            return lambda x: self.float_to_wv_float(x, wv_dtype)
+            casting_function = lambda x: self.float_to_wv_float(x, wv_dtype)
+            uncasting_function = lambda x: x
+            return casting_function, uncasting_function
 
         elif input_dtype_str in input_uints and wv_dtype_str in wv_uints:
-            return lambda x: self.int_to_wv_int(x, wv_dtype)
+            casting_function = lambda x: self.int_to_wv_int(x, wv_dtype)
+            uncasting_function = lambda x: x
+            return casting_function, uncasting_function
         
         elif input_dtype_str in input_ints and wv_dtype_str in wv_uints:
-            return lambda x: self.int_to_wv_uint(x, wv_dtype)
+            casting_function = lambda x: self.int_to_wv_uint(x, wv_dtype)
+            uncasting_function = lambda x: self.wv_uint_to_int(x, wv_dtype)
+            return casting_function, uncasting_function
 
         elif input_dtype_str in input_floats and wv_dtype_str in wv_ints: #add the bits
-            return lambda x: self.float_to_wv_int(x, wv_dtype, float_bits)
+            casting_function = lambda x: self.float_to_wv_int(x, wv_dtype, float_bits)
+            uncasting_function = lambda x: self.wv_int_to_float(x, wv_dtype, float_bits)
+            return casting_function, uncasting_function
 
         elif input_dtype_str in input_floats and wv_dtype_str in wv_uints:
-            return lambda x: self.float_to_wv_uint(x, wv_dtype, float_bits)
+            casting_function = lambda x: self.float_to_wv_uint(x, wv_dtype, float_bits)
+            uncasting_function = lambda x: self.wv_uint_to_float(x, wv_dtype, float_bits)
+            return casting_function, uncasting_function
 
         else:
             raise ValueError("Invalid input or output dtype: " + input_dtype_str + " or " + wv_dtype_str)
@@ -216,17 +230,37 @@ class wavpak_output:
     
     
     def wv_uint_to_int(self, data, target_dtype):
-        pass
+        info = np.iinfo(target_dtype)
+        #make sure none of the values are outside the range
+        if np.any(data < info.min) or np.any(data > info.max):
+            self.l.warning(self.log_name + " wv_uint_to_int: values outside range: " + str(data))
+        
+        offset = int(info.max/2)
+        data = data.astype(np.int64)
+        data = data - offset
+        data = data.astype(target_dtype)
+        return data
+
+    def wv_int_to_float(self, data, target_dtype, float_bits):
+        data = data.astype(np.float64)
+        data = data / 2**float_bits
+        data = data.astype(target_dtype)
+        return data
     
-    def get_recasting_function(self, input_dtype_str, wv_dtype_str, float_bits=0):
-        pass
+    def wv_uint_to_float(self, data, target_dtype, float_bits):
+        wv_int = self.wv_uint_to_int(data, np.int64)
+        return self.wv_int_to_float(wv_int, target_dtype, float_bits)
     
     def load_file(self, fn):
         wvunpack_cmd = ["wvunpack", "--raw", fn, "-o", "-"]
         result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
         raw_data = result.stdout
-        arr = np.frombuffer(raw_data, dtype=self.output_dtype_str).reshape(-1, self.channels)
-
+        self.l.debug(self.log_name + " wv dtype: " + self.wv_dtype_str)
+        arr = np.frombuffer(raw_data, dtype=self.wv_dtype_str).reshape(-1, self.channels)
+        self.l.debug(self.log_name + " wv unpacked data: " + str(arr))
+        arr = self._uncasting_function(arr)
+        self.l.debug(self.log_name + " uncasted data: " + str(arr))
+        
         #get a int64 numpy array of the timestamps based on the start_dt and the hz
         if not self.variable_hz:
             start_dt = fnString_to_dt(fn.split("_")[-2])
