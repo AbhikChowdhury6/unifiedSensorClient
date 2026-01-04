@@ -9,6 +9,7 @@ import shutil
 from datetime import datetime, timezone, timedelta
 import random
 import zmq
+import math
 
 from platformUtils.zmq_codec import ZmqCodec
 class Writer:
@@ -111,8 +112,9 @@ class Writer:
             self.log(20, self.object_name + " new day")
             return True
         
-        #too long since last write
-        if dt - self.last_dt > timedelta(seconds=1/self.hz):
+        #too long since last write (tolerate rounding by using ceil microseconds per sample)
+        max_gap_us = int(math.ceil(1_000_000 / self.hz))
+        if dt - self.last_dt > timedelta(microseconds=max_gap_us):
             self.log(20, self.object_name + " too long since last write")
             self.log(20, lambda:self.object_name + " too long since last write: " + str(dt - self.last_dt) + " seconds")
             return True

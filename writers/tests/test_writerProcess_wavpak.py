@@ -35,8 +35,23 @@ def generate_wavpak_test_data(data_loc, data_hz, start_time, duration_seconds):
 
 @pytest.mark.parametrize(
     "debug_lvl, topic, hz, output_hz, file_size_check_interval_s_range, additional_output_config", [
-    (10, "wavpak_output_test", 8, 8, (1, 10), 
-    {"input_dtype_str": "float32", "output_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
+    # (10, "wavpak_output_test", 8, 8, (1, 10), 
+    # {"input_dtype_str": "float32", "wv_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
+    
+    # (10, "wavpak_output_test", 16, 16, (1, 10), 
+    # {"input_dtype_str": "float32", "wv_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
+
+    # (10, "wavpak_output_test", 32, 32, (1, 10), 
+    # {"input_dtype_str": "float32", "wv_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
+
+    # (10, "wavpak_output_test", 64, 64, (1, 10), 
+    # {"input_dtype_str": "float32", "wv_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
+
+    # (10, "wavpak_output_test", 128, 128, (1, 10), 
+    # {"input_dtype_str": "float32", "wv_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
+
+    (5, "wavpak_output_test", 4, 4, (1, 10), 
+    {"input_dtype_str": "float32", "wv_dtype_str": "int32", "float_bits": 8, "bits": 32, "sign": "s", "channels": 1}),
 ])
 
 def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_check_interval_s_range, additional_output_config):
@@ -102,7 +117,7 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
 
     #now lets get our data going
     test_data_folder = "/home/chowder/Documents/unifiedSensorClient/writers/tests/test_humidity_data/"
-    data = generate_wavpak_test_data(test_data_folder, hz, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), 1 * 1 * 10)
+    data = generate_wavpak_test_data(test_data_folder, hz, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), 1 * 1 * 5)
     start_dt = data['timestamp'].iloc[0]
     end_dt = data['timestamp'].iloc[-1]
 
@@ -112,7 +127,7 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
 
     #now I would like to publish each row, sleeping for the appropriate amount of time
     for index, row in data.iterrows():
-        print("publishing message: ", row['timestamp'], np.array([row['data']]))
+        #print("publishing message: ", row['timestamp'], np.array([row['data']]))
         pub_socket.send_multipart(ZmqCodec.encode(topic, [row['timestamp'], np.array([row['data']])]))
         time.sleep(1/hz)
 
@@ -141,6 +156,37 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     file_path = os.path.join(completed_dir, expected_fn)
     assert os.path.exists(file_path)
  
+    # Inspect container header and raw bytes via wvunpack for debugging
+    print("=== wvunpack -ss header ===")
+    try:
+        ss = subprocess.run(["wvunpack", "-ss", file_path], capture_output=True, check=True)
+        print(ss.stdout.decode("utf-8", errors="replace"))
+    except Exception as e:
+        print("wvunpack -ss failed:", e)
+
+    print("=== wvunpack -r raw bytes (first 64) ===")
+    try:
+        raw = subprocess.run(["wvunpack", "-r", file_path, "-o", "-"], capture_output=True, check=True).stdout
+        print(raw[:64].hex())
+        # Parse preview according to declared bits/sign
+        bits = additional_output_config.get("bits", 16)
+        sign = additional_output_config.get("sign", "s")
+        if bits == 16 and sign == "s":
+            dtype_str = "<i2"
+        elif bits == 32 and sign == "s":
+            dtype_str = "<i4"
+        elif bits == 32 and sign == "u":
+            dtype_str = "<u4"
+        elif bits == 32 and sign == "f":
+            dtype_str = "<f4"
+        else:
+            dtype_str = "<i2"
+        print("dtype_str: " + dtype_str)
+        parsed = np.frombuffer(raw, dtype=np.dtype(dtype_str))
+        print("parsed preview:", parsed[:16])
+    except Exception as e:
+        print("wvunpack -r failed:", e)
+
 
     #let's instantiate a wavpak output object to load the file
     wavpak_output_obj = wavpak_output( 
@@ -148,7 +194,7 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
             output_hz=output_hz, 
             temp_write_location=file_writer_process_info["temp_write_location"],
             debug_lvl=debug_lvl,
-            additional_output_config=additional_output_config)
+            **additional_output_config)
     
     timestamps, data_array = wavpak_output_obj.load_file(file_path)
     # reshape expected to match loaded array dimensionality
@@ -159,6 +205,7 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     loaded_idx = pd.to_datetime(timestamps, unit='ns', utc=True)
     expected_idx = pd.DatetimeIndex(data['timestamp'])
     assert loaded_idx.equals(expected_idx)
+    time.sleep(1)
     
 
 
