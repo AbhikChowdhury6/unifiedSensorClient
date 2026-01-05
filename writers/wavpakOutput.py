@@ -76,8 +76,8 @@ class wavpak_output:
             self.wv_dtype_str = wv_dtype_str
 
 
-        self._casting_function, self._uncasting_function = self._get_casting_function(input_dtype_str, wv_dtype_str, float_bits)
-          
+        self._casting_function, self._uncasting_function = \
+            self._get_casting_function(input_dtype_str, self.wv_dtype_str, float_bits)
         
         self.file_name = None
         self.temp_output_location = temp_write_location + output_base + "/"
@@ -206,6 +206,7 @@ class wavpak_output:
         #self.l.debug(self.log_name + " wv dtype: " + self.wv_dtype_str)
         # ensure little-endian interpretation of PCM bytestream
         dtype_le = np.dtype(self.wv_dtype_str).newbyteorder('<')
+        self.l.debug("channels: " + str(self.channels))
         arr = np.frombuffer(raw_data, dtype=dtype_le).reshape(-1, self.channels)
         self.l.trace(self.log_name + " wv unpacked data: " + str(arr))
         
