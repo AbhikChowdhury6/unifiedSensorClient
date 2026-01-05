@@ -36,7 +36,10 @@ class Writer:
         self.platform_uuid = platform_uuid
         self.target_file_size = target_file_size
         self.file_size_check_interval_s_range = file_size_check_interval_s_range
-        self.hz = max(1, output.output_hz)
+        if output.variable_hz:
+            self.hz = "variable"
+        else:
+            self.hz = max(1, output.output_hz)
         self.output = output
         self.output_file = None
 
@@ -107,6 +110,9 @@ class Writer:
             self.log(10, self.object_name + " file is not open")
             return False
 
+        if self.hz == "variable":
+            return False
+        
         #new day
         if dt.date() != self.last_dt.date():
             self.log(20, self.object_name + " new day")
@@ -209,7 +215,11 @@ class Writer:
             self.log(20, lambda:self.object_name + " closing file: " + self.output_file + " at: " + str(self.last_dt))
             self.log(20, lambda: "duration: " + str(self.last_dt - self.output_start_dt))
             self.log(20, lambda: "size: " + str(os.path.getsize(self.temp_write_location + self.output_base + "/" + self.output_file)))
-            self.log(20, lambda: "calculated number of frames: " + str(self.hz * (self.last_dt - self.output_start_dt).total_seconds()))
+            if self.hz == "variable":
+                #self.log(20, lambda: "calculated number of frames: " + str(len(self.output.timestamps)))
+                pass
+            else:
+                self.log(20, lambda: "calculated number of frames: " + str(self.hz * (self.last_dt - self.output_start_dt).total_seconds()))
             
             self._close_file(self.last_dt)
             self.log(5, lambda:self.object_name + " time to close file: " + str(datetime.now().timestamp() - start_time))

@@ -48,11 +48,13 @@ def writer_process(log_queue = None,
     last_data = None
     if msg_hz is None and output_hz is not None:
         msg_hz = output_hz
-    if msg_hz < 1:
+    #is type int or float
+    if msg_hz == "variable":
+        interp_seconds = 0
+    elif msg_hz < 1:
         interp_seconds = 1/msg_hz
         #if it's 800ms into the second, assume the data isn't coming
-        sub.setsockopt(zmq.RCVTIMEO, 800) 
-
+        sub.setsockopt(zmq.RCVTIMEO, 800)
 
     if "file_writer_process_info" in kwargs:
         wc = kwargs["file_writer_process_info"]

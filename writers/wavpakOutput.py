@@ -62,10 +62,15 @@ class wavpak_output:
             self.variable_hz = True
             self.output_hz = 48000
             self.bits = 32
-            self.sign = "u"
+            self.sign = "s"
             self.endian = "le"
             self.channels += 2
-            self.wv_dtype_str = "uint32"
+            self.wv_dtype_str = "int32"
+            self.CHUNK_NS = np.int64(4_000_000_000)     # 4 seconds
+            self.NS_PER_S = np.int64(1_000_000_000)
+            self.SCALE    = np.int64(1 << 29)           # sub = count of 2^-29 seconds
+            self.SUB_MAX  = np.int64((1 << 31) - 1)     # max sub within 4 seconds
+
         else:
             self.output_hz = max(1, int(output_hz))
             self.wv_dtype_str = wv_dtype_str
@@ -122,8 +127,6 @@ class wavpak_output:
         wv_ints = ["int16", "int24", "int32"]
         input_floats = ["float32", "float64"]
         wv_floats = ["float32"]
-        input_uints = ["uint8", "uint16", "uint32", "uint64"]
-        wv_uints = ["uint8", "uint16", "uint32"]
 
         wv_dtype = getattr(np, wv_dtype_str)
         
@@ -137,25 +140,10 @@ class wavpak_output:
             uncasting_function = lambda x: x
             return casting_function, uncasting_function
 
-        elif input_dtype_str in input_uints and wv_dtype_str in wv_uints:
-            casting_function = lambda x: self.int_to_wv_int(x, wv_dtype)
-            uncasting_function = lambda x: x
-            return casting_function, uncasting_function
-        
-        elif input_dtype_str in input_ints and wv_dtype_str in wv_uints:
-            casting_function = lambda x: self.int_to_wv_uint(x, wv_dtype)
-            uncasting_function = lambda x: self.wv_uint_to_int(x, wv_dtype)
-            return casting_function, uncasting_function
-
         elif input_dtype_str in input_floats and wv_dtype_str in wv_ints: #add the bits
             casting_function = lambda x: self.float_to_wv_int(x, wv_dtype, float_bits)
             # uncast back to the original input float dtype
             uncasting_function = lambda x: self.wv_int_to_float(x, input_dtype_str, float_bits)
-            return casting_function, uncasting_function
-
-        elif input_dtype_str in input_floats and wv_dtype_str in wv_uints:
-            casting_function = lambda x: self.float_to_wv_uint(x, wv_dtype, float_bits)
-            uncasting_function = lambda x: self.wv_uint_to_float(x, wv_dtype_str, input_dtype_str, float_bits)
             return casting_function, uncasting_function
 
         else:
@@ -166,12 +154,7 @@ class wavpak_output:
         data = data.astype(dtype_le)
         data = np.ascontiguousarray(data)
         return data
-    
-    def float_to_wv_uint(self, data, target_dtype, float_bits):
-        as_int = self.float_to_wv_int(data, np.int64, float_bits)
-        as_uint = self.int_to_wv_uint(as_int, target_dtype)
-        return as_uint
-
+ 
 
     def float_to_wv_float(self, data, target_dtype):
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
@@ -186,21 +169,7 @@ class wavpak_output:
         return y
 
 
-    def int_to_wv_int(self, data, target_dtype):
-        dtype_le = np.dtype(target_dtype).newbyteorder('<')
-        info = np.iinfo(dtype_le)
-        y = np.asarray(data, dtype=np.int64)
-        y = np.clip(y, info.min, info.max)
-        y = y.astype(dtype_le, copy=False)
-        y = np.ascontiguousarray(y)
-        
-        #log a warning if any values are outside the range
-        if np.any(y < info.min) or np.any(y > info.max):
-            self.l.warning(self.log_name + " int_to_int: values outside range: " + str(y) + " for data: " + str(data))
-        return y
-
     def float_to_wv_int(self, data, target_dtype, float_bits):
-
         dtype_le = np.dtype(target_dtype).newbyteorder('<')
         float_scale = 2**float_bits
         info = np.iinfo(dtype_le)
@@ -219,45 +188,7 @@ class wavpak_output:
 
         return y
 
-    def int_to_wv_uint(self, data, target_dtype):
-        #put data in an int64 for now
-        y = data.astype(np.int64)
-
-        #get target dtype info
-        dtype_le = np.dtype(target_dtype).newbyteorder('<')
-        info = np.iinfo(dtype_le)
-        range = info.max - info.min
-        offset = int(range/2)
-        
-        #add the offset and convert to the target dtype
-        y = y + offset
-        y = np.clip(y, info.min, info.max)
-        y = y.astype(dtype_le, copy=False)
-        y = np.ascontiguousarray(y)
-
-        #log a warning if any values are outside the range
-        if np.any(y < info.min) or np.any(y > info.max):
-            self.l.warning(self.log_name + " int_to_uint: values outside range: " + str(y))
-        
-        return y
     
-    
-    def wv_uint_to_int(self, data, target_dtype):
-        target_dtype = getattr(np, target_dtype)
-        self.l.trace(self.log_name + " wv_uint_to_int: data: " + str(data))
-        self.l.trace(self.log_name + " wv_uint_to_int: target dtype: " + str(target_dtype))
-        info = np.iinfo(target_dtype)
-        #make sure none of the values are outside the range
-        if np.any(data < info.min) or np.any(data > info.max):
-            self.l.warning(self.log_name + " wv_uint_to_int: values outside range: " + str(data))
-        
-        offset = int(info.max/2)
-        data = data.astype(np.int64)
-        data = data - offset
-        data = data.astype(target_dtype)
-        self.l.trace(self.log_name + " wv_uint_to_int: data: " + str(data))
-        return data
-
     def wv_int_to_float(self, data, target_dtype, float_bits):
         target_dtype = getattr(np, target_dtype)
         data = data.astype(np.float64)
@@ -265,29 +196,23 @@ class wavpak_output:
         data = data.astype(target_dtype)
         self.l.trace(self.log_name + " wv_int_to_float: data: " + str(data))
         return data
-    
-    def wv_uint_to_float(self, data, wv_dtype_str, target_dtype, float_bits):
-        wv_int = self.wv_uint_to_int(data, wv_dtype_str)
-        return self.wv_int_to_float(wv_int, target_dtype, float_bits)
-    
+     
     def load_file(self, fn):
         wvunpack_cmd = ["wvunpack", "--raw", fn, "-o", "-"]
         result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
         raw_data = result.stdout
-        self.l.debug(self.log_name + " raw data: " + str(raw_data))
+        #self.l.debug(self.log_name + " raw data: " + str(raw_data))
 
-        self.l.debug(self.log_name + " wv dtype: " + self.wv_dtype_str)
+        #self.l.debug(self.log_name + " wv dtype: " + self.wv_dtype_str)
         # ensure little-endian interpretation of PCM bytestream
         dtype_le = np.dtype(self.wv_dtype_str).newbyteorder('<')
         arr = np.frombuffer(raw_data, dtype=dtype_le).reshape(-1, self.channels)
-        self.l.debug(self.log_name + " wv unpacked data: " + str(arr))
-
-        #self.l.debug(self.log_name + " wv unpacked data: " + str(arr))
-        arr = self._uncasting_function(arr)
-        #self.l.debug(self.log_name + " uncasted data: " + str(arr))
+        self.l.trace(self.log_name + " wv unpacked data: " + str(arr))
         
         #get a int64 numpy array of the timestamps based on the start_dt and the hz
         if not self.variable_hz:
+            # for fixed-hz, uncast entire array back to input dtype
+            arr = self._uncasting_function(arr)
             start_dt = fnString_to_dt(fn.split("_")[-2])
             # derive start time in integer nanoseconds (UTC) without float drift
             try:
@@ -303,13 +228,29 @@ class wavpak_output:
             timestamps = start_ns + np.arange(num_samples, dtype=np.int64) * step_ns
             return timestamps, arr
         
-        #we're going to get the first 2 columns of the uint32 arr
-        #and then combine the bits to get an int64ns array
-        timestamps = np.concatenate([arr[:, 0], arr[:, 1]])
-        timestamps = timestamps.astype(np.int64)
-        return timestamps, arr[:, 2:]
-        
-#b'\x7f%\x00\x00\x07&\x00\x00\x17&\x00\x00\x17&\x00\x00\x87%\x00\x00\xef%\x00\x00\x9f%\x00\x00\xff%\x00\x00\xff%\x00\x00\xbf%\x00\x00\xa7%\x00\x00\xbf%\x00\x00\x07&\x00\x00\xcf%\x00\x00\xd7%\x00\x00\xaf%\x00\x00_%\x00\x00\x17&\x00\x00\xe7%\x00\x00\xef%\x00\x00'
+        # variable-hz format: single row per logical sample with 3 channels:
+        # [chunk, data, offset], where
+        # - chunk: int32 number of 4-second chunks since epoch
+        # - offset: int32 fixed-point fraction of chunk (units of 2^-29 seconds)
+        # - data: int32 payload (scaled by float_bits if converting from floats)
+
+        chunk = arr[:, 0].astype(np.int64)
+        self.l.trace("chunks: " + str(chunk))
+        offset = arr[:, 1].astype(np.int64)
+        self.l.trace("offsets: " + str(offset))
+        # ts = chunk * 4s + offset / 2^29 (in seconds) → int64 ns
+        timestamps = (chunk * self.CHUNK_NS) + ((offset * self.NS_PER_S) // self.SCALE)
+        self.l.trace("timestamps: " + str(timestamps))
+
+        data_raw = arr[:, 2]
+        self.l.trace("data_raw: " + str(data_raw))
+        # uncast data back to original input dtype if applicable
+        data_out = self._uncasting_function(data_raw)
+        self.l.trace("data_out: " + str(data_out))
+
+
+        return timestamps.astype(np.int64), data_out
+
 
     
     def persist(self, dt, data):
@@ -388,32 +329,51 @@ class wavpak_output:
         return self.file_name
     
     def write(self, dt, data):        
-        self.l.trace("input data: " + str(data))
-        data = self._casting_function(data)
-        self.l.trace("casted data: " + str(data))
-        
         if self.variable_hz:
             if dt is None:
                 raise ValueError("dt is required for variable hz")
             #yes we are writing a 2's complement integer and telling 
-            #wavpack to see it as 2 32 bit unsigned integers
+            #wavpack to see it as 2 32 bit integers
             #we are taking the compression hit
             #but the high bits should change slow enough
             #and the low bits should have enough rounding
-            #and there is at most one 0 crossing in the file
+            #and there would be at most one 0 crossing in the file
             
-            #convert to int64ns 
-            dt = dt.timestamp() * 1e9
             self.l.trace("dt: " + str(dt))
+            dt_ns = int(round(dt.timestamp() * 1e9))
+            self.l.trace("dt_ns: " + str(dt_ns))
             
-            #convert to 8 byte little endian 
-            dt = dt.to_bytes(8, "little")
-            self.l.trace("dt bytes: 0x" + str(dt.hex()))
-            
-            #prepend the dt to the data and ensure the data is contiguous
-            data = np.concatenate([dt, data])
-            data = np.ascontiguousarray(data)
+            # compute chunk index (int32) and fractional offset within 4s chunk (fixed-point 2^-29 s)
+            chunk_i64 = np.floor_divide(np.int64(dt_ns), self.CHUNK_NS)
+            chunk = np.int32(chunk_i64)
+            self.l.trace("chunk: " + str(chunk))
 
+            rem_ns = np.int64(dt_ns) - (chunk_i64 * self.CHUNK_NS)
+            self.l.trace("rem_ns: " + str(rem_ns))
+            offset = np.floor_divide(rem_ns * self.SCALE + self.NS_PER_S // 2, self.NS_PER_S)
+            offset = np.int32(offset)
+            self.l.trace("offset: " + str(offset))
+
+
+
+            # cast data to int32 (float_bits scaling already applied in casting function)
+            self.l.trace("input data: " + str(data))
+            data_i32 = self._casting_function(data).astype(np.int32, copy=False)
+            self.l.trace("casted data: " + str(data_i32))
+
+            # build one logical sample row as [chunk, offset, data]
+            data_scalar = np.int32(np.asarray(data_i32).ravel()[0])
+            payload_i32 = np.array([chunk, offset, data_scalar], dtype=np.int32)
+            # ensure little-endian int32 and contiguous
+            payload_le = payload_i32.astype(np.dtype('<i4'), copy=False)
+            buf = np.ascontiguousarray(payload_le).tobytes()
+            self.l.trace(self.log_name + " writing variable hz data: 0x" + str(buf.hex()))
+            self.proc.stdin.write(buf)
+            return
+
+        self.l.trace("input data: " + str(data))
+        data = self._casting_function(data)
+        self.l.trace("casted data: " + str(data))
 
         #order="C" is for row major order, bytes come out row by row
         self.l.trace(self.log_name + " writing 0x" + str(data.tobytes(order="C").hex()))

@@ -50,7 +50,10 @@ def generate_wavpak_test_data(data_loc, data_hz, start_time, duration_seconds):
     # (10, "wavpak_output_test", 128, 128, (1, 10), 
     # {"input_dtype_str": "float32", "wv_dtype_str": "int16", "float_bits": 8, "bits": 16, "sign": "s", "channels": 1}),
 
-    (5, "wavpak_output_test", 4, 4, (1, 10), 
+#    (5, "wavpak_output_test", 4, 4, (1, 10), 
+#    {"input_dtype_str": "float32", "wv_dtype_str": "int32", "float_bits": 8, "bits": 32, "sign": "s", "channels": 1}),
+
+    (5, "wavpak_output_test", "variable", 0, (1, 10), 
     {"input_dtype_str": "float32", "wv_dtype_str": "int32", "float_bits": 8, "bits": 32, "sign": "s", "channels": 1}),
 ])
 
@@ -117,19 +120,20 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
 
     #now lets get our data going
     test_data_folder = "/home/chowder/Documents/unifiedSensorClient/writers/tests/test_humidity_data/"
-    data = generate_wavpak_test_data(test_data_folder, hz, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), 1 * 1 * 5)
+    data_interval = 2 if hz == "variable" else hz
+    data = generate_wavpak_test_data(test_data_folder, data_interval, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), 1 * 1 * 5)
     start_dt = data['timestamp'].iloc[0]
     end_dt = data['timestamp'].iloc[-1]
 
     print("starting data publication")
     print("expected number of messages: ", len(data))
-    print("expected duration: ", len(data) / hz)
+    print("expected duration: ", len(data) / data_interval)
 
     #now I would like to publish each row, sleeping for the appropriate amount of time
     for index, row in data.iterrows():
         #print("publishing message: ", row['timestamp'], np.array([row['data']]))
         pub_socket.send_multipart(ZmqCodec.encode(topic, [row['timestamp'], np.array([row['data']])]))
-        time.sleep(1/hz)
+        time.sleep(1/data_interval)
 
     print("closing writer process")
     #now lets close the writer process
@@ -197,6 +201,8 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
             **additional_output_config)
     
     timestamps, data_array = wavpak_output_obj.load_file(file_path)
+    print("timestamps: " + str(timestamps))
+    print("data_array: " + str(data_array))
     # reshape expected to match loaded array dimensionality
     expected = data['data'].values.reshape((-1, 1)) if getattr(data_array, "ndim", 1) == 2 else data['data'].values.reshape(-1)
     assert np.all(data_array == expected)
