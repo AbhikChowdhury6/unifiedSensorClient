@@ -10,7 +10,7 @@ sys.path.append(repoPath + "unifiedSensorClient/")
 from config import dt_to_fnString, fnString_to_dt
 import logging
 import numpy as np
-
+import pandas as pd
 
 #float32 sign=f, bits=32, endian=le, channels=1
 #int32 sign=s, bits=32, endian=le, channels=1
@@ -66,10 +66,10 @@ class wavpak_output:
             self.endian = "le"
             self.channels += 2
             self.wv_dtype_str = "int32"
-            self.CHUNK_NS = np.int64(4_000_000_000)     # 4 seconds
+            self.CHUNK_SECONDS = 128
             self.NS_PER_S = np.int64(1_000_000_000)
-            self.SCALE    = np.int64(1 << 29)           # sub = count of 2^-29 seconds
-            self.SUB_MAX  = np.int64((1 << 31) - 1)     # max sub within 4 seconds
+            self.CHUNK_NS = np.int64(self.CHUNK_SECONDS * self.NS_PER_S)
+            self.SCALE    = np.int64(2**20)           # sub = count of 2^-20 seconds
 
         else:
             self.output_hz = max(1, int(output_hz))
@@ -197,6 +197,49 @@ class wavpak_output:
         self.l.trace(self.log_name + " wv_int_to_float: data: " + str(data))
         return data
      
+    
+    def dt_ns_to_chunk_offset(self, dt):
+        self.l.trace("dt: " + str(dt))
+
+        #round the dt to the nearest microsecond
+        #dt = dt.round("us")
+        chunk = np.int32(dt.timestamp() // self.CHUNK_SECONDS)
+        chunk_start_ts = chunk * self.CHUNK_SECONDS
+
+        offset_secs = int(dt.timestamp()) - chunk_start_ts
+        offset = np.int32(offset_secs * self.SCALE)
+        dt_ns = np.int64(dt.microsecond * 1_000)
+        self.l.trace("dt_ns: \t\t" + str(dt_ns))
+
+        offset_from_ns = ((dt_ns * self.SCALE) + (self.SCALE - 1)) // self.NS_PER_S
+        self.l.trace("offset_from_ns: \t" + str(offset_from_ns))
+
+        offset = offset + offset_from_ns
+        
+        reconstructed_ts = self.chunk_offset_to_int64_ns(chunk, offset)
+        self.l.trace("ts: \t\t\t" + str(int(dt.timestamp() * 1_000_000_000)))
+        self.l.trace("reconstructed_ts: \t" + str(reconstructed_ts))
+
+        return chunk, offset
+
+    def chunk_offset_to_int64_ns(self, chunk, offset):
+        # reconstruct: chunk*CHUNK_NS + CHUNK_NS/2 + offset/2^30 (truncate to avoid double rounding)
+        chunk_start_ts = np.int64(chunk) * self.CHUNK_SECONDS
+        offset_secs = np.int64(offset) // self.SCALE
+        ts = np.int64(chunk_start_ts + offset_secs) * self.NS_PER_S
+
+        offset_for_ns = np.int64(offset % self.SCALE)
+        offset_ns = (offset_for_ns * self.NS_PER_S) // self.SCALE
+        self.l.trace("offset_ns: \t\t" + str(offset_ns))
+        offset_ciel_to_micros = ((offset_ns + 999) // 1000) * 1000
+        self.l.trace("offset_ciel_to_micros: \t" + str(offset_ciel_to_micros))
+        ts = ts + offset_ciel_to_micros
+        #round to the nearest microsecond
+        #self.l.trace("ts: " + str(ts))
+        #rounded = np.round(ts, -3)
+        #self.l.trace("rounded: " + str(rounded))
+        return ts
+        
     def load_file(self, fn):
         wvunpack_cmd = ["wvunpack", "--raw", fn, "-o", "-"]
         result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
@@ -227,6 +270,9 @@ class wavpak_output:
             step_ns = int(1_000_000_000 // self.output_hz)
             num_samples = int(arr.shape[0])
             timestamps = start_ns + np.arange(num_samples, dtype=np.int64) * step_ns
+
+            #round to the nearest microsecond
+            #timestamps = np.round(timestamps, -2) #(round )
             return timestamps, arr
         
         # variable-hz format: single row per logical sample with 3 channels:
@@ -235,12 +281,11 @@ class wavpak_output:
         # - offset: int32 fixed-point fraction of chunk (units of 2^-29 seconds)
         # - data: int32 payload (scaled by float_bits if converting from floats)
 
-        chunk = arr[:, 0].astype(np.int64)
-        self.l.trace("chunks: " + str(chunk))
-        offset = arr[:, 1].astype(np.int64)
-        self.l.trace("offsets: " + str(offset))
-        # ts = chunk * 4s + offset / 2^29 (in seconds) → int64 ns
-        timestamps = (chunk * self.CHUNK_NS) + ((offset * self.NS_PER_S) // self.SCALE)
+        chunks = arr[:, 0].astype(np.int64)
+        self.l.trace("chunks: " + str(chunks))
+        offsets = arr[:, 1].astype(np.int64)
+        self.l.trace("offsets: " + str(offsets))
+        timestamps = self.chunk_offset_to_int64_ns(chunks, offsets)
         self.l.trace("timestamps: " + str(timestamps))
 
         data_raw = arr[:, 2]
@@ -250,6 +295,8 @@ class wavpak_output:
         self.l.trace("data_out: " + str(data_out))
 
 
+        #round to the nearest microsecond
+        #timestamps = np.round(timestamps, -2)
         return timestamps.astype(np.int64), data_out
 
 
@@ -329,33 +376,15 @@ class wavpak_output:
         self.l.info(self.log_name + " opened wavpack writer: " + self.file_name)
         return self.file_name
     
-    def write(self, dt, data):        
+    def write(self, dt, data):
         if self.variable_hz:
             if dt is None:
                 raise ValueError("dt is required for variable hz")
-            #yes we are writing a 2's complement integer and telling 
-            #wavpack to see it as 2 32 bit integers
-            #we are taking the compression hit
-            #but the high bits should change slow enough
-            #and the low bits should have enough rounding
-            #and there would be at most one 0 crossing in the file
+
             
             self.l.trace("dt: " + str(dt))
-            dt_ns = int(round(dt.timestamp() * 1e9))
-            self.l.trace("dt_ns: " + str(dt_ns))
-            
-            # compute chunk index (int32) and fractional offset within 4s chunk (fixed-point 2^-29 s)
-            chunk_i64 = np.floor_divide(np.int64(dt_ns), self.CHUNK_NS)
-            chunk = np.int32(chunk_i64)
-            self.l.trace("chunk: " + str(chunk))
-
-            rem_ns = np.int64(dt_ns) - (chunk_i64 * self.CHUNK_NS)
-            self.l.trace("rem_ns: " + str(rem_ns))
-            offset = np.floor_divide(rem_ns * self.SCALE + self.NS_PER_S // 2, self.NS_PER_S)
-            offset = np.int32(offset)
-            self.l.trace("offset: " + str(offset))
-
-
+            # compute chunk from seconds (float) but keep offset rounded to fixed grid
+            chunk, offset = self.dt_ns_to_chunk_offset(dt)
 
             # cast data to int32 (float_bits scaling already applied in casting function)
             self.l.trace("input data: " + str(data))

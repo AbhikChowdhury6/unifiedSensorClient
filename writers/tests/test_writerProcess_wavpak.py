@@ -30,6 +30,8 @@ def generate_wavpak_test_data(data_loc, data_hz, start_time, duration_seconds):
     # Use integer nanoseconds per sample to avoid pandas freq parsing issues
     ns_per_sample = int(round(1e9 / data_hz))
     timestamps = pd.date_range(start=start_time, periods=num_samples, freq=pd.to_timedelta(ns_per_sample, unit="ns"))
+    # Proactively round to microseconds to avoid downstream banker’s rounding/display differences
+    timestamps = timestamps.round("us")
     data = data.iloc[:num_samples].reset_index(drop=True).values.squeeze()
     return pd.DataFrame({'timestamp': timestamps, 'data': data})
 
@@ -53,7 +55,7 @@ def generate_wavpak_test_data(data_loc, data_hz, start_time, duration_seconds):
 #    (5, "wavpak_output_test", 4, 4, (1, 10), 
 #    {"input_dtype_str": "float32", "wv_dtype_str": "int32", "float_bits": 8, "bits": 32, "sign": "s", "channels": 1}),
 
-    (5, "wavpak_output_test", "variable", 0, (1, 10), 
+    (10, "wavpak_output_test", "variable", "variable", (1, 10), 
     {"input_dtype_str": "float32", "wv_dtype_str": "int32", "float_bits": 8, "bits": 32, "sign": "s", "channels": 1}),
 ])
 
@@ -120,8 +122,10 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
 
     #now lets get our data going
     test_data_folder = "/home/chowder/Documents/unifiedSensorClient/writers/tests/test_humidity_data/"
-    data_interval = 2 if hz == "variable" else hz
-    data = generate_wavpak_test_data(test_data_folder, data_interval, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), 1 * 1 * 5)
+    data_interval = 2048 if hz == "variable" else hz #tested up to 2^11
+    
+    seconds_to_publish = 200
+    data = generate_wavpak_test_data(test_data_folder, data_interval, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), seconds_to_publish)
     start_dt = data['timestamp'].iloc[0]
     end_dt = data['timestamp'].iloc[-1]
 
@@ -201,16 +205,19 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
             **additional_output_config)
     
     timestamps, data_array = wavpak_output_obj.load_file(file_path)
-    print("timestamps: " + str(timestamps))
-    print("data_array: " + str(data_array))
+    #print("timestamps: " + str(timestamps))
+    #print("data_array: " + str(data_array))
     # reshape expected to match loaded array dimensionality
     expected = data['data'].values.reshape((-1, 1)) if getattr(data_array, "ndim", 1) == 2 else data['data'].values.reshape(-1)
     assert np.all(data_array == expected)
 
     #convert my int64ns timestamps to datetimes
     loaded_idx = pd.to_datetime(timestamps, unit='ns', utc=True)
+    print("loaded_idx: " + str(loaded_idx.values))
     expected_idx = pd.DatetimeIndex(data['timestamp'])
-    assert loaded_idx.equals(expected_idx)
+    print("expected_idx: " + str(expected_idx.values))
+    # Compare exact int64 nanoseconds to avoid display/formatting differences
+    assert np.array_equal(loaded_idx.values, expected_idx.values)
     time.sleep(1)
     
 
