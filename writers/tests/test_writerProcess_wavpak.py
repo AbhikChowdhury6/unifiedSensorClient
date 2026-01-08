@@ -122,7 +122,7 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
 
     #now lets get our data going
     test_data_folder = "/home/chowder/Documents/unifiedSensorClient/writers/tests/test_humidity_data/"
-    data_interval = 2048 if hz == "variable" else hz #tested up to 2^11
+    data_interval = 32 if hz == "variable" else hz #tested up to 2^11
     
     seconds_to_publish = 200
     data = generate_wavpak_test_data(test_data_folder, data_interval, datetime(2026, 1, 7, 0, 0, 0, 0, timezone.utc), seconds_to_publish)
@@ -132,12 +132,14 @@ def test_writer_wavpak(tmp_path, debug_lvl, topic, hz, output_hz, file_size_chec
     print("starting data publication")
     print("expected number of messages: ", len(data))
     print("expected duration: ", len(data) / data_interval)
+    print("time sleeping: ", 0.01 * len(data))
 
     #now I would like to publish each row, sleeping for the appropriate amount of time
     for index, row in data.iterrows():
         #print("publishing message: ", row['timestamp'], np.array([row['data']]))
         pub_socket.send_multipart(ZmqCodec.encode(topic, [row['timestamp'], np.array([row['data']])]))
-        time.sleep(1/data_interval)
+        time.sleep(0.01)
+        #time.sleep(1/data_interval)
 
     print("closing writer process")
     #now lets close the writer process

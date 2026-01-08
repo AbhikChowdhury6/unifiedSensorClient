@@ -217,7 +217,7 @@ i2c_controller_1_process_config = {
                     "data_type": "float",
                     "shape": "1x1",
                     "hz": 16,
-                    "grace_period_samples": 3,
+                    "grace_period_samples": 4,
                     "topic": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_float_1x1_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
