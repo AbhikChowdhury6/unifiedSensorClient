@@ -44,6 +44,7 @@ class Sensor:
             raise ValueError("retrieve_data is required")
         self.retrieve_data = retrieve_data
         #timing
+        self.hz = hz
         self.sensor_hz = hz
         self.message_hz = max(1, hz)
         self.sensor_delay_micros = int(1_000_000/self.sensor_hz)
