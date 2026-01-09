@@ -16,6 +16,7 @@ from platformUtils.logUtils import worker_configurer, check_apply_level, set_pro
 #import the config
 from config import zmq_control_endpoint
 from adafruit_extended_bus import ExtendedI2C as I2C
+import traceback
 
 def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
@@ -79,25 +80,32 @@ def i2c_controller(log_queue, config):
 
     # Start loop
     time.sleep(1 - datetime.now().microsecond/1_000_000)
-    while True:
-        #print(f"in loop time is {datetime.now()}")
-        #sys.stdout.flush()
-        for sensor in sensors:
-            sensor.read_data()
+    try:
+        while True:
+            #print(f"in loop time is {datetime.now()}")
+            #sys.stdout.flush()
+            for sensor in sensors:
+                sensor.read_data()
 
-        # check if there's any messages in the control signal topic
-        try:
-            parts = sub.recv_multipart(flags=zmq.NOBLOCK)
-            _, obj = ZmqCodec.decode(parts)
-            l.debug(config["short_name"] + " controller control message: " + str(obj))
-            if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "i2c"):
-                l.info(config["short_name"] + " controller exiting")
-                break
-        except zmq.Again:
-            # No message available
-            pass
-                
-        micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
-        time.sleep(micros_to_delay/1_000_000)
+            # check if there's any messages in the control signal topic
+            try:
+                parts = sub.recv_multipart(flags=zmq.NOBLOCK)
+                _, obj = ZmqCodec.decode(parts)
+                l.debug(config["short_name"] + " controller control message: " + str(obj))
+                if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "i2c"):
+                    l.info(config["short_name"] + " controller exiting")
+                    break
+            except zmq.Again:
+                # No message available
+                pass
+                    
+            micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
+            time.sleep(micros_to_delay/1_000_000)
+    except Exception as e:
+        # Log full traceback to logs and stderr immediately, then terminate this process
+        l.exception(f"{config['short_name']} controller encountered an unhandled exception and will exit")
+        traceback.print_exc()
+        sys.stderr.flush()
+        os._exit(1)
         
     l.info(config["short_name"] + " controller exiting")  
