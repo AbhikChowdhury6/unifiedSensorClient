@@ -267,7 +267,7 @@ i2c_controller_1_process_config = {
                     #expected range
                     #min is 0, max is 100
                     "shape": "1x1",
-                    "hz": .25,
+                    "hz": 0.25,
                     "grace_period_samples": 1,
                     "topic": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_float_1x1_0P25hz",
                     "debug_lvl": 20,

@@ -42,19 +42,6 @@ def writer_process(log_queue = None,
     sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
     l.info(process_name + " subscribed to " + topic)
 
-    interp_seconds = 0
-    interped_messages = 0
-    last_dt = datetime.min.replace(tzinfo=timezone.utc)
-    last_data = None
-    if msg_hz is None and output_hz is not None:
-        msg_hz = output_hz
-    #is type int or float
-    if msg_hz == "variable":
-        interp_seconds = 0
-    elif msg_hz < 1:
-        interp_seconds = 1/msg_hz
-        #if it's 800ms into the second, assume the data isn't coming
-        sub.setsockopt(zmq.RCVTIMEO, 800)
 
     if "file_writer_process_info" in kwargs:
         wc = kwargs["file_writer_process_info"]
@@ -97,71 +84,19 @@ def writer_process(log_queue = None,
         time.sleep(next_second_ts - datetime.now().timestamp())
 
     while True:
-        #handle no interploation
-        if not interp_seconds:
-            msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
-            if msg_topic == "control" and (msg[0] == "exit_all" or 
-                (msg[0] == "exit" and msg[-1] == process_name)):
-                l.info(process_name + " exiting")
-                break
-            
-            if msg_topic != topic:
-                continue
-
-            dt, chunk = msg
-            writer.write(dt, chunk)
+        msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
+        if msg_topic == "control" and (msg[0] == "exit_all" or 
+            (msg[0] == "exit" and msg[-1] == process_name)):
+            l.info(process_name + " exiting")
+            break
+        
+        if msg_topic != topic:
             continue
 
-
-        #handle interpolating
-        msg_topic = None
-        msg = None
-        try:
-            msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
-        except zmq.Again:
-            l.trace(process_name + " no message available")
-            #if we're interpolating, and we have never gotten data, sleep to the next second
-            if last_data is None:
-                sleep_to_next_second()
-                continue
-        
-        #at this stage, we either got a message, or recev timed out and we should interpolate
-        
-        #if we got a message, handle it
-        if msg_topic is not None: #we either got a control message or new data
-            if msg_topic == "control" and (msg[0] == "exit_all" or 
-                (msg[0] == "exit" and msg[-1] == process_name)):
-                l.info(process_name + " exiting")
-                break
-            
-            if msg_topic != topic: #don't sleep if we didn't get new data
-                continue
-
-            dt, chunk = msg
-            writer.write(dt, chunk)
-            interped_messages = 0
-            last_dt = dt
-            last_data = chunk
-            sleep_to_next_second()
-            continue
+        dt, chunk = msg
+        writer.write(dt, chunk)
 
 
-        #at this point, we are interpolating, and recev timed out
-        interped_messages += 1
-
-        if interped_messages > interp_seconds:
-            #it's been too long, sleep to the next second and don't write anything
-            sleep_to_next_second()
-            continue
-        
-        #write the interpolated data
-        interp_time = last_dt +timedelta(seconds=interped_messages)
-        writer.write(interp_time, last_data)
-        
-        #if it for some reason took longer than 200ms to write, don't wait
-        next_second_ts = datetime.now(timezone.utc).replace(microsecond=0).timestamp() + 1
-        time.sleep(max(0, next_second_ts - datetime.now().timestamp()))
-        
 
     l.info(process_name + " exiting")
     writer.close()

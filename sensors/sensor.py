@@ -44,11 +44,16 @@ class Sensor:
             raise ValueError("retrieve_data is required")
         self.retrieve_data = retrieve_data
         #timing
-        self.hz = hz
-        self.delay_micros = int(1_000_000/self.hz)
+        self.sensor_hz = hz
+        self.message_hz = max(1, hz)
+        self.sensor_delay_micros = int(1_000_000/self.sensor_hz)
+        self.message_delay_micros = int(1_000_000/self.message_hz)
         #self.timestamp_rounding_bits = config['timestamp_rounding_bits']
         #self.trillionths = 1_000_000_000_000/(2**self.timestamp_rounding_bits)
-        self.retrive_after = datetime.fromtimestamp(0, tz=timezone.utc)
+        self.sensor_update_after = datetime.fromtimestamp(0, tz=timezone.utc)
+        self.message_update_after = datetime.fromtimestamp(0, tz=timezone.utc)
+        self.grace_period_samples = grace_period_samples
+
 
         #data descriptor
         self.bus_location = bus_location
@@ -103,14 +108,15 @@ class Sensor:
         self.is_ready = is_ready
         while not self.is_ready():
             self.l.debug(self.topic + " waiting for data...")
-            time.sleep(self.delay_micros/1_000_000)
+            time.sleep(self.sensor_delay_micros/1_000_000)
         _ = self.retrieve_data() # a warmup reading
         time.sleep(.25)
 
         self.last_read_dt = None
         self.last_read_data = None
-        self.grace_period_seconds = (1/self.hz) * (grace_period_samples+1)
-        
+        self.interp_seconds = (1/self.message_hz) * (self.grace_period_samples+1)
+        self.interped_samples = -1
+
         #calculate the estimated read time
         ts = datetime.now(timezone.utc)
         _ = self.retrieve_data()
@@ -158,67 +164,54 @@ class Sensor:
             self.l.critical(msg)
     
     def read_data(self):
-        #check if it's the right time to read the data
-        now = datetime.now(timezone.utc)
-        if now < self.retrive_after:
-            return
-        
         if not self.is_ready():
             return
+        
+        #check if it's the right time to read the data
+        now = datetime.now(timezone.utc)
+        rounded_down_micros = (now.microsecond//self.sensor_delay_micros) * self.sensor_delay_micros
+        now = now.replace(microsecond=int(rounded_down_micros))
+        
+        
+        if now >= self.sensor_update_after:            
+            self.log(5, lambda: "updating data from " + self.topic)
 
-        self.log(5, lambda: "reading data from " + self.topic)
-        #read the data
-        new_data = self.retrieve_data()
-        read_micros = (datetime.now(timezone.utc) - now).total_seconds() * 1_000_000
-        self.max_read_micros = max(self.max_read_micros, read_micros)
-        self.log(5, lambda: "read time: " + str(read_micros) + " microseconds")
-        self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
+            if self.debug_lvl == 5: ts = now.timestamp()
+            curr_data = np.array(self.retrieve_data())
+            self.log(5, lambda: "read time: " + str(now.timestamp() - ts) + " seconds")
+            self.max_read_micros = max(self.max_read_micros, (now.timestamp() - ts) * 1_000_000)
+            self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
+
+            
+            self.sensor_update_after = now + timedelta(microseconds=self.sensor_delay_micros)
+            self.log(5, lambda: "next sensor update after" + str(self.sensor_update_after))
+            self.last_read_data = curr_data
+            self.last_read_dt = now
+            self.interped_samples = -1
+
+
         
-        self.retrive_after = now + timedelta(microseconds=self.delay_micros)
-        self.log(5, lambda: "next read after" + str(self.retrive_after))
-        
-        if new_data is None:
-            #self.log(40, lambda: "no data read from " + self.topic)
+        # I think there's an opportunity to do interpolation and resampling here
+        # now all we need to do is to keep sending messages at message_hz until we run out of grace period
+        if curr_data is None:
+            self.log(40, lambda: "no data read from " + self.topic)
             return
-        self.log(5, lambda: "data read from " + self.topic + ": " + str(len(new_data)) + " bytes")
-        
-        #round ts to the nearest hz seconds
-        if self.hz <= 1:
-            now = now.replace(microsecond=0)
-            prev_second = int(now.timestamp() // self.hz) * self.hz
-            now = datetime.fromtimestamp(prev_second, tz=timezone.utc)
-        else:
-            rounded_down_micros = (now.microsecond//self.delay_micros) * self.delay_micros
-            now = now.replace(microsecond=int(rounded_down_micros))# round down to the nearest delay micros
-        
-        
 
-        # convert to numpy array before sending
-        new_data_np = np.array(new_data)
+        if now >= self.message_update_after and self.interped_samples < self.grace_period_samples:
+            self.log(5, lambda: "sending data from " + self.topic)
+            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, curr_data]))
+            self.interped_samples += 1
+            self.message_update_after = now + timedelta(microseconds=self.message_delay_micros)
+            self.log(5, lambda: "next message update after" + str(self.message_update_after))
 
-        #handle grace period
-        if self.last_read_dt is not None:
+
+        elif self.interped_samples > self.grace_period_samples:
+            self.log(30, lambda: self.topic + " time since last read is greater than grace period")
+            self.log(30, lambda: self.topic + " grace samples: " + str(self.grace_period_samples) + " samples")
+            self.log(30, lambda: self.topic + " interped samples: " + str(self.interped_samples) + " samples")
             time_since_last_read = (now - self.last_read_dt).total_seconds()
-            if time_since_last_read > 1/self.hz:
-                #forward fill the missed samples
-                if self.last_read_data is not None:
-                    missed_samples = int(time_since_last_read / (1/self.hz)) -1
-                    self.log(10, lambda: self.topic + " missed " + str(missed_samples) + " samples")
-                    for i in range(missed_samples):
-                        new_dt = self.last_read_dt + timedelta(seconds=(i+1)/self.hz)
-                        self.log(10, lambda: self.topic + " forwarding fill sample at: " + str(new_dt))
-                        self.pub.send_multipart(ZmqCodec.encode(self.topic, [new_dt, self.last_read_data]))
-
-            if time_since_last_read > self.grace_period_seconds:
-                self.log(30, lambda: self.topic + " time since last read is greater than grace period")
-                self.log(30, lambda: self.topic + " grace period: " + str(self.grace_period_seconds) + " seconds")
-                self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
-                self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
-                self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
+            self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
+            self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
+            self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
 
 
-        self.last_read_dt = now
-        self.last_read_data = new_data_np
-        self.log(10, lambda: "read time: " + str(now))
-        self.log(5, lambda: "sending data " + str(new_data_np))
-        self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, new_data_np]))
