@@ -181,8 +181,11 @@ class Sensor:
             return
         
         #if it has been longer than the update hz, fill the messages (for higher hz sensors)
-        if self.last_read_dt is not None and (now - self.last_read_dt).total_seconds() > 1/self.sensor_hz:
-            messages_to_fill = min(int((now - self.last_read_dt).total_seconds() * self.message_hz) - 1, self.messages_to_interp)
+        seconds_since_last_read = (now - self.last_read_dt).total_seconds()
+        self.log(5, lambda: "time since last read: " + str(seconds_since_last_read) + " seconds")
+        
+        if self.last_read_dt is not None and seconds_since_last_read > 1/self.sensor_hz:
+            messages_to_fill = min(int(seconds_since_last_read * self.message_hz) - 1, self.messages_to_interp)
             self.log(5, lambda: "messages to fill: " + str(messages_to_fill))
             if messages_to_fill > 0:
                 self.log(5, lambda: "it has been " + str(now - self.last_read_dt) + " seconds since the last read")
