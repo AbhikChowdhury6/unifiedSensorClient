@@ -199,7 +199,7 @@ class Sensor:
             #self.log(40, lambda: "no data read from " + self.topic)
             return
 
-        if now >= self.message_update_after and self.interped_samples < self.grace_period_samples:
+        if now >= self.message_update_after and self.interped_samples <= self.grace_period_samples:
             self.log(5, lambda: "sending data from " + self.topic)
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
             self.interped_samples += 1
