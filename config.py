@@ -219,7 +219,7 @@ i2c_controller_1_process_config = {
                     "hz": 16,
                     "grace_period_samples": 4,
                     "topic": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_float_1x1_16hz",
-                    "debug_lvl": 20,
+                    "debug_lvl": 5,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
@@ -270,7 +270,7 @@ i2c_controller_1_process_config = {
                     "hz": 0.25,
                     "grace_period_samples": 1,
                     "topic": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_float_1x1_0P25hz",
-                    "debug_lvl": 5,
+                    "debug_lvl": 10,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": .25,
