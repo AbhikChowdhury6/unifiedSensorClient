@@ -115,9 +115,10 @@ class Sensor:
         time.sleep(.25)
 
         self.last_read_dt = None
-        self.last_read_data = None
         self.interp_seconds = (1/self.message_hz) * (self.grace_period_samples+1)
-        self.interped_samples = -1
+        self.messages_per_sensor_update = self.message_hz // self.sensor_hz
+        self.messages_to_interp = self.messages_per_sensor_update * self.grace_period_samples
+        self.curr_interped_messages = -1
 
         #calculate the estimated read time
         ts = datetime.now(timezone.utc)
@@ -187,9 +188,8 @@ class Sensor:
             
             self.sensor_update_after = now + timedelta(microseconds=self.sensor_delay_micros)
             self.log(5, lambda: "next sensor update after" + str(self.sensor_update_after))
-            self.last_read_data = self.curr_data
             self.last_read_dt = now
-            self.interped_samples = -1
+            self.curr_interped_messages = -1
 
 
         
@@ -199,18 +199,18 @@ class Sensor:
             #self.log(40, lambda: "no data read from " + self.topic)
             return
 
-        if now >= self.message_update_after and self.interped_samples <= self.grace_period_samples:
+        if now >= self.message_update_after and self.curr_interped_messages <= self.messages_to_interp:
             self.log(5, lambda: "sending data from " + self.topic)
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
-            self.interped_samples += 1
+            self.curr_interped_messages += 1
             self.message_update_after = now + timedelta(microseconds=self.message_delay_micros)
             self.log(5, lambda: "next message update after" + str(self.message_update_after))
 
 
-        elif self.interped_samples > self.grace_period_samples:
+        elif self.curr_interped_messages > self.messages_to_interp:
             self.log(30, lambda: self.topic + " time since last read is greater than grace period")
             self.log(30, lambda: self.topic + " grace samples: " + str(self.grace_period_samples) + " samples")
-            self.log(30, lambda: self.topic + " interped samples: " + str(self.interped_samples) + " samples")
+            self.log(30, lambda: self.topic + " interped samples: " + str(self.curr_interped_messages) + " samples")
             time_since_last_read = (now - self.last_read_dt).total_seconds()
             self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
             self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
