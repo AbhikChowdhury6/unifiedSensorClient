@@ -210,6 +210,7 @@ class Sensor:
             return
 
         for i in range(messages_to_catch_up):
+            self.log(5, lambda: "sending message " + str(i) + " of " + str(messages_to_catch_up))
             if now >= self.message_update_after and self.curr_interped_messages <= self.messages_to_interp:
                 mt = self.last_read_dt + timedelta(seconds=i/self.message_hz)
                 self.log(5, lambda: "sending data from " + self.topic)
