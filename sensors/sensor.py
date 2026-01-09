@@ -212,10 +212,10 @@ class Sensor:
             #self.max_read_micros = max(self.max_read_micros, (now.timestamp() - ts) * 1_000_000)
             #self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
 
+            self.last_read_dt = now
             
             self.sensor_update_after = now + timedelta(microseconds=self.sensor_delay_micros)
             self.log(5, lambda: "next sensor update after" + str(self.sensor_update_after))
-            self.stop_sending_messages_after = now + timedelta(seconds=self.messages_to_interp/self.message_hz)
 
         
         #for lower hz sensors, we need to fill the messages
