@@ -177,7 +177,7 @@ class Sensor:
         if now >= self.sensor_update_after:            
             self.log(5, lambda: "updating data from " + self.topic)
 
-            if self.debug_lvl == 5: ts = now.timestamp()
+            ts = now.timestamp()
             curr_data = np.array(self.retrieve_data())
             self.log(5, lambda: "read time: " + str(now.timestamp() - ts) + " seconds")
             self.max_read_micros = max(self.max_read_micros, (now.timestamp() - ts) * 1_000_000)
