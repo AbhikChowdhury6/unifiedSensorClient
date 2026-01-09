@@ -199,21 +199,33 @@ class Sensor:
             #self.log(40, lambda: "no data read from " + self.topic)
             return
 
-        if now >= self.message_update_after and self.curr_interped_messages <= self.messages_to_interp:
-            self.log(5, lambda: "sending data from " + self.topic)
-            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
-            self.curr_interped_messages += 1
-            self.message_update_after = now + timedelta(microseconds=self.message_delay_micros)
-            self.log(5, lambda: "next message update after" + str(self.message_update_after))
+
+        # run this enough times to catch up
+        messages_to_catch_up = int((now - self.last_read_dt).total_seconds() / self.message_hz)
+        self.log(5, lambda: "messages to catch up: " + str(messages_to_catch_up))
+        if messages_to_catch_up > self.messages_to_interp:
+            self.log(30, lambda: "messages to catch up is greater than messages to interp")
+            self.log(30, lambda: "messages to catch up: " + str(messages_to_catch_up))
+            self.log(30, lambda: "messages to interp: " + str(self.messages_to_interp))
+            return
+
+        for i in range(messages_to_catch_up):
+            if now >= self.message_update_after and self.curr_interped_messages <= self.messages_to_interp:
+                mt = self.last_read_dt + timedelta(seconds=i/self.message_hz)
+                self.log(5, lambda: "sending data from " + self.topic)
+                self.pub.send_multipart(ZmqCodec.encode(self.topic, [mt, self.curr_data]))
+                self.curr_interped_messages += 1
+                self.message_update_after = mt + timedelta(microseconds=self.message_delay_micros)
+                self.log(5, lambda: "next message update after" + str(self.message_update_after))
 
 
-        elif self.curr_interped_messages > self.messages_to_interp:
-            self.log(30, lambda: self.topic + " time since last read is greater than grace period")
-            self.log(30, lambda: self.topic + " grace samples: " + str(self.grace_period_samples) + " samples")
-            self.log(30, lambda: self.topic + " interped samples: " + str(self.curr_interped_messages) + " samples")
-            time_since_last_read = (now - self.last_read_dt).total_seconds()
-            self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
-            self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
-            self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
+            elif self.curr_interped_messages > self.messages_to_interp:
+                self.log(30, lambda: self.topic + " time since last read is greater than grace period")
+                self.log(30, lambda: self.topic + " grace samples: " + str(self.grace_period_samples) + " samples")
+                self.log(30, lambda: self.topic + " interped samples: " + str(self.curr_interped_messages) + " samples")
+                time_since_last_read = (now - self.last_read_dt).total_seconds()
+                self.log(30, lambda: self.topic + " time since last read: " + str(time_since_last_read) + " seconds")
+                self.log(30, lambda: self.topic + " 1/hz: " + str(1/self.hz) + " seconds")
+                self.log(30, lambda: self.topic + " hz: " + str(self.hz) + "hz")
 
 
