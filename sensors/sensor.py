@@ -54,6 +54,7 @@ class Sensor:
         self.sensor_update_after = datetime.fromtimestamp(0, tz=timezone.utc)
         self.message_update_after = datetime.fromtimestamp(0, tz=timezone.utc)
         self.grace_period_samples = grace_period_samples
+        self.curr_data = None
 
 
         #data descriptor
@@ -178,7 +179,7 @@ class Sensor:
             self.log(5, lambda: "updating data from " + self.topic)
 
             ts = now.timestamp()
-            curr_data = np.array(self.retrieve_data())
+            self.curr_data = np.array(self.retrieve_data())
             self.log(5, lambda: "read time: " + str(now.timestamp() - ts) + " seconds")
             self.max_read_micros = max(self.max_read_micros, (now.timestamp() - ts) * 1_000_000)
             self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
@@ -186,7 +187,7 @@ class Sensor:
             
             self.sensor_update_after = now + timedelta(microseconds=self.sensor_delay_micros)
             self.log(5, lambda: "next sensor update after" + str(self.sensor_update_after))
-            self.last_read_data = curr_data
+            self.last_read_data = self.curr_data
             self.last_read_dt = now
             self.interped_samples = -1
 
@@ -194,13 +195,13 @@ class Sensor:
         
         # I think there's an opportunity to do interpolation and resampling here
         # now all we need to do is to keep sending messages at message_hz until we run out of grace period
-        if curr_data is None:
-            self.log(40, lambda: "no data read from " + self.topic)
+        if self.curr_data is None:
+            #self.log(40, lambda: "no data read from " + self.topic)
             return
 
         if now >= self.message_update_after and self.interped_samples < self.grace_period_samples:
             self.log(5, lambda: "sending data from " + self.topic)
-            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, curr_data]))
+            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
             self.interped_samples += 1
             self.message_update_after = now + timedelta(microseconds=self.message_delay_micros)
             self.log(5, lambda: "next message update after" + str(self.message_update_after))
