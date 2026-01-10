@@ -33,7 +33,11 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     print("gps capture connected to control topic")
     sys.stdout.flush()
 
-    uart = serial.Serial("/dev/serial0", baudrate=9600, timeout=10)
+    # use configured serial parameters
+    port = f"/dev/{config.get('bus_location', 'serial0')}"
+    baudrate = int(config.get("baudrate", 9600))
+    timeout = float(config.get("timeout", 10))
+    uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)
 
     gps = adafruit_gps.GPS(uart, debug=False)  # Use UART/pyserial
 
@@ -53,9 +57,22 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     
     is_ready = lambda: True
-    get_3dFix = lambda: np.array([gps.latitude, gps.longitude, gps.altitude_m / 1000])
-    get_speed = lambda: np.array([gps.speed])
-    get_epe = lambda: np.array([gps.epx, gps.epy, gps.epv, gps.eps])
+    # handle None values before a fix; use NaN so warmup doesn't crash
+    to_float_or_nan = lambda v: float(v) if v is not None else np.nan
+    alt_km = lambda: (float(getattr(gps, "altitude_m")) / 1000.0) if getattr(gps, "altitude_m", None) is not None else np.nan
+    values_or_none = lambda vals: None if np.any(np.isnan(np.array(vals, dtype=float))) else vals
+    get_3dFix = lambda: values_or_none([
+        to_float_or_nan(gps.latitude),
+        to_float_or_nan(gps.longitude),
+        alt_km(),
+    ])
+    get_speed = lambda: values_or_none([to_float_or_nan(gps.speed)])
+    get_epe = lambda: values_or_none([
+        to_float_or_nan(gps.epx),
+        to_float_or_nan(gps.epy),
+        to_float_or_nan(gps.epv),
+        to_float_or_nan(getattr(gps, "eps", None)),
+    ])
     retrieve_datas = {'3dFix': get_3dFix,
                       'speed': get_speed,
                       'epe': get_epe}

@@ -178,9 +178,10 @@ class Sensor:
 
         if self.hz == "variable":
             self.log(5, lambda: "sending data at time: " + str(now))
-            self.curr_data = np.array(self.retrieve_data())
-            if self.curr_data is None:
+            rd = self.retrieve_data()
+            if rd is None:
                 return
+            self.curr_data = np.array(rd)
             self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
             return
         
@@ -213,9 +214,10 @@ class Sensor:
             self.log(5, lambda: "updating data from " + self.topic)
 
             #ts = now.timestamp()
-            self.curr_data = np.array(self.retrieve_data())
-            if self.curr_data is None:
+            rd = self.retrieve_data()
+            if rd is None:
                 return
+            self.curr_data = np.array(rd)
             #self.log(5, lambda: "read time: " + str(now.timestamp() - ts) + " seconds")
             #self.max_read_micros = max(self.max_read_micros, (now.timestamp() - ts) * 1_000_000)
             #self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
