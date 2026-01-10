@@ -684,7 +684,7 @@ gps_capture_process_config = {
     "short_name": "gps",
     "time_to_shutdown": 1,
     "debug_lvl": 5,
-    "bus_location": "ttyUSB0",
+    "bus_location": "serial0",
     "device_name": "cdtop-tech_PA1616S",
     "baudrate": 9600,
     "timeout": 10,
@@ -702,7 +702,7 @@ gps_capture_process_config = {
                 #lat min is -90, max is 90
                 #lon min is -180, max is 180
                 #alt-km min is -10, max is 10
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gps3dFix_wgs84_int32-f23_latxlonxalt-km-3_variable",
+                "output_base": f"serial0_cdtop-tech_PA1616S_gps3dFix_wgs84_int32-f23_latxlonxalt-km-3_variable",
                 "additional_output_config": {
                     "channels": 3,
                     "float_bits": 23,

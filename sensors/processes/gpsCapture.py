@@ -33,7 +33,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     print("gps capture connected to control topic")
     sys.stdout.flush()
 
-    uart = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=10)
+    uart = serial.Serial("/dev/serial0", baudrate=9600, timeout=10)
 
     gps = adafruit_gps.GPS(uart, debug=False)  # Use UART/pyserial
 
