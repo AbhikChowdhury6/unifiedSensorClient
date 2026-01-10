@@ -747,7 +747,7 @@ gps_capture_process_config = {
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsDOP_HDOP-PDOP-VDOP_int32-f10_HDOPxPDOPxVDOP-3_variable",
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsDOP_H-P-V_int32-f10_hxpxv-3_variable",
                 "additional_output_config": {
                     "channels": 3,
                     "float_bits": 6,
