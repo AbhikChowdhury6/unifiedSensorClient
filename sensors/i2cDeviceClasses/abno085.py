@@ -8,6 +8,7 @@ from adafruit_bno08x import (
 import logging
 import sys
 import numpy as np
+import time
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
@@ -22,6 +23,8 @@ class aBNO085:
                     device_config = {
                         "bus": None, # will be set by i2cController,
                         "address": 0x4b, # default address for bno085
+                        "read_timeout_s": 0.05,
+                        "max_consecutive_errors": 5,
                         "log_queue": None, # will be set by i2cController,
                     },
                     sensors_config = [
@@ -67,18 +70,57 @@ class aBNO085:
         self.l.info(self.device_name + " starting")
 
         #this is different
-        self.bno085 = BNO08X_I2C(device_config['bus'], address=device_config['address'])
+        self._bus = device_config['bus']
+        self._address = device_config['address']
+        self._read_timeout_s = device_config.get("read_timeout_s", 0.05)
+        self._max_consecutive_errors = device_config.get("max_consecutive_errors", 5)
+        self._consecutive_errors = 0
+        self.bno085 = BNO08X_I2C(self._bus, address=self._address)
         self.bno085.enable_feature(BNO_REPORT_ACCELEROMETER) #add interval micros if desired
         self.bno085.enable_feature(BNO_REPORT_GYROSCOPE)
         self.bno085.enable_feature(BNO_REPORT_MAGNETOMETER)
         self.bno085.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
         
         self.is_ready = lambda: True
+        
+        def _reinit():
+            try:
+                self.l.warning(self.device_name + " attempting BNO08x re-initialization after error")
+                self.bno085 = BNO08X_I2C(self._bus, address=self._address)
+                self.bno085.enable_feature(BNO_REPORT_ACCELEROMETER)
+                self.bno085.enable_feature(BNO_REPORT_GYROSCOPE)
+                self.bno085.enable_feature(BNO_REPORT_MAGNETOMETER)
+                self.bno085.enable_feature(BNO_REPORT_GAME_ROTATION_VECTOR)
+                self._consecutive_errors = 0
+                return True
+            except Exception:
+                self.l.exception(self.device_name + " BNO08x re-initialization failed")
+                return False
+        self._reinit = _reinit
 
-        self.get_accel = lambda: np.array([self.bno085.acceleration])
-        self.get_gyro = lambda: np.array([self.bno085.gyro])
-        self.get_magnet = lambda: np.array([self.bno085.magnetic])
-        self.get_game_quaternion = lambda: np.array([self.bno085.game_quaternion])
+        def _safe_read(name, getter):
+            start = time.monotonic()
+            try:
+                value = getter()
+            except Exception:
+                self._consecutive_errors += 1
+                self.l.exception(self.device_name + " " + name + " read raised")
+                # Let Sensor handle recovery via on_error
+                raise
+            duration = time.monotonic() - start
+            if duration > self._read_timeout_s:
+                self._consecutive_errors += 1
+                self.l.warning(self.device_name + f" {name} read timeout {duration:.4f}s > {self._read_timeout_s:.4f}s")
+                # Treat timeout as failure; raise to trigger recovery
+                raise TimeoutError(f"{name} read exceeded timeout")
+            else:
+                self._consecutive_errors = 0
+            return value
+
+        self.get_accel = lambda: np.array([_safe_read("acceleration", lambda: self.bno085.acceleration)])
+        self.get_gyro = lambda: np.array([_safe_read("gyroscope", lambda: self.bno085.gyro)])
+        self.get_magnet = lambda: np.array([_safe_read("magnetometer", lambda: self.bno085.magnetic)])
+        self.get_game_quaternion = lambda: np.array([_safe_read("game-rotation", lambda: self.bno085.game_quaternion)])
 
         retrieve_datas = {'acceleration': self.get_accel,
                           'gyroscope': self.get_gyro,
