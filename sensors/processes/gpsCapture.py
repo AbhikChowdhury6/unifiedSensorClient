@@ -59,7 +59,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     is_ready = lambda: True
     # handle None values before a fix; use NaN so warmup doesn't crash
     to_float_or_nan = lambda v: float(v) if v is not None else np.nan
-    alt_km = lambda: (float(gps.height_geoid) / 1000.0)
+    alt_km = lambda: (float(getattr(gps, "height_geoid")) / 1000.0) if getattr(gps, "height_geoid", None) is not None else np.nan
     values_or_none = lambda vals: None if np.any(np.isnan(np.array(vals, dtype=float))) else vals
     get_3dFix = lambda: values_or_none([
         to_float_or_nan(gps.latitude),
