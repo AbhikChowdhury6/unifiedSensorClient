@@ -193,7 +193,7 @@ class Sensor:
                 self.log(5, lambda: "we have a maximum of " + str(self.messages_to_interp) + " messages to interp")
                 self.log(5, lambda: "we will be writing " + str(messages_to_fill) + " number of messages")
                 
-                for i in range(messages_to_fill):
+                for i in range(1, messages_to_fill):
                     dt = self.last_read_dt + timedelta(seconds=i/self.message_hz)
                     self.log(5, lambda: "filling message " + str(i) + " of " + str(messages_to_fill) + " at " + str(dt))
                     self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt, self.curr_data]))
