@@ -134,6 +134,8 @@ class Sensor:
             if "additional_output_config" not in wc:
                 wc["additional_output_config"] = {}
             wc["additional_output_config"]["log_queue"] = log_queue
+            if "file_size_check_interval_s_range" not in wc:
+                wc["file_size_check_interval_s_range"] = (300, 600)
             writer_args = {
                            "debug_lvl": debug_lvl,
                            "log_queue": log_queue,
