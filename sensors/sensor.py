@@ -175,6 +175,14 @@ class Sensor:
         now = datetime.now(timezone.utc)
         rounded_down_micros = (now.microsecond//self.sensor_delay_micros) * self.sensor_delay_micros
         now = now.replace(microsecond=int(rounded_down_micros))
+
+        if self.hz == "variable":
+            self.log(5, lambda: "sending data at time: " + str(now))
+            self.curr_data = np.array(self.retrieve_data())
+            if self.curr_data is None:
+                return
+            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
+            return
         
         #The highest frequency thing will be the message hz, so we can check that first
         if now < self.message_update_after:

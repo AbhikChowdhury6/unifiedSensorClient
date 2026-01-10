@@ -683,7 +683,7 @@ gps_capture_process_config = {
     "func_name": "gps_capture",
     "short_name": "gps",
     "time_to_shutdown": 1,
-    "debug_lvl": 20,
+    "debug_lvl": 5,
     "bus_location": "ttyUSB0",
     "device_name": "cdtop-tech_PA1616S",
     "baudrate": 9600,
@@ -695,12 +695,19 @@ gps_capture_process_config = {
             "data_type": "float",
             "shape": "1x3",
             "hz": 1,
+            "grace_period_samples": 0,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gps3dFix_wgs84_float64_latxlonxalt-3_variable",
+                #lat min is -90, max is 90
+                #lon min is -180, max is 180
+                #alt-km min is -10, max is 10
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gps3dFix_wgs84_int32-f23_latxlonxalt-km-3_variable",
                 "additional_output_config": {
                     "channels": 3,
+                    "float_bits": 23,
+                    "bits": 32,
+                    "sign": "s",
                 },
             },
         },
@@ -708,16 +715,20 @@ gps_capture_process_config = {
             "sensor_type": "speed",
             "units": "kmDh",
             #expected range
-            #min is 0, max is 1000
+            #speed min is 0km/h, max is 1000km/h
             "data_type": "float",
             "shape": "1x1",
             "hz": 1,
+            "grace_period_samples": 0,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsSpeed_kmDh_uint32-f10_NA-1_variable",
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsSpeed_kmDh_int32-f10_NA-1_variable",
                 "additional_output_config": {
                     "channels": 1,
+                    "float_bits": 10,
+                    "bits": 32,
+                    "sign": "s",
                 },
             },
         },
@@ -726,14 +737,27 @@ gps_capture_process_config = {
             "units": "m-kmDh",
             "data_type": "float",
             "shape": "1x4",
+            "grace_period_samples": 0,
+            #expected range
+            #error in the x direction
+            #epe-x min is 0m, max is 1000m
+            #error in the y direction
+            #epe-y min is 0m, max is 1000m
+            #error in the vertical direction
+            #epe-v min is 0m, max is 1000m
+            #error in the speed km/h
+            #epe-s min is 0km/h, max is 1000km/h
             "hz": 1,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
                 #V is vertical, S is speed
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsEPEP_m-kmDh_uint32-f10_XxYxVxS-4_variable",
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsEPEP_m-kmDh_int32-f10_XxYxVxS-4_variable",
                 "additional_output_config": {
                     "channels": 4,
+                    "float_bits": 10,
+                    "bits": 32,
+                    "sign": "s",
                 },
             },
         },
@@ -952,6 +976,7 @@ all_process_configs = {
     #"sqlite": [1, sqlite_writer_process_config],
     "i2c0": [1, i2c_controller_0_process_config],
     "i2c1": [1, i2c_controller_1_process_config],
+    "gps": [1, gps_capture_process_config],
     #"video": [1, video_controller_process_1_config],
     #"detector_timelapse": [1, detector_timelapse_writer_process_config],
     #"yolo": [1, yolo_person_detector_process_config],
