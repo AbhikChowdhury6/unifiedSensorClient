@@ -60,13 +60,14 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     # handle None values before a fix; use NaN so warmup doesn't crash
     to_float_or_nan = lambda v: float(v) if v is not None else np.nan
     alt_km = lambda: (float(getattr(gps, "altitude_m")) / 1000.0) if getattr(gps, "altitude_m", None) is not None else np.nan
+    speed_kmh = lambda: (float(getattr(gps, "speed_knots")) * 1.852) if getattr(gps, "speed_knots", None) is not None else np.nan
     values_or_none = lambda vals: None if np.any(np.isnan(np.array(vals, dtype=float))) else vals
     get_3dFix = lambda: values_or_none([
         to_float_or_nan(gps.latitude),
         to_float_or_nan(gps.longitude),
         alt_km(),
     ])
-    get_speed = lambda: values_or_none([to_float_or_nan(gps.speed)])
+    get_speed = lambda: values_or_none([speed_kmh()])
     get_epe = lambda: values_or_none([
         to_float_or_nan(gps.epx),
         to_float_or_nan(gps.epy),
