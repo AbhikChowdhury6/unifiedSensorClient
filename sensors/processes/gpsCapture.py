@@ -53,7 +53,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     
     is_ready = lambda: True
-    get_3dFix = lambda: np.array([gps.latitude, gps.longitude, gps.altitude])
+    get_3dFix = lambda: np.array([gps.latitude, gps.longitude, gps.altitude_m / 1000])
     get_speed = lambda: np.array([gps.speed])
     get_epe = lambda: np.array([gps.epx, gps.epy, gps.epv, gps.eps])
     retrieve_datas = {'3dFix': get_3dFix,
