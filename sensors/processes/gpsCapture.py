@@ -59,24 +59,22 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     is_ready = lambda: True
     # handle None values before a fix; use NaN so warmup doesn't crash
     to_float_or_nan = lambda v: float(v) if v is not None else np.nan
-    alt_km = lambda: (float(getattr(gps, "altitude_m")) / 1000.0) if getattr(gps, "altitude_m", None) is not None else np.nan
-    speed_kmh = lambda: (float(getattr(gps, "speed_knots")) * 1.852) if getattr(gps, "speed_knots", None) is not None else np.nan
+    alt_km = lambda: (float(gps.height_geoid) / 1000.0)
     values_or_none = lambda vals: None if np.any(np.isnan(np.array(vals, dtype=float))) else vals
     get_3dFix = lambda: values_or_none([
         to_float_or_nan(gps.latitude),
         to_float_or_nan(gps.longitude),
-        alt_km(),
+        to_float_or_nan(alt_km()),
     ])
-    get_speed = lambda: values_or_none([speed_kmh()])
-    get_epe = lambda: values_or_none([
-        to_float_or_nan(gps.epx),
-        to_float_or_nan(gps.epy),
-        to_float_or_nan(gps.epv),
-        to_float_or_nan(getattr(gps, "eps", None)),
+    get_speed = lambda: to_float_or_nan(gps.speed_kmh)
+    get_dop = lambda: values_or_none([
+        to_float_or_nan(gps.hdop),
+        to_float_or_nan(gps.pdop),
+        to_float_or_nan(gps.vdop),
     ])
     retrieve_datas = {'3dFix': get_3dFix,
                       'speed': get_speed,
-                      'epe': get_epe}
+                      'dop': get_dop}
     
     sensors = []
     for sensor in config["sensors"]:

@@ -733,29 +733,23 @@ gps_capture_process_config = {
             },
         },
         {
-            "sensor_type": "epe",
-            "units": "m-kmDh",
+            "sensor_type": "dop",
+            "units": "HDOP-PDOP-VDOP",
             "data_type": "float",
             "shape": "1x4",
             "grace_period_samples": 0,
             #expected range
-            #error in the x direction
-            #epe-x min is 0m, max is 1000m
-            #error in the y direction
-            #epe-y min is 0m, max is 1000m
-            #error in the vertical direction
-            #epe-v min is 0m, max is 1000m
-            #error in the speed km/h
-            #epe-s min is 0km/h, max is 1000km/h
+            #HDOP min is 0, max is 100
+            #PDOP min is 0, max is 100
+            #VDOP min is 0, max is 100
             "hz": 1,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                #V is vertical, S is speed
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsEPEP_m-kmDh_int32-f10_XxYxVxS-4_variable",
+                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsDOP_HDOP-PDOP-VDOP_int32-f10_HDOPxPDOPxVDOP-3_variable",
                 "additional_output_config": {
-                    "channels": 4,
-                    "float_bits": 10,
+                    "channels": 3,
+                    "float_bits": 6,
                     "bits": 32,
                     "sign": "s",
                 },
