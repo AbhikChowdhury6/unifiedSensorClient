@@ -684,6 +684,7 @@ gps_capture_process_config = {
     "short_name": "gps",
     "time_to_shutdown": 1,
     "debug_lvl": 5,
+    "hz": 1,
     "bus_location": "serial0",
     "device_name": "cdtop-tech_PA1616S",
     "baudrate": 9600,
