@@ -562,7 +562,7 @@ i2c_controller_0_process_config = {
                     "hz": 8,
                     "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_magnetometer_ut_float_1x3_8hz",
-                    "debug_lvl": 20,
+                    "debug_lvl": 5,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 8,
@@ -969,7 +969,7 @@ yolo_person_detector_process_config = {
 
 all_process_configs = {
     #"sqlite": [1, sqlite_writer_process_config],
-#    "i2c0": [1, i2c_controller_0_process_config],
+    "i2c0": [1, i2c_controller_0_process_config],
     "i2c1": [1, i2c_controller_1_process_config],
     "gps": [1, gps_capture_process_config],
     #"video": [1, video_controller_process_1_config],
