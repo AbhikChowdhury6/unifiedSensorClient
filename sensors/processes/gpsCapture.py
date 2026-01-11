@@ -94,18 +94,23 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     delay_micros = 1_000_000/config["hz"]
     time.sleep(1 - datetime.now().microsecond/1_000_000)
     while True:
-        parts = sub.recv_multipart(flags=zmq.NOBLOCK)
-        topic, obj = ZmqCodec.decode(parts)
-        if topic == "control":
-            if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "gps"):
-                print("gps capture exiting")
-                sys.stdout.flush()
-                break
+        # non-blocking control receive; ignore when no message
+        try:
+            parts = sub.recv_multipart(flags=zmq.NOBLOCK)
+            topic, obj = ZmqCodec.decode(parts)
+            if topic == "control":
+                if obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "gps"):
+                    print("gps capture exiting")
+                    sys.stdout.flush()
+                    break
+        except zmq.Again:
+            pass
         
         gps.update()
         if not gps.has_fix:
             #log gps waiting for fix
             l.debug("gps waiting for fix")
+            time.sleep(0.25)
             continue
         
         for sensor in sensors:
