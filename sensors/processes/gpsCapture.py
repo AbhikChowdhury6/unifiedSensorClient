@@ -68,7 +68,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         to_float_or_nan(gps.longitude),
         to_float_or_nan(alt_km()),
     ])
-    get_speed = lambda: to_float_or_nan(gps.speed_kmh)
+    get_speed = lambda: values_or_none([to_float_or_nan(gps.speed_kmh)])
     get_dop = lambda: values_or_none([
         to_float_or_nan(gps.hdop),
         to_float_or_nan(gps.pdop),

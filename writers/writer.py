@@ -161,7 +161,7 @@ class Writer:
 
     def write(self, dt, data):
         self.log(5, lambda:self.object_name + "##################### got data for time: " + str(dt))
-        self.l.trace(lambda:self.object_name + " data: " + str(data))
+        self.log(5, lambda: self.object_name + " data: " + str(data))
         
         # handle if we get a chunk of data that spans 2 days
         if data.shape[0] > 1:
