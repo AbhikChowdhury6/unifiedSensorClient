@@ -62,18 +62,45 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     #even though the documentation describes the ellipsoid height, and not the geoid height rip
     alt_km = lambda: (float(getattr(gps, "height_geoid")) / 1000.0) if getattr(gps, "height_geoid", None) is not None else np.nan
-    values_or_none = lambda vals: None if np.any(np.isnan(np.array(vals, dtype=float))) else vals
-    get_3dFix = lambda: values_or_none([
-        to_float_or_nan(gps.latitude),
-        to_float_or_nan(gps.longitude),
-        to_float_or_nan(alt_km()),
-    ])
-    get_speed = lambda: values_or_none([to_float_or_nan(gps.speed_kmh)])
-    get_dop = lambda: values_or_none([
-        to_float_or_nan(gps.hdop),
-        to_float_or_nan(gps.pdop),
-        to_float_or_nan(gps.vdop),
-    ])
+    
+    def values_or_none(vals):
+        if np.any(np.isnan(np.array(vals, dtype=float))):
+            return None
+        return vals
+
+
+    def get_3dFix():
+        vals = [
+            to_float_or_nan(gps.latitude),
+            to_float_or_nan(gps.longitude),
+            to_float_or_nan(alt_km())
+        ]
+        r = values_or_none(vals)
+        if r is None:
+            return None
+        return np.array([r])
+
+    def get_speed():
+        vals = [
+            to_float_or_nan(gps.speed_kmh)
+        ]
+        r = values_or_none(vals)
+        if r is None:
+            return None
+        return np.array([r])
+    
+    def get_dop():
+        vals = [
+            to_float_or_nan(gps.hdop), 
+            to_float_or_nan(gps.pdop), 
+            to_float_or_nan(gps.vdop)
+        ]
+        r = values_or_none(vals)
+        if r is None:
+            return None
+        return np.array([r])
+
+
     retrieve_datas = {'3dFix': get_3dFix,
                       'speed': get_speed,
                       'dop': get_dop}
