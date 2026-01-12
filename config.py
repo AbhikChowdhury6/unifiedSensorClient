@@ -737,7 +737,7 @@ gps_capture_process_config = {
             "sensor_type": "dop",
             "units": "HDOP-PDOP-VDOP",
             "data_type": "float",
-            "shape": "1x4",
+            "shape": "1x3",
             "grace_period_samples": 0,
             #expected range
             #HDOP min is 0, max is 100

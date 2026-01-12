@@ -41,8 +41,8 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     gps = adafruit_gps.GPS(uart, debug=False)  # Use UART/pyserial
 
-    # Enable RMC + VTG + GGA so speed is populated and position is available
-    gps.send_command(b"PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
+    # Enable RMC + VTG + GGA + GSA (GSA provides PDOP/HDOP/VDOP)
+    gps.send_command(b"PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
     # Turn on just minimum info (RMC only, location):
     # gps.send_command(b'PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
     # Turn off everything:
@@ -108,6 +108,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         ]
         r = values_or_none(vals)
         if r is None:
+            l.trace("get_dop: r is None")
             return None
         return np.array([r])
 
