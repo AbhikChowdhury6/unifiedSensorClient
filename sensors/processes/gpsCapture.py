@@ -41,10 +41,8 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     gps = adafruit_gps.GPS(uart, debug=False)  # Use UART/pyserial
 
-    # Turn on the basic GGA and RMC info (what you typically want)
-    gps.send_command(b"PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
-    # Turn on the basic GGA and RMC info + VTG for speed in km/h
-    # gps.send_command(b"PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
+    # Enable RMC + VTG + GGA so speed is populated and position is available
+    gps.send_command(b"PMTK314,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
     # Turn on just minimum info (RMC only, location):
     # gps.send_command(b'PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
     # Turn off everything:
@@ -58,11 +56,23 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     
     is_ready = lambda: True
     # handle None values before a fix; use NaN so warmup doesn't crash
-    to_float_or_nan = lambda v: float(v) if v is not None else np.nan
+    def to_float_or_nan(v):
+        if v is None:
+            l.trace("to_float_or_nan: v is None: " + str(v))
+            return np.nan
+        return float(v)
 
-    #even though the documentation describes the ellipsoid height, and not the geoid height rip
-    alt_km = lambda: (float(getattr(gps, "height_geoid")) / 1000.0) if getattr(gps, "height_geoid", None) is not None else np.nan
-    
+
+    def ellipsoid_alt_km():
+        msl_alt = gps.altitude_m
+        if msl_alt is None:
+            return np.nan
+        geoid_alt = gps.height_geoid
+        if geoid_alt is None:
+            return np.nan
+        ellipsoid_alt = msl_alt + geoid_alt
+        return ellipsoid_alt / 1000.0
+
     def values_or_none(vals):
         if np.any(np.isnan(np.array(vals, dtype=float))):
             return None
@@ -73,7 +83,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         vals = [
             to_float_or_nan(gps.latitude),
             to_float_or_nan(gps.longitude),
-            to_float_or_nan(alt_km())
+            to_float_or_nan(ellipsoid_alt_km())
         ]
         r = values_or_none(vals)
         if r is None:
@@ -86,6 +96,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         ]
         r = values_or_none(vals)
         if r is None:
+            l.trace("get_speed: r is None")
             return None
         return np.array([r])
     
