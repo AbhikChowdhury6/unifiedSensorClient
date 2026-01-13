@@ -39,19 +39,15 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     timeout = float(config.get("timeout", 10))
     uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)
 
-    gps = adafruit_gps.GPS(uart, debug=False)  # Use UART/pyserial
+    def _init_gps(uart_obj):
+        g = adafruit_gps.GPS(uart_obj, debug=False)  # Use UART/pyserial
+        # Enable RMC + VTG + GGA + GSA (GSA provides PDOP/HDOP/VDOP)
+        g.send_command(b"PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
+        # Set update rate to 500ms
+        g.send_command(b'PMTK220,500')
+        return g
 
-    # Enable RMC + VTG + GGA + GSA (GSA provides PDOP/HDOP/VDOP)
-    gps.send_command(b"PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
-    # Turn on just minimum info (RMC only, location):
-    # gps.send_command(b'PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
-    # Turn off everything:
-    # gps.send_command(b'PMTK314,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0')
-    # Turn on everything (not all of it is parsed!)
-    # gps.send_command(b'PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0')
-
-
-    gps.send_command(b'PMTK220,500') #set update rate to 500ms
+    gps = _init_gps(uart)
 
     
     is_ready = lambda: True
@@ -134,6 +130,8 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     delay_micros = 1_000_000/config["hz"]
     time.sleep(1 - datetime.now().microsecond/1_000_000)
+    consecutive_parse_errors = 0
+    reset_threshold = int(config.get("parse_error_reset_threshold", 5))
     while True:
         # non-blocking control receive; ignore when no message
         try:
@@ -146,8 +144,39 @@ def gps_capture(log_queue: queue.Queue, config: dict):
                     break
         except zmq.Again:
             pass
-        
-        gps.update()
+        # Robust GPS update with checksum-error handling and resync
+        try:
+            gps.update()
+            consecutive_parse_errors = 0
+        except ValueError as e:
+            # Bad checksum or malformed sentence (e.g., '?D')
+            l.warning("gps parse error on NMEA sentence; resetting input buffer")
+            try:
+                uart.reset_input_buffer()
+            except Exception:
+                l.exception("gps failed to reset input buffer")
+            consecutive_parse_errors += 1
+            if consecutive_parse_errors >= reset_threshold:
+                l.warning("gps consecutive parse errors exceeded threshold; reopening serial and reinitializing GPS")
+                try:
+                    uart.close()
+                except Exception:
+                    pass
+                try:
+                    uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)
+                    gps = _init_gps(uart)
+                    consecutive_parse_errors = 0
+                except Exception:
+                    l.exception("gps failed to reinitialize after parse errors")
+            # Skip this cycle
+            micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
+            time.sleep(micros_to_delay/1_000_000)
+            continue
+        except Exception:
+            l.exception("gps unexpected exception during update")
+            micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
+            time.sleep(micros_to_delay/1_000_000)
+            continue
         if not gps.has_fix:
             #log gps waiting for fix
             l.debug("gps waiting for fix")
