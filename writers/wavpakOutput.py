@@ -35,17 +35,17 @@ class wavpak_output:
         self.log_name = output_base + "_wavpak-output"
         self.l = logging.getLogger(self.log_name)
         self.l.setLevel(debug_lvl)
-        self.l.info(self.log_name + " starting")
+        self.l.info(" starting")
 
-        self.l.debug(self.log_name + " debug lvl: " + str(debug_lvl))
-        self.l.debug(self.log_name + " input dtype: " + input_dtype_str)
-        self.l.debug(self.log_name + " wv dtype: " + wv_dtype_str)
-        self.l.debug(self.log_name + " float bits: " + str(float_bits))
-        self.l.debug(self.log_name + " bits: " + str(bits))
-        self.l.debug(self.log_name + " sign: " + sign)
-        self.l.debug(self.log_name + " endian: " + endian)
-        self.l.debug(self.log_name + " channels: " + str(channels))
-        self.l.debug(self.log_name + " output hz: " + str(output_hz))
+        self.l.debug(" debug lvl: " + str(debug_lvl))
+        self.l.debug(" input dtype: " + input_dtype_str)
+        self.l.debug(" wv dtype: " + wv_dtype_str)
+        self.l.debug(" float bits: " + str(float_bits))
+        self.l.debug(" bits: " + str(bits))
+        self.l.debug(" sign: " + sign)
+        self.l.debug(" endian: " + endian)
+        self.l.debug(" channels: " + str(channels))
+        self.l.debug(" output hz: " + str(output_hz))
         
         
         self.output_base = output_base
@@ -75,6 +75,18 @@ class wavpak_output:
             self.output_hz = max(1, int(output_hz))
             self.wv_dtype_str = wv_dtype_str
 
+
+        self.l.debug("self.variable_hz: " + str(self.variable_hz))
+        self.l.debug("self.output_hz: " + str(self.output_hz))
+        self.l.debug("self.bits: " + str(self.bits))
+        self.l.debug("self.sign: " + str(self.sign))
+        self.l.debug("self.endian: " + str(self.endian))
+        self.l.debug("self.channels: " + str(self.channels))
+        self.l.debug("self.wv_dtype_str: " + str(self.wv_dtype_str))
+        # self.l.debug("self.CHUNK_SECONDS: " + str(self.CHUNK_SECONDS))
+        # self.l.debug("self.NS_PER_S: " + str(self.NS_PER_S))
+        # self.l.debug("self.CHUNK_NS: " + str(self.CHUNK_NS))
+        # self.l.debug("self.SCALE: " + str(self.SCALE))
 
         self._casting_function, self._uncasting_function = \
             self._get_casting_function(input_dtype_str, self.wv_dtype_str, float_bits)

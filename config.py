@@ -228,7 +228,7 @@ i2c_controller_1_process_config = {
                         "output_base": f"i2c-1-0x77_bosch-bme680_air-pressure_kpa_int16-f7_wavpak-1_16hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
-                            "output_dtype_str": "int16",
+                            "wv_dtype_str": "int16",
                             "float_bits": 7,
                             "sign": "s",
                             "bits": 16,
@@ -278,7 +278,7 @@ i2c_controller_1_process_config = {
                         "output_base": f"i2c-1-0x77_bosch-bme680_rel-hum_percent_int16-f8_wavpak-1_0P25hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
-                            "output_dtype_str": "int16",
+                            "wv_dtype_str": "int16",
                             "float_bits": 8,
                             "sign": "s",
                             "bits": 16,
@@ -303,7 +303,7 @@ i2c_controller_1_process_config = {
                         "output_base": f"i2c-1-0x77_bosch-bme680_voc_LNohm_int16-f11_wavpak-1_1hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
-                            "output_dtype_str": "int16",
+                            "wv_dtype_str": "int16",
                             "float_bits": 11,
                             "sign": "s",
                             "bits": 16,
@@ -525,7 +525,7 @@ i2c_controller_0_process_config = {
                         "output_base": f"i2c-0-0x4b_bosch-bno085_accel_mDsE2_int16-f6_wavpak-3_32hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
-                            "output_dtype_str": "int16",
+                            "wv_dtype_str": "int16",
                             "float_bits": 6,
                             "channels": 3,
                             "sign": "s",
@@ -570,7 +570,7 @@ i2c_controller_0_process_config = {
                         "output_base": f"i2c-0-0x4b_bosch-bno085_magnet_ut_int16-f6_wavpak-3_8hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
-                            "output_dtype_str": "int16",
+                            "wv_dtype_str": "int16",
                             "float_bits": 6,
                             "channels": 3,
                             "sign": "s",
@@ -595,7 +595,7 @@ i2c_controller_0_process_config = {
                         "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_wavpak-4_16hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
-                            "output_dtype_str": "int16",
+                            "wv_dtype_str": "int16",
                             "float_bits": 10,
                             "channels": 4,
                             "sign": "s",
@@ -708,6 +708,8 @@ gps_capture_process_config = {
                 #alt-km min is -10, max is 10
                 "output_base": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_int32-f23_wavpak-3_variable",
                 "additional_output_config": {
+                    "input_dtype_str": "float32",
+                    "wv_dtype_str": "int32",
                     "channels": 3,
                     "float_bits": 23,
                     "bits": 32,
@@ -730,6 +732,8 @@ gps_capture_process_config = {
                 "output_hz": "variable",
                 "output_base": f"serial-0_cdtoptech-PA1616S_speed_kmDh_int32-f10-1_variable",
                 "additional_output_config": {
+                    "input_dtype_str": "float32",
+                    "wv_dtype_str": "int32",
                     "channels": 1,
                     "float_bits": 10,
                     "bits": 32,
@@ -754,6 +758,8 @@ gps_capture_process_config = {
                 "output_hz": "variable",
                 "output_base": f"serial-0_cdtoptech-PA1616S_dop_NA_int32-f10_wavpak-3_variable",
                 "additional_output_config": {
+                    "input_dtype_str": "float32",
+                    "wv_dtype_str": "int32",
                     "channels": 3,
                     "float_bits": 6,
                     "bits": 32,
