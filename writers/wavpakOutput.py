@@ -220,6 +220,9 @@ class wavpak_output:
         self.l.trace("chunk: " + str(chunk))
         self.l.trace("chunk_start_ts: " + str(chunk_start_ts))
         self.l.trace("chunk bytes: " + str(chunk_start_ts.tobytes().hex()))
+        # also show the exact 4 bytes that will be written for chunk (little-endian int32)
+        chunk_bytes_le = np.array([np.int32(chunk)], dtype=np.dtype('<i4')).tobytes().hex()
+        self.l.trace("chunk bytes (i32 written): " + str(chunk_bytes_le))
 
 
         offset_secs = int(dt.timestamp()) - chunk_start_ts
@@ -234,6 +237,9 @@ class wavpak_output:
         offset = offset + offset_from_ns
         self.l.trace("offset: " + str(offset))
         self.l.trace("offset bytes: " + str(offset.tobytes().hex()))
+        # also show the exact 4 bytes that will be written for offset (little-endian int32)
+        offset_bytes_le = np.array([np.int32(offset)], dtype=np.dtype('<i4')).tobytes().hex()
+        self.l.trace("offset bytes (i32 written): " + str(offset_bytes_le))
         
         reconstructed_ts = self.chunk_offset_to_int64_ns(chunk, offset)
         self.l.trace("ts: \t\t\t" + str(int(dt.timestamp() * 1_000_000_000)))
@@ -295,7 +301,7 @@ class wavpak_output:
             return timestamps, arr
         
         # variable-hz format: single row per logical sample with 3 channels:
-        # [chunk, data, offset], where
+        # [chunk, offset, data], where
         # - chunk: int32 number of 4-second chunks since epoch
         # - offset: int32 fixed-point fraction of chunk (units of 2^-29 seconds)
         # - data: int32 payload (scaled by float_bits if converting from floats)
