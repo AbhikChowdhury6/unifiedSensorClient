@@ -974,7 +974,7 @@ yolo_person_detector_process_config = {
 all_process_configs = {
     #"sqlite": [1, sqlite_writer_process_config],
 #    "i2c0": [1, i2c_controller_0_process_config],
-    "i2c1": [1, i2c_controller_1_process_config],
+#    "i2c1": [1, i2c_controller_1_process_config],
     "gps": [1, gps_capture_process_config],
     #"video": [1, video_controller_process_1_config],
     #"detector_timelapse": [1, detector_timelapse_writer_process_config],

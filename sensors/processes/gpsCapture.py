@@ -151,7 +151,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         if not gps.has_fix:
             #log gps waiting for fix
             l.debug("gps waiting for fix")
-            time.sleep(0.25)
+            #time.sleep(0.25)
             continue
         
         for sensor in sensors:
