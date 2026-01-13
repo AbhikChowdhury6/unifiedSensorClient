@@ -20,7 +20,7 @@ class aBME680:
                     },
                     sensors_config = [
                         {
-                            "sensor_type": "barometric-pressure",
+                            "sensor_type": "air-pressure",
                             "units": "kpa",
                             "data_type": "float",
                             "shape": "1x1",
@@ -28,7 +28,7 @@ class aBME680:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "relative-humidity",
+                            "sensor_type": "rel-hum",
                             "units": "percent",
                             "data_type": "float",
                             "shape": "1x1",
@@ -36,7 +36,7 @@ class aBME680:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "air-temperature",
+                            "sensor_type": "air-temp",
                             "units": "celsius",
                             "data_type": "float",
                             "shape": "1x1",
@@ -44,7 +44,7 @@ class aBME680:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "volatile-organic-compounds",
+                            "sensor_type": "voc",
                             "units": "LNohm",
                             "data_type": "float",
                             "shape": "1x1",
@@ -71,10 +71,10 @@ class aBME680:
         self.get_pressure_kpa = lambda: np.array([self.bme680.pressure / 10])
         self.get_voc_lnohm = lambda: np.array([np.log(self.bme680.gas)])
 
-        retrieve_datas = {'air-temperature': self.get_temp_c,
-                          'relative-humidity': self.get_relative_humidity,
-                          'barometric-pressure': self.get_pressure_kpa,
-                          'volatile-organic-compounds': self.get_voc_lnohm,}
+        retrieve_datas = {'air-temp': self.get_temp_c,
+                          'rel-hum': self.get_relative_humidity,
+                          'air-pressure': self.get_pressure_kpa,
+                          'voc': self.get_voc_lnohm,}
 
 
 

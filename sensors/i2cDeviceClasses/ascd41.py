@@ -29,7 +29,7 @@ class aSCD41:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "air-temperature",
+                            "sensor_type": "air-temp",
                             "units": "celsius",
                             "data_type": "float",
                             "shape": "1x1",
@@ -37,7 +37,7 @@ class aSCD41:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "relative-humidity",
+                            "sensor_type": "rel-hum",
                             "units": "percent",
                             "data_type": "float",
                             "shape": "1x1",
@@ -62,8 +62,8 @@ class aSCD41:
         self.get_relative_humidity = lambda: np.array([self.scd4x.relative_humidity])
         
         retrieve_datas = {'co2': self.get_co2,
-                            'air-temperature': self.get_air_temperature,
-                            'relative-humidity': self.get_relative_humidity}
+                            'air-temp': self.get_air_temperature,
+                            'rel-hum': self.get_relative_humidity}
 
 
         self.sensors = []

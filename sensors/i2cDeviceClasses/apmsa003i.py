@@ -44,7 +44,7 @@ class aPMSA003I:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "air-particulate-particle-count",
+                            "sensor_type": "air-particulate-count",
                             "units": "greaterthan0p3umD0P1l",
                             "data_type": "int",
                             "shape": "1x1",
@@ -82,12 +82,12 @@ class aPMSA003I:
         self.get_pm1 = lambda: np.array([get_aqdata_field("pm10 env")])
         self.get_pm2P5 = lambda: np.array([get_aqdata_field("pm25 env")])
         self.get_pm10 = lambda: np.array([get_aqdata_field("pm100 env")])
-        self.get_particle_count = lambda: np.array([get_aqdata_field("particles 03um")])
+        self.get_count = lambda: np.array([get_aqdata_field("particles 03um")])
         
         retrieve_datas = {'air-particulate-pm1': self.get_pm1,
                             'air-particulate-pm2P5': self.get_pm2P5,
                             'air-particulate-pm10': self.get_pm10,
-                            'air-particulate-particle-count': self.get_particle_count}
+                            'air-particulate-count': self.get_count}
 
         self.sensors = []
         for s in sensors_config:

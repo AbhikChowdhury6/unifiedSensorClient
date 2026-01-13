@@ -29,7 +29,7 @@ class aBNO085:
                     },
                     sensors_config = [
                         {
-                            "sensor_type": "acceleration",
+                            "sensor_type": "accel",
                             "units": "mDsE2",
                             "data_type": "float",
                             "shape": "1x3",
@@ -37,7 +37,7 @@ class aBNO085:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "gyroscope",
+                            "sensor_type": "gyro",
                             "units": "radDs",
                             "data_type": "float",
                             "shape": "1x3",
@@ -45,7 +45,7 @@ class aBNO085:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "magnetometer",
+                            "sensor_type": "magnet",
                             "units": "gauss",
                             "data_type": "float",
                             "shape": "1x3",
@@ -122,9 +122,9 @@ class aBNO085:
         self.get_magnet = lambda: np.array([_safe_read("magnetometer", lambda: self.bno085.magnetic)])
         self.get_game_quaternion = lambda: np.array([_safe_read("game-rotation", lambda: self.bno085.game_quaternion)])
 
-        retrieve_datas = {'acceleration': self.get_accel,
-                          'gyroscope': self.get_gyro,
-                          'magnetometer': self.get_magnet,
+        retrieve_datas = {'accel': self.get_accel,
+                          'gyro': self.get_gyro,
+                          'magnet': self.get_magnet,
                           'game-rotation': self.get_game_quaternion}
         
         #this is the same

@@ -19,7 +19,7 @@ class aBME280:
                     },
                     sensors_config = [
                         {
-                            "sensor_type": "air-temperature",
+                            "sensor_type": "air-temp",
                             "units": "celsius",
                             "data_type": "float",
                             "shape": "1x1",
@@ -27,7 +27,7 @@ class aBME280:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "relative-humidity",
+                            "sensor_type": "rel-hum",
                             "units": "percent",
                             "data_type": "float",
                             "shape": "1x1",
@@ -35,7 +35,7 @@ class aBME280:
                             "file_writer_config": {},
                         },
                         {
-                            "sensor_type": "barometric-pressure",
+                            "sensor_type": "air-pressure",
                             "units": "pascal",
                             "data_type": "float",
                             "shape": "1x1",
@@ -60,9 +60,9 @@ class aBME280:
         self.get_relative_humidity = lambda: np.array([self.bme280.relative_humidity])
         self.get_barometric_pressure = lambda: np.array([self.bme280.pressure * 100])
         
-        retrieve_datas = {'air-temperature': self.get_air_temperature,
-                            'relative-humidity': self.get_relative_humidity,
-                            'barometric-pressure': self.get_barometric_pressure}
+        retrieve_datas = {'air-temp': self.get_air_temperature,
+                            'rel-hum': self.get_relative_humidity,
+                            'air-pressure': self.get_barometric_pressure}
 
 
         self.sensors = []
