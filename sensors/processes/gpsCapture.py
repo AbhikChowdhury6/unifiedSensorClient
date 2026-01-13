@@ -34,7 +34,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     sys.stdout.flush()
 
     # use configured serial parameters
-    port = f"/dev/{config.get('bus_location', 'serial0')}"
+    port = f"/dev/{config.get('port', 'serial0')}"
     baudrate = int(config.get("baudrate", 9600))
     timeout = float(config.get("timeout", 10))
     uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)

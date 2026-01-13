@@ -687,6 +687,7 @@ gps_capture_process_config = {
     "hz": 1,
     "bus_location": "serial-0",
     "device_name": "cdtoptech-PA1616S",
+    "port": "serial0",
     "baudrate": 9600,
     "timeout": 10,
     "sensors": [
