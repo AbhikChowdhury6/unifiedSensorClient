@@ -219,7 +219,6 @@ class wavpak_output:
         chunk_start_ts = chunk * self.CHUNK_SECONDS
         self.l.trace("chunk: " + str(chunk))
         self.l.trace("chunk_start_ts: " + str(chunk_start_ts))
-        self.l.trace("chunk bytes: " + str(chunk_start_ts.tobytes().hex()))
         # also show the exact 4 bytes that will be written for chunk (little-endian int32)
         chunk_bytes_le = np.array([np.int32(chunk)], dtype=np.dtype('<i4')).tobytes().hex()
         self.l.trace("chunk bytes (i32 written): " + str(chunk_bytes_le))
@@ -236,7 +235,6 @@ class wavpak_output:
 
         offset = offset + offset_from_ns
         self.l.trace("offset: " + str(offset))
-        self.l.trace("offset bytes: " + str(offset.tobytes().hex()))
         # also show the exact 4 bytes that will be written for offset (little-endian int32)
         offset_bytes_le = np.array([np.int32(offset)], dtype=np.dtype('<i4')).tobytes().hex()
         self.l.trace("offset bytes (i32 written): " + str(offset_bytes_le))
@@ -313,11 +311,11 @@ class wavpak_output:
         timestamps = self.chunk_offset_to_int64_ns(chunks, offsets)
         self.l.trace("timestamps: " + str(timestamps[:100]))
 
-        data_raw = arr[:, 2]
-        self.l.trace("data_raw: " + str(data_raw[:100]))
+        data_raw = arr[:, 2:]
+        self.l.trace("data_raw: " + str(data_raw[:100, :]))
         # uncast data back to original input dtype if applicable
         data_out = self._uncasting_function(data_raw)
-        self.l.trace("data_out: " + str(data_out[:100]))
+        self.l.trace("data_out: " + str(data_out[:100, :]))
 
 
         #round to the nearest microsecond
