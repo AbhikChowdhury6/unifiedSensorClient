@@ -237,7 +237,7 @@ i2c_controller_1_process_config = {
                 },
                 {
                     "sensor_type": "air-temp",
-                    "units": "celsius",
+                    "units": "c",
                     #expected range
                     #min is -40, max is 85
                     "data_type": "float",
@@ -345,7 +345,7 @@ i2c_controller_1_process_config = {
         #         },
         #         {
         #             "sensor_type": "air-temp",
-        #             "units": "celsius",
+        #             "units": "c",
         #             "data_type": "float",
         #             #expected range
         #             #min is -40, max is 85
@@ -698,7 +698,7 @@ gps_capture_process_config = {
             "shape": "numpy-3",
             "hz": 1,
             "grace_period_samples": 0,
-            "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_variable",
+            "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_1hz",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
@@ -723,7 +723,7 @@ gps_capture_process_config = {
             "shape": "numpy-1",
             "hz": 1,
             "grace_period_samples": 0,
-            "topic": f"serial-0_cdtoptech-PA1616S_speed_kmDh_float_numpy-1_variable",
+            "topic": f"serial-0_cdtoptech-PA1616S_speed_kmDh_float_numpy-1_1hz",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
@@ -747,7 +747,7 @@ gps_capture_process_config = {
             #PDOP min is 0, max is 100
             #VDOP min is 0, max is 100
             "hz": 1,
-            "topic": f"serial-0_cdtoptech-PA1616S_dop_NA_float_numpy-3_variable",
+            "topic": f"serial-0_cdtoptech-PA1616S_dop_NA_float_numpy-3_1hz",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
