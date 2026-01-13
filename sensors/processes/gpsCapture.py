@@ -113,7 +113,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         return np.array([r])
 
 
-    retrieve_datas = {'3dFix': get_3dFix,
+    retrieve_datas = {'3d-fix': get_3dFix,
                       'speed': get_speed,
                       'dop': get_dop}
     
