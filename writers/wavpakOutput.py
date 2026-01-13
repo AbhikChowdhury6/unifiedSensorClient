@@ -411,9 +411,12 @@ class wavpak_output:
             self.l.trace("casted data: " + str(data_i32))
             self.l.trace("casted data bytes: " + str(data_i32.tobytes().hex()))
 
-            # build one logical sample row as [chunk, offset, data]
-            data_scalar = np.int32(np.asarray(data_i32).ravel()[0])
-            payload_i32 = np.array([chunk, offset, data_scalar], dtype=np.int32)
+            # build payload row(s) as [chunk, offset, data_channels...]
+            payload_i32 = np.zeros((self.channels), dtype=np.int32)
+            payload_i32[0] = np.int32(chunk)
+            payload_i32[1] = np.int32(offset)
+            payload_i32[2:] = data_i32.astype(np.int32, copy=False)
+
             # ensure little-endian int32 and contiguous
             payload_le = payload_i32.astype(np.dtype('<i4'), copy=False)
             buf = np.ascontiguousarray(payload_le).tobytes()
