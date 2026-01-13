@@ -699,6 +699,7 @@ gps_capture_process_config = {
             "hz": 1,
             "grace_period_samples": 0,
             "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_1hz",
+            "debug_lvl": 5,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",

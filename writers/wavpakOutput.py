@@ -244,14 +244,14 @@ class wavpak_output:
         wvunpack_cmd = ["wvunpack", "--raw", fn, "-o", "-"]
         result = subprocess.run(wvunpack_cmd, capture_output=True, check=True)
         raw_data = result.stdout
-        #self.l.debug(self.log_name + " raw data: " + str(raw_data))
+        self.l.debug(" raw data: " + str(raw_data[:100]))
 
-        #self.l.debug(self.log_name + " wv dtype: " + self.wv_dtype_str)
+        self.l.debug(" wv dtype: " + self.wv_dtype_str)
         # ensure little-endian interpretation of PCM bytestream
         dtype_le = np.dtype(self.wv_dtype_str).newbyteorder('<')
         self.l.debug("channels: " + str(self.channels))
         arr = np.frombuffer(raw_data, dtype=dtype_le).reshape(-1, self.channels)
-        self.l.trace(self.log_name + " wv unpacked data: " + str(arr))
+        self.l.trace(" wv unpacked data: " + str(arr[:100]))
         
         #get a int64 numpy array of the timestamps based on the start_dt and the hz
         if not self.variable_hz:
@@ -282,17 +282,17 @@ class wavpak_output:
         # - data: int32 payload (scaled by float_bits if converting from floats)
 
         chunks = arr[:, 0].astype(np.int64)
-        self.l.trace("chunks: " + str(chunks))
+        self.l.trace("chunks: " + str(chunks[:100]))
         offsets = arr[:, 1].astype(np.int64)
-        self.l.trace("offsets: " + str(offsets))
+        self.l.trace("offsets: " + str(offsets[:100]))
         timestamps = self.chunk_offset_to_int64_ns(chunks, offsets)
-        self.l.trace("timestamps: " + str(timestamps))
+        self.l.trace("timestamps: " + str(timestamps[:100]))
 
         data_raw = arr[:, 2]
-        self.l.trace("data_raw: " + str(data_raw))
+        self.l.trace("data_raw: " + str(data_raw[:100]))
         # uncast data back to original input dtype if applicable
         data_out = self._uncasting_function(data_raw)
-        self.l.trace("data_out: " + str(data_out))
+        self.l.trace("data_out: " + str(data_out[:100]))
 
 
         #round to the nearest microsecond

@@ -1,3 +1,4 @@
 .idea/
 VMs/upload-service/secrets.env
 *.pyc
+validation/exampleGPSData/*
