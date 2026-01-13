@@ -215,7 +215,7 @@ i2c_controller_1_process_config = {
                     #expected range
                     #min is 30, max is 130
                     "data_type": "float",
-                    "shape": "1x1",
+                    "shape": "numpy-1",
                     "hz": 16,
                     "grace_period_samples": 4,
                     "topic": f"i2c-1-0x77_bosch-bme680_air-pressure_kpa_float_numpy-1_16hz",
@@ -241,7 +241,7 @@ i2c_controller_1_process_config = {
                     #expected range
                     #min is -40, max is 85
                     "data_type": "float",
-                    "shape": "1x1",
+                    "shape": "numpy-1",
                     "hz": 1,
                     "grace_period_samples": 1,
                     "topic": f"i2c-1-0x77_bosch-bme680_air-temp_c_float_numpy-1_1hz",
@@ -266,7 +266,7 @@ i2c_controller_1_process_config = {
                     "data_type": "float",
                     #expected range
                     #min is 0, max is 100
-                    "shape": "1x1",
+                    "shape": "numpy-1",
                     "hz": 0.25,
                     "grace_period_samples": 1,
                     "topic": f"i2c-1-0x77_bosch-bme680_rel-hum_percent_float_numpy-1_0P25hz",
@@ -291,7 +291,7 @@ i2c_controller_1_process_config = {
                     "data_type": "float",
                     #expected range
                     #min is -3, max is 13
-                    "shape": "1x1",
+                    "shape": "numpy-1",
                     "hz": 1,
                     "grace_period_samples": 1,
                     "topic": f"i2c-1-0x77_bosch-bme680_voc_LNohm_float_numpy-1_1hz",
@@ -327,7 +327,7 @@ i2c_controller_1_process_config = {
         #             #expected range
         #             #min is 400, max is 10000
         #             "data_type": "int",
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": .2,
         #             "grace_period_samples": 6,
         #             "topic": f"i2c-1-0x62_scd41_co2_ppm_int_numpy-1_0P2hz",
@@ -349,7 +349,7 @@ i2c_controller_1_process_config = {
         #             "data_type": "float",
         #             #expected range
         #             #min is -40, max is 85
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": .2,
         #             "grace_period_samples": 6,
         #             "topic": f"i2c-1-0x62_scd41_air-temp_c_float_numpy-1_0P2hz",
@@ -371,7 +371,7 @@ i2c_controller_1_process_config = {
         #             "data_type": "float",
         #             #expected range
         #             #min is 0, max is 100
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": .2,
         #             "grace_period_samples": 6,
         #             "topic": f"i2c-1-0x62_scd41_rel-hum_percent_float_numpy-1_0P2hz",
@@ -404,7 +404,7 @@ i2c_controller_1_process_config = {
         #             #expected range
         #             #min is 0, max is 10000
         #             "data_type": "int",
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": 1,
         #             "grace_period_samples": 1,
         #             "file_writer_config": {
@@ -424,7 +424,7 @@ i2c_controller_1_process_config = {
         #             #expected range
         #             #min is 0, max is 10000
         #             "data_type": "int",
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": 1,
         #             "grace_period_samples": 1,
         #             "file_writer_config": {
@@ -444,7 +444,7 @@ i2c_controller_1_process_config = {
         #             #expected range
         #             #min is 0, max is 10000
         #             "data_type": "int",
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": 1,
         #             "grace_period_samples": 1,
         #             "file_writer_config": {
@@ -464,7 +464,7 @@ i2c_controller_1_process_config = {
         #             #expected range
         #             #min is 0, max is 100000
         #             "data_type": "int",
-        #             "shape": "1x1",
+        #             "shape": "numpy-1",
         #             "hz": 1,
         #             "grace_period_samples": 1,
         #             "file_writer_config": {
@@ -513,7 +513,7 @@ i2c_controller_0_process_config = {
                     "sensor_type": "accel",
                     "units": "mDsE2",
                     "data_type": "float",
-                    "shape": "1x3",
+                    "shape": "numpy-3",
                     "hz": 32,
                     "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_accel_mDsE2_float_numpy-3_32hz",
@@ -537,7 +537,7 @@ i2c_controller_0_process_config = {
                     "sensor_type": "gyro",
                     "units": "radDs",
                     "data_type": "float",
-                    "shape": "1x3",
+                    "shape": "numpy-3",
                     "hz": 32,
                     "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_gyro_radDs_float_numpy-3_32hz",
@@ -558,7 +558,7 @@ i2c_controller_0_process_config = {
                     "sensor_type": "magnet",
                     "units": "ut",
                     "data_type": "float",
-                    "shape": "1x3",
+                    "shape": "numpy-3",
                     "hz": 8,
                     "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_magnet_ut_float_numpy-3_8hz",
@@ -582,7 +582,7 @@ i2c_controller_0_process_config = {
                     "sensor_type": "game-rotation",
                     "units": "quaternion",
                     "data_type": "float",
-                    "shape": "1x4",
+                    "shape": "numpy-4",
                     "hz": 16,
                     "grace_period_samples": 1,
                     "topic": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_float_numpy-4_16hz",
@@ -695,7 +695,7 @@ gps_capture_process_config = {
             "sensor_type": "3d-fix",
             "units": "wgs84",
             "data_type": "float",
-            "shape": "1x3",
+            "shape": "numpy-3",
             "hz": 1,
             "grace_period_samples": 0,
             "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_variable",
@@ -720,7 +720,7 @@ gps_capture_process_config = {
             #expected range
             #speed min is 0km/h, max is 1000km/h
             "data_type": "float",
-            "shape": "1x1",
+            "shape": "numpy-1",
             "hz": 1,
             "grace_period_samples": 0,
             "topic": f"serial-0_cdtoptech-PA1616S_speed_kmDh_float_numpy-1_variable",
@@ -740,7 +740,7 @@ gps_capture_process_config = {
             "sensor_type": "dop",
             "units": "NA",
             "data_type": "float",
-            "shape": "1x3",
+            "shape": "numpy-3",
             "grace_period_samples": 0,
             #expected range
             #HDOP min is 0, max is 100
