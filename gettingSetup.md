@@ -38,7 +38,7 @@ dtparam=i2c_arm_baudrate=400000
 
 
 
-wifi reliability
+wifi reliability, dang it seems to really help acutally
 
 # Global NM tweaks
 sudo tee /etc/NetworkManager/conf.d/wifi-solid.conf >/dev/null <<'EOF'
@@ -78,5 +78,67 @@ sudo systemctl enable --now wifi-nosleep.service
 
 sudo nano /usr/local/sbin/wifi-heal.sh
 
+#!/usr/bin/env bash
+set -euo pipefail
+
+IF=wlan0
+CONN="HomeWiFi"               # your saved connection profile name
+GATEWAY=$(ip route | awk '/^default/ {print $3; exit}')
+
+# 1) If radio is blocked, unblock
+rfkill unblock wifi || true
+
+# 2) Quick health checks
+LINK_STATE=$(nmcli -t -f DEVICE,STATE dev | awk -F: -v i="$IF" '$1==i{print $2}')
+HAS_ROUTE=$(ip route | grep -q '^default' && echo 1 || echo 0)
+REACH_GW=1
+if [[ -n "${GATEWAY:-}" ]]; then
+  ping -c1 -W1 "$GATEWAY" >/dev/null 2>&1 || REACH_GW=0
+else
+  REACH_GW=0
+fi
+
+# 3) If disconnected or no route or gateway unreachable → try to heal
+if [[ "$LINK_STATE" != "connected" || "$HAS_ROUTE" -eq 0 || "$REACH_GW" -eq 0 ]]; then
+  nmcli r wifi on || true
+  nmcli dev set "$IF" managed yes || true
+  nmcli dev wifi rescan || true
+  nmcli con up id "$CONN" || {
+    # last resort: bounce the Wi-Fi radio and NM
+    nmcli r wifi off; sleep 2; nmcli r wifi on
+    nmcli con up id "$CONN" || systemctl restart NetworkManager
+  }
+fi
 
 
+#######
+sudo install -m 755 /usr/local/sbin/wifi-heal.sh /usr/local/sbin/wifi-heal.sh
+
+
+
+sudo tee /etc/systemd/system/wifi-heal.service >/dev/null <<'EOF'
+[Unit]
+Description=WiFi self-heal if disconnected
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/wifi-heal.sh
+EOF
+
+sudo tee /etc/systemd/system/wifi-heal.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run WiFi healer every 20 seconds
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=20s
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now wifi-heal.timer

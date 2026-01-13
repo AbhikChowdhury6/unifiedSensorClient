@@ -43,8 +43,8 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         g = adafruit_gps.GPS(uart_obj, debug=False)  # Use UART/pyserial
         # Enable RMC + VTG + GGA + GSA (GSA provides PDOP/HDOP/VDOP)
         g.send_command(b"PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
-        # Set update rate to 500ms
-        g.send_command(b'PMTK220,500')
+        g.send_command(b"PMTK220,1000")  # 1 Hz
+        g.send_command(b"PMTK386,0")     # disable static navigation
         return g
 
     gps = _init_gps(uart)
