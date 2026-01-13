@@ -56,7 +56,9 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         if v is None:
             l.trace("to_float_or_nan: v is None: " + str(v))
             return np.nan
-        return np.float32(v)
+        l.trace("float32: " + str(np.float32(v)))
+        l.trace("float64: " + str(np.float64(v)))
+        return np.float64(v)
 
 
     def ellipsoid_alt_km():
@@ -67,7 +69,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         if geoid_alt is None:
             return np.nan
         ellipsoid_alt = msl_alt + geoid_alt
-        return np.float32(ellipsoid_alt / 1000.0)
+        return np.float64(ellipsoid_alt / 1000.0)
 
     def values_or_none(vals):
         if np.any(np.isnan(np.array(vals, dtype=float))):

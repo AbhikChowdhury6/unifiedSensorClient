@@ -708,7 +708,7 @@ gps_capture_process_config = {
                 #alt-km min is -10, max is 10
                 "output_base": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_int32-f23_wavpak-3_variable",
                 "additional_output_config": {
-                    "input_dtype_str": "float32",
+                    "input_dtype_str": "float64",
                     "wv_dtype_str": "int32",
                     "channels": 3,
                     "float_bits": 23,
@@ -732,7 +732,7 @@ gps_capture_process_config = {
                 "output_hz": "variable",
                 "output_base": f"serial-0_cdtoptech-PA1616S_speed_kmDh_int32-f10-1_variable",
                 "additional_output_config": {
-                    "input_dtype_str": "float32",
+                    "input_dtype_str": "float64",
                     "wv_dtype_str": "int32",
                     "channels": 1,
                     "float_bits": 10,
@@ -758,7 +758,7 @@ gps_capture_process_config = {
                 "output_hz": "variable",
                 "output_base": f"serial-0_cdtoptech-PA1616S_dop_NA_int32-f10_wavpak-3_variable",
                 "additional_output_config": {
-                    "input_dtype_str": "float32",
+                    "input_dtype_str": "float64",
                     "wv_dtype_str": "int32",
                     "channels": 3,
                     "float_bits": 6,
