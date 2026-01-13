@@ -210,7 +210,7 @@ i2c_controller_1_process_config = {
             "debug_lvl": 20,
             "sensors_config": [
                 {
-                    "sensor_type": "barometric-pressure",
+                    "sensor_type": "air-pressure",
                     "units": "kpa",
                     #expected range
                     #min is 30, max is 130
@@ -218,14 +218,14 @@ i2c_controller_1_process_config = {
                     "shape": "1x1",
                     "hz": 16,
                     "grace_period_samples": 4,
-                    "topic": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_float_1x1_16hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_air-pressure_kpa_float_numpy-1_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         #the change from topic is drop the data shape time dimension
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-1-0x77_bosch-bme680_barometric-pressure_kpa_int16-f7_NA-1_16hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_air-pressure_kpa_int16-f7_wavpak-1_16hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -236,7 +236,7 @@ i2c_controller_1_process_config = {
                     },
                 },
                 {
-                    "sensor_type": "air-temperature",
+                    "sensor_type": "air-temp",
                     "units": "celsius",
                     #expected range
                     #min is -40, max is 85
@@ -244,13 +244,13 @@ i2c_controller_1_process_config = {
                     "shape": "1x1",
                     "hz": 1,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-1-0x77_bosch-bme680_air-temperature_celsius_float_1x1_1hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_air-temp_c_float_numpy-1_1hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x77_bosch-bme680_air-temperature_celsius_int16-f8_NA-1_1hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_air-temp_c_int16-f8_wavpak-1_1hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -261,7 +261,7 @@ i2c_controller_1_process_config = {
                     },
                 },
                 {
-                    "sensor_type": "relative-humidity",
+                    "sensor_type": "rel-hum",
                     "units": "percent",
                     "data_type": "float",
                     #expected range
@@ -269,13 +269,13 @@ i2c_controller_1_process_config = {
                     "shape": "1x1",
                     "hz": 0.25,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_float_1x1_0P25hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_rel-hum_percent_float_numpy-1_0P25hz",
                     "debug_lvl": 10,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": .25,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x77_bosch-bme680_relative-humidity_percent_int16-f8_NA-1_0P25hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_rel-hum_percent_int16-f8_wavpak-1_0P25hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -286,7 +286,7 @@ i2c_controller_1_process_config = {
                     },
                 },
                 {
-                    "sensor_type": "volatile-organic-compounds",
+                    "sensor_type": "voc",
                     "units": "LNohm",
                     "data_type": "float",
                     #expected range
@@ -294,13 +294,13 @@ i2c_controller_1_process_config = {
                     "shape": "1x1",
                     "hz": 1,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_LNohm_float_1x1_1hz",
+                    "topic": f"i2c-1-0x77_bosch-bme680_voc_LNohm_float_numpy-1_1hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 1,
                         "file_size_check_interval_s_range": (300, 600),
-                        "output_base": f"i2c-1-0x77_bosch-bme680_volatile-organic-compounds_LNohm_int16-f11_NA-1_1hz",
+                        "output_base": f"i2c-1-0x77_bosch-bme680_voc_LNohm_int16-f11_wavpak-1_1hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -330,13 +330,13 @@ i2c_controller_1_process_config = {
         #             "shape": "1x1",
         #             "hz": .2,
         #             "grace_period_samples": 6,
-        #             "topic": f"i2c-1-0x62_scd41_co2_ppm_int_1x1_0P2hz",
+        #             "topic": f"i2c-1-0x62_scd41_co2_ppm_int_numpy-1_0P2hz",
         #             "debug_lvl": 5,
         #             "file_writer_config": {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x62_scd41_co2_ppm_int16-f0_NA-1_0P2hz",
+        #                 "output_base": f"i2c-1-0x62_scd41_co2_ppm_int16-f0_wavpak-1_0P2hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -344,7 +344,7 @@ i2c_controller_1_process_config = {
         #             },
         #         },
         #         {
-        #             "sensor_type": "air-temperature",
+        #             "sensor_type": "air-temp",
         #             "units": "celsius",
         #             "data_type": "float",
         #             #expected range
@@ -352,13 +352,13 @@ i2c_controller_1_process_config = {
         #             "shape": "1x1",
         #             "hz": .2,
         #             "grace_period_samples": 6,
-        #             "topic": f"i2c-1-0x62_scd41_air-temperature_celsius_float_1x1_0P2hz",
+        #             "topic": f"i2c-1-0x62_scd41_air-temp_c_float_numpy-1_0P2hz",
         #             "debug_lvl": 5,
         #             "file_writer_config": {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x62_scd41_air-temperature_celsius_int16-f8_NA-1_0P2hz",
+        #                 "output_base": f"i2c-1-0x62_scd41_air-temp_c_int16-f8_wavpak-1_0P2hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -366,7 +366,7 @@ i2c_controller_1_process_config = {
         #             },
         #         },
         #         {
-        #             "sensor_type": "relative-humidity",
+        #             "sensor_type": "rel-hum",
         #             "units": "percent",
         #             "data_type": "float",
         #             #expected range
@@ -374,13 +374,13 @@ i2c_controller_1_process_config = {
         #             "shape": "1x1",
         #             "hz": .2,
         #             "grace_period_samples": 6,
-        #             "topic": f"i2c-1-0x62_scd41_relative-humidity_percent_float_1x1_0P2hz",
+        #             "topic": f"i2c-1-0x62_scd41_rel-hum_percent_float_numpy-1_0P2hz",
         #             "debug_lvl": 20,
         #             "file_writer_config": {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x62_scd41_relative-humidity_percent_int16-f8_NA-1_0P2hz",
+        #                 "output_base": f"i2c-1-0x62_scd41_rel-hum_percent_int16-f8_wavpak-1_0P2hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -411,7 +411,7 @@ i2c_controller_1_process_config = {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm1-ugDmE3_int16-f0_NA-1_1hz",
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm1_ugDmE3_int16-f0_wavpak-1_1hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -431,7 +431,7 @@ i2c_controller_1_process_config = {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm2P5_ugDmE3_int16-f0_NA-1_1hz",
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm2P5_ugDmE3_int16-f0_wavpak-1_1hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -451,7 +451,7 @@ i2c_controller_1_process_config = {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm10_ugDmE3_int16-f0_NA-1_1hz",
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-pm10_ugDmE3_int16-f0_wavpak-1_1hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -459,7 +459,7 @@ i2c_controller_1_process_config = {
         #             },
         #         },
         #         {
-        #             "sensor_type": "air-particulate-particle-count",
+        #             "sensor_type": "air-particulate-count",
         #             "units": "GT0P3umD0P1l",
         #             #expected range
         #             #min is 0, max is 100000
@@ -471,7 +471,7 @@ i2c_controller_1_process_config = {
         #                 "output_module": "wavpakOutput",
         #                 "output_hz": 1,
         #                 "file_size_check_interval_s_range": (300, 600),
-        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-particle-count_GT0P3umD0P1l_int16-f0_NA-1_1hz",
+        #                 "output_base": f"i2c-1-0x12_pmsa003i_air-particulate-count_GT0P3umD0P1l_int16-f0_wavpak-1_1hz",
         #                 "additional_output_config": {
         #                     "sign": "s",
         #                     "bits": 16,
@@ -510,19 +510,19 @@ i2c_controller_0_process_config = {
             "debug_lvl": 20,
             "sensors_config": [
                 {
-                    "sensor_type": "acceleration",
+                    "sensor_type": "accel",
                     "units": "mDsE2",
                     "data_type": "float",
                     "shape": "1x3",
                     "hz": 32,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_float_1x3_32hz",
+                    "topic": f"i2c-0-0x4b_bosch-bno085_accel_mDsE2_float_numpy-3_32hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 32,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_acceleration_mDsE2_int16-f6_XYZ-3_32hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_accel_mDsE2_int16-f6_wavpak-3_32hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -534,19 +534,19 @@ i2c_controller_0_process_config = {
                     },
                 },
                 {
-                    "sensor_type": "gyroscope",
+                    "sensor_type": "gyro",
                     "units": "radDs",
                     "data_type": "float",
                     "shape": "1x3",
                     "hz": 32,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_float_1x3_32hz",
+                    "topic": f"i2c-0-0x4b_bosch-bno085_gyro_radDs_float_numpy-3_32hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 32,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_gyroscope_radDs_int16-f6_XxYxZ-3_32hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_gyro_radDs_int16-f6_wavpak-3_32hz",
                         "additional_output_config": {
                             "channels": 3,
                             "sign": "s",
@@ -555,19 +555,19 @@ i2c_controller_0_process_config = {
                     },
                 },
                 {
-                    "sensor_type": "magnetometer",
+                    "sensor_type": "magnet",
                     "units": "ut",
                     "data_type": "float",
                     "shape": "1x3",
                     "hz": 8,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-0-0x4b_bosch-bno085_magnetometer_ut_float_1x3_8hz",
+                    "topic": f"i2c-0-0x4b_bosch-bno085_magnet_ut_float_numpy-3_8hz",
                     "debug_lvl": 5,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 8,
                         "file_size_check_interval_s_range": (30, 60),
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnetometer_ut_int16-f6_XxYxZ-3_8hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_magnet_ut_int16-f6_wavpak-3_8hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -585,14 +585,14 @@ i2c_controller_0_process_config = {
                     "shape": "1x4",
                     "hz": 16,
                     "grace_period_samples": 1,
-                    "topic": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_float_1x4_16hz",
+                    "topic": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_float_numpy-4_16hz",
                     "debug_lvl": 20,
                     "file_writer_config": {
                         "output_module": "wavpakOutput",
                         "output_hz": 16,
                         "file_size_check_interval_s_range": (30, 60),
                         #could be f14, but we don't need that much precision
-                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_WxXxYxZ-4_16hz",
+                        "output_base": f"i2c-0-0x4b_bosch-bno085_game-rotation_quaternion_int16-f10_wavpak-4_16hz",
                         "additional_output_config": {
                             "input_dtype_str": "float32",
                             "output_dtype_str": "int16",
@@ -683,27 +683,28 @@ gps_capture_process_config = {
     "func_name": "gps_capture",
     "short_name": "gps",
     "time_to_shutdown": 1,
-    "debug_lvl": 5,
+    "debug_lvl": 10,
     "hz": 1,
-    "bus_location": "serial0",
-    "device_name": "cdtop-tech_PA1616S",
+    "bus_location": "serial-0",
+    "device_name": "cdtoptech-PA1616S",
     "baudrate": 9600,
     "timeout": 10,
     "sensors": [
         {
-            "sensor_type": "3dFix",
+            "sensor_type": "3d-fix",
             "units": "wgs84",
             "data_type": "float",
             "shape": "1x3",
             "hz": 1,
             "grace_period_samples": 0,
+            "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_variable",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
                 #lat min is -90, max is 90
                 #lon min is -180, max is 180
                 #alt-km min is -10, max is 10
-                "output_base": f"serial0_cdtop-tech_PA1616S_gps3dFix_wgs84_int32-f23_latxlonxalt-km-3_variable",
+                "output_base": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_int32-f23_wavpak-3_variable",
                 "additional_output_config": {
                     "channels": 3,
                     "float_bits": 23,
@@ -721,10 +722,11 @@ gps_capture_process_config = {
             "shape": "1x1",
             "hz": 1,
             "grace_period_samples": 0,
+            "topic": f"serial-0_cdtoptech-PA1616S_speed_kmDh_float_numpy-1_variable",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsSpeed_kmDh_int32-f10_NA-1_variable",
+                "output_base": f"serial-0_cdtoptech-PA1616S_speed_kmDh_int32-f10-1_variable",
                 "additional_output_config": {
                     "channels": 1,
                     "float_bits": 10,
@@ -735,7 +737,7 @@ gps_capture_process_config = {
         },
         {
             "sensor_type": "dop",
-            "units": "HDOP-PDOP-VDOP",
+            "units": "NA",
             "data_type": "float",
             "shape": "1x3",
             "grace_period_samples": 0,
@@ -744,10 +746,11 @@ gps_capture_process_config = {
             #PDOP min is 0, max is 100
             #VDOP min is 0, max is 100
             "hz": 1,
+            "topic": f"serial-0_cdtoptech-PA1616S_dop_NA_float_numpy-3_variable",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                "output_base": f"ttyUSB0_cdtop-tech_PA1616S_gpsDOP_H-P-V_int32-f10_hxpxv-3_variable",
+                "output_base": f"serial-0_cdtoptech-PA1616S_dop_NA_int32-f10_wavpak-3_variable",
                 "additional_output_config": {
                     "channels": 3,
                     "float_bits": 6,
