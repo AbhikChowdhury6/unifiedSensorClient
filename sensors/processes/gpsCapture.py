@@ -152,10 +152,10 @@ def gps_capture(log_queue: queue.Queue, config: dict):
             #log gps waiting for fix
             l.debug("gps waiting for fix")
             #time.sleep(0.25)
-            continue
         
-        for sensor in sensors:
-            sensor.read_data()
+        else:
+            for sensor in sensors:
+                sensor.read_data()
         
         micros_to_delay = delay_micros - (datetime.now().microsecond % delay_micros)
         time.sleep(micros_to_delay/1_000_000)
