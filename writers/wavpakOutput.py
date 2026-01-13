@@ -217,8 +217,13 @@ class wavpak_output:
         #dt = dt.round("us")
         chunk = np.int32(dt.timestamp() // self.CHUNK_SECONDS)
         chunk_start_ts = chunk * self.CHUNK_SECONDS
+        self.l.trace("chunk: " + str(chunk))
+        self.l.trace("chunk_start_ts: " + str(chunk_start_ts))
+        self.l.trace("chunk bytes: " + str(chunk_start_ts.tobytes().hex()))
+
 
         offset_secs = int(dt.timestamp()) - chunk_start_ts
+        self.l.trace("offset_secs: " + str(offset_secs))
         offset = np.int32(offset_secs * self.SCALE)
         dt_ns = np.int64(dt.microsecond * 1_000)
         self.l.trace("dt_ns: \t\t" + str(dt_ns))
@@ -227,6 +232,8 @@ class wavpak_output:
         self.l.trace("offset_from_ns: \t" + str(offset_from_ns))
 
         offset = offset + offset_from_ns
+        self.l.trace("offset: " + str(offset))
+        self.l.trace("offset bytes: " + str(offset.tobytes().hex()))
         
         reconstructed_ts = self.chunk_offset_to_int64_ns(chunk, offset)
         self.l.trace("ts: \t\t\t" + str(int(dt.timestamp() * 1_000_000_000)))
@@ -402,6 +409,7 @@ class wavpak_output:
             self.l.trace("input data: " + str(data))
             data_i32 = self._casting_function(data).astype(np.int32, copy=False)
             self.l.trace("casted data: " + str(data_i32))
+            self.l.trace("casted data bytes: " + str(data_i32.tobytes().hex()))
 
             # build one logical sample row as [chunk, offset, data]
             data_scalar = np.int32(np.asarray(data_i32).ravel()[0])
@@ -416,7 +424,8 @@ class wavpak_output:
         self.l.trace("input data: " + str(data))
         data = self._casting_function(data)
         self.l.trace("casted data: " + str(data))
-
+        self.l.trace("casted data bytes: " + str(data.tobytes().hex()))
+        
         #order="C" is for row major order, bytes come out row by row
         self.l.trace(self.log_name + " writing 0x" + str(data.tobytes(order="C").hex()))
         self.proc.stdin.write(data.tobytes(order="C"))
