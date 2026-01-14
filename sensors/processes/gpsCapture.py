@@ -40,12 +40,44 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)
 
     def _init_gps(uart_obj):
-        g = adafruit_gps.GPS(uart_obj, debug=False)  # Use UART/pyserial
-        # Enable RMC + VTG + GGA + GSA (GSA provides PDOP/HDOP/VDOP)
-        g.send_command(b"PMTK314,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
-        g.send_command(b"PMTK220,1000")  # 1 Hz
-        g.send_command(b"PMTK386,0")     # disable static navigation
-        return g
+        gps = adafruit_gps.GPS(uart_obj, debug=False)  # Use UART/pyserial
+        gps.send_command(b"PMTK386,0")          # no static nav
+        gps.send_command(b"PMTK313,1")          # SBAS on
+        gps.send_command(b"PMTK301,2")          # WAAS
+        gps.send_command(b"PMTK319,1")          # integrity mode (optional)
+        #PMTK314 types of messages: GGL,RMC,VTG,GGA,GSA,GSV,...,ZDA,PMTKCHN
+        #the number is every how many number of fixes to send the message
+        gps.send_command(b"PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")  # RMC
+        #https://receiverhelp.trimble.com/alloy-gnss/en-us/NMEA-0183messages_MessageOverview.html
+        
+        #from RMC
+        #UTC time (hhmmss.ss), status: A = valid, V = void
+        #latitude (ddmm.mmmmm), N/S
+        #longitude (dddmm.mmmm), E/W
+        #speed over ground (knots), course over ground (degrees)
+        #date (ddmmyy),
+        #magnetic variation (degrees), E/W, mode - often skipped
+        
+        #from GGA
+        #UTC time (hhmmss.ss), status: A = valid, V = void
+        #latitude (ddmm.mmmmm), N/S
+        #longitude (dddmm.mmmm), E/W
+        #fix type: 0 = invalid, 1 = GPS, 2 = DGPS, 3 = PPS, 4 = RTK, 5 = RTK Float, 6 = EST, 7 = MAN, 8 = SIM
+        #satellites used (00-12), HDOP,
+        #MSL altitude, altiude units (M = meters, F = feet), geoid height, geoid height units,
+        #Age of differential GPS data (seconds), Differential station ID (0000-1023) - often skipped
+        #check sum
+
+        #reminder ellipsoid altitude = msl altitude + geoid height
+
+        #from VTG
+        #course over ground (degrees), True track indicator (T), Magnetic track indicator (M),
+        #Speed over ground (knots), Speed unit (N = knots, K = km/h), Mode indicator (A = autonomous, D = differential, E = estimated, N = not valid, S = simulation)
+
+
+        #from GSA
+        gps.send_command(b"PMTK220,250")        # 4hz (SBAS OK up to 5Hz for PA1616S)
+        return gps
 
     gps = _init_gps(uart)
 
