@@ -696,9 +696,9 @@ gps_capture_process_config = {
             "units": "wgs84",
             "data_type": "float",
             "shape": "numpy-3",
-            "hz": 1,
+            "hz": 4,
             "grace_period_samples": 0,
-            "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_1hz",
+            "topic": f"serial-0_cdtoptech-PA1616S_3d-fix_wgs84_float_numpy-3_4hz",
             "debug_lvl": 5,
             "file_writer_config": {
                 "output_module": "wavpakOutput",
@@ -718,55 +718,55 @@ gps_capture_process_config = {
             },
         },
         {
-            "sensor_type": "speed",
-            "units": "kmDh",
+            "sensor_type": "speed-heading",
+            "units": "kmDh-deg",
             #expected range
             #speed min is 0km/h, max is 1000km/h
             "data_type": "float",
             "shape": "numpy-1",
-            "hz": 1,
+            "hz": 4,
             "grace_period_samples": 0,
-            "topic": f"serial-0_cdtoptech-PA1616S_speed_kmDh_float_numpy-1_1hz",
+            "topic": f"serial-0_cdtoptech-PA1616S_speed-heading_kmDh-deg_float_numpy-1_4hz",
             "file_writer_config": {
                 "output_module": "wavpakOutput",
                 "output_hz": "variable",
-                "output_base": f"serial-0_cdtoptech-PA1616S_speed_kmDh_int32-f10-1_variable",
+                "output_base": f"serial-0_cdtoptech-PA1616S_speed-heading_kmDh-deg_int32-f10-2_variable",
                 "additional_output_config": {
                     "input_dtype_str": "float64",
                     "wv_dtype_str": "int32",
-                    "channels": 1,
+                    "channels": 2,
                     "float_bits": 10,
                     "bits": 32,
                     "sign": "s",
                 },
             },
         },
-        {
-            "sensor_type": "dop",
-            "units": "NA",
-            "data_type": "float",
-            "shape": "numpy-3",
-            "grace_period_samples": 0,
-            #expected range
-            #HDOP min is 0, max is 100
-            #PDOP min is 0, max is 100
-            #VDOP min is 0, max is 100
-            "hz": 1,
-            "topic": f"serial-0_cdtoptech-PA1616S_dop_NA_float_numpy-3_1hz",
-            "file_writer_config": {
-                "output_module": "wavpakOutput",
-                "output_hz": "variable",
-                "output_base": f"serial-0_cdtoptech-PA1616S_dop_NA_int32-f10_wavpak-3_variable",
-                "additional_output_config": {
-                    "input_dtype_str": "float64",
-                    "wv_dtype_str": "int32",
-                    "channels": 3,
-                    "float_bits": 6,
-                    "bits": 32,
-                    "sign": "s",
-                },
-            },
-        },
+        # {
+        #     "sensor_type": "dop",
+        #     "units": "NA",
+        #     "data_type": "float",
+        #     "shape": "numpy-3",
+        #     "grace_period_samples": 0,
+        #     #expected range
+        #     #HDOP min is 0, max is 100
+        #     #PDOP min is 0, max is 100
+        #     #VDOP min is 0, max is 100
+        #     "hz": 1,
+        #     "topic": f"serial-0_cdtoptech-PA1616S_dop_NA_float_numpy-3_1hz",
+        #     "file_writer_config": {
+        #         "output_module": "wavpakOutput",
+        #         "output_hz": "variable",
+        #         "output_base": f"serial-0_cdtoptech-PA1616S_dop_NA_int32-f10_wavpak-3_variable",
+        #         "additional_output_config": {
+        #             "input_dtype_str": "float64",
+        #             "wv_dtype_str": "int32",
+        #             "channels": 3,
+        #             "float_bits": 6,
+        #             "bits": 32,
+        #             "sign": "s",
+        #         },
+        #     },
+        # },
     ],
 }
 

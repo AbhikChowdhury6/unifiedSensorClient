@@ -35,29 +35,26 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
     # use configured serial parameters
     port = f"/dev/{config.get('port', 'serial0')}"
-    baudrate = int(config.get("baudrate", 9600))
     timeout = float(config.get("timeout", 10))
-    uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)
 
-    def _init_gps(uart_obj):
-        gps = adafruit_gps.GPS(uart_obj, debug=False)  # Use UART/pyserial
+
+    def init_gps():
+        uart = serial.Serial(port, baudrate=9600, timeout=timeout)
+        gps = adafruit_gps.GPS(uart, debug=False) 
+        gps.send_command(b"PMTK251,57600")
+        uart = serial.Serial(port, baudrate=57600, timeout=timeout) # update the baudrate to 57600
+        gps = adafruit_gps.GPS(uart, debug=False)  # Use UART/pyserial
+
+
         gps.send_command(b"PMTK386,0")          # no static nav
         gps.send_command(b"PMTK313,1")          # SBAS on
         gps.send_command(b"PMTK301,2")          # WAAS
         gps.send_command(b"PMTK319,1")          # integrity mode (optional)
-        #PMTK314 types of messages: GGL,RMC,VTG,GGA,GSA,GSV,...,ZDA,PMTKCHN
+        #PMTK314 types of messages: GGL,RMC,VTG,GGA,GSA,GSV,...reserved...,ZDA,PMTKCHN
         #the number is every how many number of fixes to send the message
-        gps.send_command(b"PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")  # RMC
+        gps.send_command(b"PMTK314,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0")
         #https://receiverhelp.trimble.com/alloy-gnss/en-us/NMEA-0183messages_MessageOverview.html
-        
-        #from RMC
-        #UTC time (hhmmss.ss), status: A = valid, V = void
-        #latitude (ddmm.mmmmm), N/S
-        #longitude (dddmm.mmmm), E/W
-        #speed over ground (knots), course over ground (degrees)
-        #date (ddmmyy),
-        #magnetic variation (degrees), E/W, mode - often skipped
-        
+
         #from GGA
         #UTC time (hhmmss.ss), status: A = valid, V = void
         #latitude (ddmm.mmmmm), N/S
@@ -71,17 +68,19 @@ def gps_capture(log_queue: queue.Queue, config: dict):
         #reminder ellipsoid altitude = msl altitude + geoid height
 
         #from VTG
-        #course over ground (degrees), True track indicator (T), Magnetic track indicator (M),
-        #Speed over ground (knots), Speed unit (N = knots, K = km/h), Mode indicator (A = autonomous, D = differential, E = estimated, N = not valid, S = simulation)
+        #course over ground (degrees), True track indicator (T), 
+        #heading magnetic (degrees), Magnetic track indicator (M),
+        #Speed over ground (knots), Speed unit (N)
+        #Speed (km/h), Speed unit (K)
+        #mode indicator (A = autonomous, D = differential, E = estimated, N = not valid, S = simulation)
+        #check sum
 
-
-        #from GSA
         gps.send_command(b"PMTK220,250")        # 4hz (SBAS OK up to 5Hz for PA1616S)
-        return gps
-
-    gps = _init_gps(uart)
-
+        
+        return uart,gps
     
+    uart, gps = init_gps()
+
     is_ready = lambda: True
     # handle None values before a fix; use NaN so warmup doesn't crash
     def to_float_or_nan(v):
@@ -120,13 +119,14 @@ def gps_capture(log_queue: queue.Queue, config: dict):
             return None
         return np.array([r])
 
-    def get_speed():
+    def get_speed_heading():
         vals = [
-            to_float_or_nan(gps.speed_kmh)
+            to_float_or_nan(gps.speed_kmh),
+            to_float_or_nan(gps.track_angle_deg)
         ]
         r = values_or_none(vals)
         if r is None:
-            l.trace("get_speed: r is None")
+            l.trace("get_speed_heading: r is None")
             return None
         return np.array([r])
     
@@ -144,7 +144,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
 
 
     retrieve_datas = {'3d-fix': get_3dFix,
-                      'speed': get_speed,
+                      'speed-heading': get_speed_heading,
                       'dop': get_dop}
     
     sensors = []
@@ -178,6 +178,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
                     break
         except zmq.Again:
             pass
+        
         # Robust GPS update with checksum-error handling and resync
         try:
             gps.update()
@@ -197,8 +198,7 @@ def gps_capture(log_queue: queue.Queue, config: dict):
                 except Exception:
                     pass
                 try:
-                    uart = serial.Serial(port, baudrate=baudrate, timeout=timeout)
-                    gps = _init_gps(uart)
+                    uart, gps = init_gps()
                     consecutive_parse_errors = 0
                 except Exception:
                     l.exception("gps failed to reinitialize after parse errors")
