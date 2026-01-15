@@ -649,7 +649,7 @@ video_controller_process_1_config = {
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
-    "debug_lvl": 5,
+    "debug_lvl": 10,
     
     "camera_class_loc": repoPath + "unifiedSensorClient/sensors/videoDeviceClasses/",
     "camera_module_name": "piCamera",

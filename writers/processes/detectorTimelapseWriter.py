@@ -159,7 +159,8 @@ def detector_timelapse_writer(log_queue, config):
                 l.trace(" writer writing full speed frame: " + str(dt))
                 full_speed_writer.write(dt, fr)
             l.info(" writer caught up on " + str(len(dts)) + " frames")
-            l.debug(" writer caught up on frames from: " + str(min(dts)) + " to " + str(max(dts)))
+            if len(dts) > 0:
+                l.debug(" writer caught up on frames from: " + str(min(dts)) + " to " + str(max(dts)))
             delete_old_files()
             curr_timelapse_frame = None
             switch_to_fs = False
