@@ -228,11 +228,11 @@ def detector_timelapse_writer(log_queue, config):
         persist(dt_utc, frame)
         
         if dt_utc < timelapse_write_dt:
+            is_full_speed = False
             continue
         elif full_speed_writer.output.file_name is not None:
             # we are now officially writing timelapse frames
             full_speed_writer.close()
-        is_full_speed = False
         
         if dt_utc.microsecond != 0:
             continue
