@@ -640,7 +640,7 @@ audio_controller_process_1_config = {
 }
 
 #c3dec556_csi-0_picamV3-sony-imx708-noir-120fov-12MP_image_BGR_uint8_1x960x540x3_8hz
-camera_topic = f"csi-0_{picamv3noirwide}_image_BGR_uint8_1x960x540x3_8hz"
+camera_topic = f"csi-0_{picamv3noirwide}_image_level_uint8_960x540x3_8hz"
 camera_endpoint = f"ipc:///tmp/{camera_topic}.sock"
 
 video_controller_process_1_config = {
@@ -659,9 +659,9 @@ video_controller_process_1_config = {
     "bus_location": "csi-0",
     "device_name": picamv3noirwide,
     "sensor_type": "image",
-    "units": "BGR",
+    "units": "level",
     "data_type": "uint8",
-    "shape": "1x960x540x3",
+    "shape": "numpy-960x540x3",
     "hz": 8,
     "grace_period_samples": 0,
     "file_writer_config": {},
@@ -672,7 +672,7 @@ video_controller_process_1_config = {
     "camera_height": 1080,
     "subsample_ratio": 2,
     "format": "RGB888",
-    "flip_vertical": False,
+    "flip_vertical": True,
     "timestamp_images": True,
 }
 
@@ -839,6 +839,7 @@ detector_timelapse_writer_process_config = {
     "completed_write_location_base": "/home/pi/data/upload/",
     "time_before_seconds": 32,
     "time_after_seconds": 32,
+    "timelapse_interval_seconds": 4,
     
     "camera_endpoint": camera_endpoint,
     "camera_topic": camera_topic,
@@ -851,7 +852,7 @@ detector_timelapse_writer_process_config = {
     ],
 
     "full_speed_output_config": {
-        "output_base": f"csi-0_{picamv3noirwide}_mp4_width-960xheight-540xRGB-3_8hz",
+        "output_base": f"csi-0_{picamv3noirwide}_video_level_uint8_mp4-960x540x3_8hz",
         "hz": 8,
         "file_size_check_interval_s_range": (5, 10),
         "camera_width": 960,
@@ -867,12 +868,13 @@ detector_timelapse_writer_process_config = {
     },
     
     "timelapse_output_config": {
-        "output_base": f"csi-0_{picamv3noirwide}_mp4_width-960xheight-540xRGB-3_1hz",
-        "hz": 1,
+        "output_base": f"csi-0_{picamv3noirwide}_video_level_uint8_mp4-960x540x3_0P25hz",
+        "hz": .25,
         "file_size_check_interval_s_range": (30, 60),
         "camera_width": 960,
         "camera_height": 540,
-        "gop_interval": 1024,
+        #one every 256 frame updates
+        "gop_interval": int(256/.25),
         "preset": "slow",
         "crf": 23,
         "debug_lvl": 10,
@@ -943,7 +945,7 @@ yolo_person_detector_process_config = {
     "confidence_threshold": 0.5,
     "nms_threshold": 0.5,
     "interval_seconds": 8,
-    "verbose": False,
+    "verbose": True,
 }
 
 # is_dark_detector_process_config = {
@@ -982,10 +984,10 @@ all_process_configs = {
     #"sqlite": [1, sqlite_writer_process_config],
 #    "i2c0": [1, i2c_controller_0_process_config],
 #    "i2c1": [1, i2c_controller_1_process_config],
-    "gps": [1, gps_capture_process_config],
-    #"video": [1, video_controller_process_1_config],
-    #"detector_timelapse": [1, detector_timelapse_writer_process_config],
-    #"yolo": [1, yolo_person_detector_process_config],
+#    "gps": [1, gps_capture_process_config],
+    "video": [1, video_controller_process_1_config],
+    "detector_timelapse": [1, detector_timelapse_writer_process_config],
+    "yolo": [1, yolo_person_detector_process_config],
 #    "audio": [1, audio_controller_process_config],
 #    "opus": [1, audio_writer_process_config],
 #    "dark": [0, is_dark_detector_process_config],
