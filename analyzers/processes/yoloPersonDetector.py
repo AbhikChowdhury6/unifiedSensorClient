@@ -24,11 +24,9 @@ from platformUtils.zmq_codec import ZmqCodec
 from platformUtils.logUtils import worker_configurer, set_process_title
 
 from config import (
-    yolo_person_detector_process_config,
     zmq_control_endpoint,
 )
 
-config = yolo_person_detector_process_config
 """Optional deep-size support via Pympler (if installed)."""
 try:
     from pympler import muppy, summary as pympler_summary
@@ -116,7 +114,7 @@ def _compute_next_capture_dt(now_dt: datetime, interval_s: float) -> datetime:
 #like 8 seconds on the pi5 and 8 seconds on the pi4 with a smaller model
 
 
-def yolo_person_detector(log_queue):
+def yolo_person_detector(log_queue, config):
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
     l = logging.getLogger(config["short_name"])

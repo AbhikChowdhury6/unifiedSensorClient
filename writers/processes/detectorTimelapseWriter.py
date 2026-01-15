@@ -7,7 +7,7 @@ import numpy as np
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
-from config import zmq_control_endpoint, detector_timelapse_writer_process_config
+from config import zmq_control_endpoint
 import zmq
 import logging
 from platformUtils.logUtils import worker_configurer, set_process_title
@@ -16,8 +16,7 @@ from writers.writer import Writer
 from writers.videoOutput import video_output
 import qoi
 
-config = detector_timelapse_writer_process_config
-def detector_timelapse_writer(log_queue):
+def detector_timelapse_writer(log_queue, config):
     #set up logging
     set_process_title(config["short_name"])
     worker_configurer(log_queue, config["debug_lvl"])
