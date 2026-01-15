@@ -115,10 +115,10 @@ def detector_timelapse_writer(log_queue, config):
 
     
     #if there are left over files from the last run, write them to the full speed video
-    for dt, fr in load():
+    for dt, fr in load(datetime.min.replace(tzinfo=timezone.utc)):
         l.trace(" writer writing full speed frame: " + str(dt))
         full_speed_writer.write(dt, fr)
-    delete_old_files()
+    delete_old_files(datetime.min.replace(tzinfo=timezone.utc))
 
     
     #if there are
@@ -140,7 +140,7 @@ def detector_timelapse_writer(log_queue, config):
         if topic in config["detector_topics"]:
             detection_ts = msg[0]
             detected = msg[1]
-            l.debug(" writer detected: " + str(detected))
+            l.debug(" writer detected: " + str(detected) + " at " + str(detection_ts) + " UTC")
             if detected:
                 timelapse_after = detection_ts + timedelta(seconds=config["time_after_seconds"])
                 l.trace(" writer timelapse after: " + str(timelapse_after))
