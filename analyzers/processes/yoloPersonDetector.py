@@ -205,7 +205,7 @@ def yolo_person_detector(log_queue, config):
 
 
         pub.send_multipart(ZmqCodec.encode(config["pub_topic"], [dt_utc, detected]))
-        l.debug(config["short_name"] + " published " + str(detected))
+        l.debug(config["short_name"] + " published " + str(detected) + " at " + str(dt_utc))
 
 
 
