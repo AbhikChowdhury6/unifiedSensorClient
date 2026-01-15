@@ -168,3 +168,14 @@ def file_uploader(log_queue, config):
     
     l.info(config["short_name"] + " process exiting")
 
+if __name__ == "__main__":
+    config = {
+        "data_dir": "/home/pi/data/temp/",
+        "upload_url": "http://localhost:8000/upload",
+        "time_till_ready": 0,
+        "short_name": "file-up",
+        "debug_lvl": "debug",
+        "upload_retry_interval": 1,
+    }
+    l = logging.getLogger("file-up")
+    _upload_files_in_backlog(0, config, l)
