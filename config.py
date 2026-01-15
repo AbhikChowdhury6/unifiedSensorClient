@@ -649,7 +649,7 @@ video_controller_process_1_config = {
     "func_name": "video_controller",
     "short_name": "video",
     "time_to_shutdown": .25,
-    "debug_lvl": 20,
+    "debug_lvl": 5,
     
     "camera_class_loc": repoPath + "unifiedSensorClient/sensors/videoDeviceClasses/",
     "camera_module_name": "piCamera",
@@ -834,7 +834,7 @@ detector_timelapse_writer_process_config = {
     "func_name": "detector_timelapse_writer",
     "short_name": "detector_timelapse",
     "time_to_shutdown": .1,
-    "debug_lvl": 10,
+    "debug_lvl": 5,
     "temp_file_location": "/home/pi/data/temp/",
     "completed_write_location_base": "/home/pi/data/upload/",
     "time_before_seconds": 32,
