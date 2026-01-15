@@ -55,7 +55,7 @@ def detector_timelapse_writer(log_queue, config):
     #some fields for controlling the flow of the writer
     timelapse_hz = config["timelapse_output_config"]["hz"]
     detection_grace_period = timedelta(seconds=8)
-    seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + detection_grace_period + 1/timelapse_hz)
+    seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz) + detection_grace_period
     last_frame_dt = datetime.min.replace(tzinfo=timezone.utc)
 
     timelapse_frame_offset = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)
