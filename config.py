@@ -640,7 +640,7 @@ audio_controller_process_1_config = {
 }
 
 #c3dec556_csi-0_picamV3-sony-imx708-noir-120fov-12MP_image_BGR_uint8_1x960x540x3_8hz
-camera_topic = f"csi-0_{picamv3noirwide}_image_level_uint8_960x540x3_8hz"
+camera_topic = f"csi-0_{picamv3noirwide}_image_level_uint8_numpy-960x540x3_8hz"
 camera_endpoint = f"ipc:///tmp/{camera_topic}.sock"
 
 video_controller_process_1_config = {

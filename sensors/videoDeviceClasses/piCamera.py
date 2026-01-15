@@ -43,7 +43,7 @@ class PiCamera:
 
         self.l = logging.getLogger(self.device_name)
         self.l.setLevel(debug_lvl)
-        self.l.info(self.device_name + " starting")
+        self.l.info(" starting")
         
         self.flip_vertical = flip_vertical
         self.subsample_ratio = subsample_ratio

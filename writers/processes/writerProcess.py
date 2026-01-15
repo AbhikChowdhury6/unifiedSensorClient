@@ -29,18 +29,18 @@ def writer_process(log_queue = None,
     l = logging.getLogger(process_name)
     set_process_title(process_name)
     worker_configurer(log_queue, debug_lvl)
-    l.info(process_name + " starting")
+    l.info(" starting")
 
     ctx = zmq.Context()
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    l.debug(process_name + " subscribed to control on endpoint: " + zmq_control_endpoint)
+    l.debug(" subscribed to control on endpoint: " + zmq_control_endpoint)
     
     sensor_endpoint = f"ipc:///tmp/{topic}.sock"
     sub.connect(sensor_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, topic.encode())
-    l.info(process_name + " subscribed to " + topic)
+    l.info(" subscribed to " + topic)
 
 
     if "file_writer_process_info" in kwargs:
@@ -48,7 +48,7 @@ def writer_process(log_queue = None,
     else:
         wc = file_writer_process_info
 
-    l.debug(process_name + " additional_output_config: " + str(additional_output_config))
+    l.debug(" additional_output_config: " + str(additional_output_config))
     
     if "output_info" in kwargs:
         output_info = kwargs["output_info"][output_module]
@@ -66,7 +66,7 @@ def writer_process(log_queue = None,
                          temp_write_location=wc["temp_write_location"],
                          debug_lvl=debug_lvl)
     if debug_lvl <= 5:
-        l.trace(process_name + " output constructor time: " + str(datetime.now().timestamp() - start_time))
+        l.trace(" output constructor time: " + str(datetime.now().timestamp() - start_time))
     
     if debug_lvl <= 5: start_time = datetime.now().timestamp()
     writer = Writer(output=output,
@@ -77,7 +77,7 @@ def writer_process(log_queue = None,
                     platform_uuid=wc["platform_uuid"],
                     debug_lvl=debug_lvl)
     if debug_lvl <= 5:
-        l.trace(process_name + " writer constructor time: " + str(datetime.now().timestamp() - start_time))
+        l.trace(" writer constructor time: " + str(datetime.now().timestamp() - start_time))
     
     def sleep_to_next_second():
         next_second_ts = datetime.now(timezone.utc).replace(microsecond=0).timestamp() + 1
@@ -87,7 +87,7 @@ def writer_process(log_queue = None,
         msg_topic, msg = ZmqCodec.decode(sub.recv_multipart())
         if msg_topic == "control" and (msg[0] == "exit_all" or 
             (msg[0] == "exit" and msg[-1] == process_name)):
-            l.info(process_name + " exiting")
+            l.info(" exiting")
             break
         
         if msg_topic != topic:
@@ -98,5 +98,5 @@ def writer_process(log_queue = None,
 
 
 
-    l.info(process_name + " exiting")
+    l.info(" exiting")
     writer.close()

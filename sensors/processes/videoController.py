@@ -33,7 +33,7 @@ def video_controller(log_queue, config):
     sub = ctx.socket(zmq.SUB)
     sub.connect(zmq_control_endpoint)
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    l.info(config["short_name"] + " controller connected to control topic")
+    l.info(" controller connected to control topic")
 
     fwc = config['file_writer_config']
     if fwc not in [None, {}]:
