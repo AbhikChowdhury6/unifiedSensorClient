@@ -37,66 +37,66 @@ except Exception:
 _tracemalloc_started = False
 _last_snapshot = None
 
-def memdiag_start(max_frames: int = 25):
-    global _tracemalloc_started, _last_snapshot
-    # Start tracemalloc only for heavy diagnostics
-    if bool(config.get("memdiag_heavy", False)):
-        if not _tracemalloc_started:
-            tracemalloc.start(max_frames)
-            _tracemalloc_started = True
-        _last_snapshot = tracemalloc.take_snapshot()
+# def memdiag_start(max_frames: int = 25):
+#     global _tracemalloc_started, _last_snapshot
+#     # Start tracemalloc only for heavy diagnostics
+#     if bool(config.get("memdiag_heavy", False)):
+#         if not _tracemalloc_started:
+#             tracemalloc.start(max_frames)
+#             _tracemalloc_started = True
+#         _last_snapshot = tracemalloc.take_snapshot()
 
-def memdiag_log(logger, tag: str = "", top_n: int = 15):
-    global _last_snapshot
-    try:
-        # Cheap metrics first (avoid OOM): process RSS and GC counters
-        rss_mb = None
-        if _PSUTIL:
-            try:
-                proc = psutil.Process(os.getpid())
-                rss_mb = proc.memory_info().rss / (1024 * 1024)
-            except Exception:
-                rss_mb = None
-        gen_counts = gc.get_count()
-        msg = f"[memdiag] {tag} rss_mb={rss_mb:.1f} gens={gen_counts}" if rss_mb is not None else f"[memdiag] {tag} gens={gen_counts}"
-        # Optional CUDA stats
-        try:
-            if torch.cuda.is_available():
-                alloc = torch.cuda.memory_allocated() / 1e6
-                reserv = torch.cuda.memory_reserved() / 1e6
-                msg += f" cuda_alloc_mb={alloc:.1f} cuda_resv_mb={reserv:.1f}"
-        except Exception:
-            pass
-        logger.info(msg)
+# def memdiag_log(logger, tag: str = "", top_n: int = 15):
+#     global _last_snapshot
+#     try:
+#         # Cheap metrics first (avoid OOM): process RSS and GC counters
+#         rss_mb = None
+#         if _PSUTIL:
+#             try:
+#                 proc = psutil.Process(os.getpid())
+#                 rss_mb = proc.memory_info().rss / (1024 * 1024)
+#             except Exception:
+#                 rss_mb = None
+#         gen_counts = gc.get_count()
+#         msg = f"[memdiag] {tag} rss_mb={rss_mb:.1f} gens={gen_counts}" if rss_mb is not None else f"[memdiag] {tag} gens={gen_counts}"
+#         # Optional CUDA stats
+#         try:
+#             if torch.cuda.is_available():
+#                 alloc = torch.cuda.memory_allocated() / 1e6
+#                 reserv = torch.cuda.memory_reserved() / 1e6
+#                 msg += f" cuda_alloc_mb={alloc:.1f} cuda_resv_mb={reserv:.1f}"
+#         except Exception:
+#             pass
+#         logger.info(msg)
 
-        # Heavy diagnostics (tracemalloc, pympler) gated by config
-        if bool(config.get("memdiag_heavy", False)):
-            # Force GC to reduce noise
-            gc.collect()
-            # Tracemalloc diff since last snapshot
-            if _last_snapshot is None:
-                _last_snapshot = tracemalloc.take_snapshot()
-            snap_now = tracemalloc.take_snapshot()
-            stats = snap_now.compare_to(_last_snapshot, 'lineno')
-            _last_snapshot = snap_now
-            lines = []
-            for st in stats[:top_n]:
-                size_kb = st.size_diff / 1024.0
-                tb_last = st.traceback.format()[-1].strip() if st.traceback else "<no tb>"
-                lines.append(f"{size_kb:9.1f} KiB {st.count_diff:+5d} {tb_last}")
-            if lines:
-                logger.info("[memdiag] " + tag + " top alloc growth:\n  " + "\n  ".join(lines))
+#         # Heavy diagnostics (tracemalloc, pympler) gated by config
+#         if bool(config.get("memdiag_heavy", False)):
+#             # Force GC to reduce noise
+#             gc.collect()
+#             # Tracemalloc diff since last snapshot
+#             if _last_snapshot is None:
+#                 _last_snapshot = tracemalloc.take_snapshot()
+#             snap_now = tracemalloc.take_snapshot()
+#             stats = snap_now.compare_to(_last_snapshot, 'lineno')
+#             _last_snapshot = snap_now
+#             lines = []
+#             for st in stats[:top_n]:
+#                 size_kb = st.size_diff / 1024.0
+#                 tb_last = st.traceback.format()[-1].strip() if st.traceback else "<no tb>"
+#                 lines.append(f"{size_kb:9.1f} KiB {st.count_diff:+5d} {tb_last}")
+#             if lines:
+#                 logger.info("[memdiag] " + tag + " top alloc growth:\n  " + "\n  ".join(lines))
 
-            # Optional deep-size summary
-            if _PYMPLER:
-                try:
-                    all_objs = muppy.get_objects()
-                    sum_list = pympler_summary.summarize(all_objs)
-                    logger.info("[memdiag] pympler summary (top 10):\n" + pympler_summary.format_(sum_list)[:2000])
-                except Exception:
-                    pass
-    except Exception as e:
-        logger.warning(f"[memdiag] failed: {e}")
+#             # Optional deep-size summary
+#             if _PYMPLER:
+#                 try:
+#                     all_objs = muppy.get_objects()
+#                     sum_list = pympler_summary.summarize(all_objs)
+#                     logger.info("[memdiag] pympler summary (top 10):\n" + pympler_summary.format_(sum_list)[:2000])
+#                 except Exception:
+#                     pass
+#     except Exception as e:
+#         logger.warning(f"[memdiag] failed: {e}")
 
 def _compute_next_capture_dt(now_dt: datetime, interval_s: float) -> datetime:
     return int(math.ceil(now_dt.timestamp() / interval_s) * interval_s)
@@ -152,9 +152,9 @@ def yolo_person_detector(log_queue, config):
 
 
     next_capture = None
-    l.debug(config["short_name"] + " starting memdiag")
-    memdiag_start()
-    l.debug(config["short_name"] + " memdiag started")
+#    l.debug(config["short_name"] + " starting memdiag")
+#    memdiag_start()
+#    l.debug(config["short_name"] + " memdiag started")
     iter_count = 0
     
     while True:
@@ -210,14 +210,12 @@ def yolo_person_detector(log_queue, config):
 
 
         iter_count += 1
-        if (iter_count % int(config.get("memdiag_interval", 10))) == 0:
-            memdiag_log(l, tag="yolo_loop")
+#        if (iter_count % int(config.get("memdiag_interval", 10))) == 0:
+#            memdiag_log(l, tag="yolo_loop")
 
 
     l.info(config["short_name"] + " exiting")
 
 
-if __name__ == "__main__":
-    yolo_person_detector(None)
 
 

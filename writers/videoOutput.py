@@ -27,6 +27,7 @@ class video_output:
         self.camera_height = camera_height
         self.fourcc = fourcc
         self.debug_lvl = debug_lvl
+        self.variable_hz = False
 
         self.log_name = output_base + "_video-output"
         self.l = logging.getLogger(self.log_name)
