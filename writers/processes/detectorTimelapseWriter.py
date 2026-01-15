@@ -54,7 +54,11 @@ def detector_timelapse_writer(log_queue, config):
 
     #some fields for controlling the flow of the writer
     timelapse_hz = config["timelapse_output_config"]["hz"]
-    seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)
+    detection_grace_period = timedelta(seconds=8)
+    seconds_till_irrelvance = timedelta(seconds=config["time_before_seconds"] + detection_grace_period + 1/timelapse_hz)
+    last_frame_dt = datetime.min.replace(tzinfo=timezone.utc)
+
+    timelapse_frame_offset = timedelta(seconds=config["time_before_seconds"] + 1/timelapse_hz)
 
 
     persist_location = config["temp_file_location"] + config["short_name"] + "-persist/"
@@ -66,6 +70,8 @@ def detector_timelapse_writer(log_queue, config):
             l.trace(" writer persisting frame: " + str(frame_dt))
             qoi.write(fn, data[i])
     
+    #will yield all of the files in the persist
+    #that are after the time before seconds from the given dt_utc
     def load(dt_utc):#for when we switch to full speed
         
         l.debug("dt_utc: " + str(dt_utc))
@@ -82,6 +88,8 @@ def detector_timelapse_writer(log_queue, config):
             data = np.expand_dims(data, axis=0)
             yield fnString_to_dt(file), data
 
+    #will delete all of the files in the persist
+    #that are before seconds_till_irrelvance from the given dt_utc
     def delete_old_files(dt_utc):
         files = sorted(os.listdir(persist_location))
         
@@ -129,6 +137,7 @@ def detector_timelapse_writer(log_queue, config):
     switch_to_fs = False
     switch_to_tl = True
     start_writing_after = None
+    detection_ts = datetime.min.replace(tzinfo=timezone.utc)
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
@@ -139,6 +148,13 @@ def detector_timelapse_writer(log_queue, config):
             continue
         
         if topic in config["detector_topics"]:
+            if msg[0] < last_frame_dt + detection_grace_period:
+                l.warning("detected frame too old: " + str(msg[0]) + " < " + str(last_frame_dt))
+                l.warning("last frame dt: " + str(last_frame_dt))
+                l.warning("detection grace period: " + str(detection_grace_period))
+                l.warning("cuttoff time: " + str(last_frame_dt + detection_grace_period))
+                l.warning("skipping frame")
+                continue
             detection_ts = msg[0]
             detected = msg[1]
             l.debug(" writer detected: " + str(detected) + " at " + str(detection_ts) + " UTC")
@@ -160,6 +176,7 @@ def detector_timelapse_writer(log_queue, config):
         if topic != config["camera_topic"]:
             continue
         
+        last_frame_dt = msg[0]
         dt_utc, frame = msg[0], msg[1]
 
         if switch_to_fs:
@@ -167,14 +184,14 @@ def detector_timelapse_writer(log_queue, config):
             #catch up on time before seconds amount of frames
             l.info(" writer catching up on " + str(config["time_before_seconds"]) + " seconds of frames")
             dts = []
-            for dt, fr in load(dt_utc):
+            for dt, fr in load(detection_ts):
                 dts.append(dt)
                 l.trace(" writer writing full speed frame: " + str(dt))
                 full_speed_writer.write(dt, fr)
             l.info(" writer caught up on " + str(len(dts)) + " frames")
             if len(dts) > 0:
                 l.debug(" writer caught up on frames from: " + str(min(dts)) + " to " + str(max(dts)))
-            delete_old_files(dt_utc)
+            delete_old_files(detection_ts)
             curr_timelapse_frame = None
             switch_to_fs = False
             is_full_speed = True
@@ -186,12 +203,12 @@ def detector_timelapse_writer(log_queue, config):
             continue
         
         #it's a timelapse, presist in case we need to switch to full speed
-        l.trace(" writer persisting timelapse frame: " + str(dt_utc))
+        #l.trace(" writer persisting timelapse frame: " + str(dt_utc))
         persist(dt_utc, frame)
 
         if switch_to_tl:
             l.info(" writer switching to timelapse")
-            start_writing_after = dt_utc + seconds_till_irrelvance
+            start_writing_after = detection_ts + seconds_till_irrelvance
             next_timelapse_frame_update = start_writing_after
             switch_to_tl = False
             continue
@@ -202,19 +219,19 @@ def detector_timelapse_writer(log_queue, config):
 
         #upsample writes to every second
         if dt_utc.microsecond != 0:
-            l.trace(" writer skipping frame with microsecond: " + str(dt_utc.microsecond))
+            #l.trace(" writer skipping frame with microsecond: " + str(dt_utc.microsecond))
             continue
 
         if dt_utc >= next_timelapse_frame_update:
-            curr_timelapse_frame = get_file(dt_utc - seconds_till_irrelvance)
+            curr_timelapse_frame = get_file(dt_utc - timelapse_frame_offset)
             if curr_timelapse_frame is None:
-                l.error(" writer no frame found for " + str(dt_utc - seconds_till_irrelvance))
+                l.error(" writer no frame found for " + str(dt_utc - timelapse_frame_offset))
                 continue
-            l.debug(" writer updating timelapse frame for " + str(dt_utc - seconds_till_irrelvance))
+            l.debug(" writer updating timelapse frame for " + str(dt_utc - timelapse_frame_offset))
             delete_old_files(dt_utc)
             next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
 
-        frame_dt = dt_utc - seconds_till_irrelvance
+        frame_dt = dt_utc - timelapse_frame_offset
         l.debug(" writer writing timelapse frame at " + str(frame_dt))
         timelapse_writer.write(frame_dt, curr_timelapse_frame)
     
