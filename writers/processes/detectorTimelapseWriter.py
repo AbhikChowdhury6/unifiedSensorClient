@@ -66,10 +66,15 @@ def detector_timelapse_writer(log_queue, config):
             l.trace(" writer persisting frame: " + str(frame_dt))
             qoi.write(fn, data[i])
     
-    def load():#for when we switch to full speed
+    def load(dt_utc):#for when we switch to full speed
+        
+        l.debug("dt_utc: " + str(dt_utc))
+        l.debug("time before seconds: " + str(config["time_before_seconds"]))
+        time_before_dt = dt_utc - timedelta(seconds=config["time_before_seconds"])
+        l.debug("time before datetime: " + str(time_before_dt))
+        
         files = [file for file in sorted(os.listdir(persist_location)) 
-                    if fnString_to_dt(file) <= datetime.now(timezone.utc) -\
-                        timedelta(seconds=config["time_before_seconds"])]
+                    if fnString_to_dt(file) >= time_before_dt]
         
         l.trace(" writer loading " + str(len(files)) + " files")
         for file in files:
@@ -77,16 +82,22 @@ def detector_timelapse_writer(log_queue, config):
             data = np.expand_dims(data, axis=0)
             yield fnString_to_dt(file), data
 
-    def delete_old_files():
+    def delete_old_files(dt_utc):
         files = sorted(os.listdir(persist_location))
+        
+        l.debug("dt_utc: " + str(dt_utc))
+        l.debug("seconds till irrelvance: " + str(seconds_till_irrelvance))
+        l.debug("irrelvance datetime: " + str(dt_utc - seconds_till_irrelvance))
+        
         dts = []
         for file in files:
             dt = fnString_to_dt(file)
             dts.append(dt)
-            if dt < datetime.now(timezone.utc) -\
+            if dt < dt_utc -\
                 seconds_till_irrelvance:
                 l.trace(" writer deleting old file: " + str(file))
                 os.remove(persist_location + file)
+        
         l.debug(" writer deleted " + str(len(dts)) + " old files")
         if len(dts) == 0:
             return
@@ -127,18 +138,19 @@ def detector_timelapse_writer(log_queue, config):
             continue
         
         if topic in config["detector_topics"]:
+            detection_ts = msg[0]
             detected = msg[1]
             l.debug(" writer detected: " + str(detected))
             if detected:
-                timelapse_after = msg[0] + timedelta(seconds=config["time_after_seconds"])
+                timelapse_after = detection_ts + timedelta(seconds=config["time_after_seconds"])
                 l.trace(" writer timelapse after: " + str(timelapse_after))
                 if not is_full_speed:
                     switch_to_fs = True
                     l.trace(" writer switching to full speed")
                 is_full_speed = True
-                last_detection_ts = msg[0]
+                last_detection_ts = detection_ts
             
-            elif timelapse_after < msg[0]: #switch to timelapse
+            elif timelapse_after < detection_ts: #switch to timelapse
                 if is_full_speed:
                     switch_to_tl = True
                     l.trace(" writer switching to timelapse")
@@ -154,14 +166,14 @@ def detector_timelapse_writer(log_queue, config):
             #catch up on time before seconds amount of frames
             l.info(" writer catching up on " + str(config["time_before_seconds"]) + " seconds of frames")
             dts = []
-            for dt, fr in load():
+            for dt, fr in load(dt_utc):
                 dts.append(dt)
                 l.trace(" writer writing full speed frame: " + str(dt))
                 full_speed_writer.write(dt, fr)
             l.info(" writer caught up on " + str(len(dts)) + " frames")
             if len(dts) > 0:
                 l.debug(" writer caught up on frames from: " + str(min(dts)) + " to " + str(max(dts)))
-            delete_old_files()
+            delete_old_files(dt_utc)
             curr_timelapse_frame = None
             switch_to_fs = False
             is_full_speed = True
@@ -193,13 +205,12 @@ def detector_timelapse_writer(log_queue, config):
             continue
 
         if dt_utc >= next_timelapse_frame_update:
-            l.trace(" writer updating timelapse frame for " + str(dt_utc - seconds_till_irrelvance))
             curr_timelapse_frame = get_file(dt_utc - seconds_till_irrelvance)
             if curr_timelapse_frame is None:
                 l.error(" writer no frame found for " + str(dt_utc - seconds_till_irrelvance))
                 continue
             l.debug(" writer updating timelapse frame for " + str(dt_utc - seconds_till_irrelvance))
-            delete_old_files()
+            delete_old_files(dt_utc)
             next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
 
         frame_dt = dt_utc - seconds_till_irrelvance
