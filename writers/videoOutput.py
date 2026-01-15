@@ -88,6 +88,6 @@ class video_output:
         self.file_name = None
         return new_fn
 
-    def write(self, data):
+    def write(self,dt, data):
         for frame in data:
             self.output.write(frame)
