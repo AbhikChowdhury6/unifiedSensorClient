@@ -74,7 +74,7 @@ def detector_timelapse_writer(log_queue, config):
     #full speed writes all the files in prsist 
     #that are after or on the time before seconds from the given dt_utc
     #but also before the time after seconds from the given dt_utc
-    def load(dt_utc):#for when we switch to full speed
+    def load(dt_utc, till_end = False):#for when we switch to full speed
         
         l.debug("dt_utc: " + str(dt_utc))
         l.debug("time before seconds: " + str(time_before_seconds))
@@ -85,7 +85,7 @@ def detector_timelapse_writer(log_queue, config):
         
         files = [file for file in sorted(os.listdir(persist_location)) 
                     if fnString_to_dt(file) >= time_before_dt and 
-                    fnString_to_dt(file) < time_after_dt]
+                    (fnString_to_dt(file) < time_after_dt or till_end)]
         
         l.trace(" writer loading " + str(len(files)) + " files")
         if len(files) > 0:
@@ -133,9 +133,7 @@ def detector_timelapse_writer(log_queue, config):
     
     min_dt = datetime.min.replace(tzinfo=timezone.utc) + seconds_till_irrelvance
     #if there are left over files from the last run, write them to the full speed video
-    for dt, fr in load(min_dt):
-        l.trace(" writer writing full speed frame: " + str(dt))
-        full_speed_writer.write(dt, fr)
+    load(min_dt, True)
     delete_old_files(min_dt)
 
     
