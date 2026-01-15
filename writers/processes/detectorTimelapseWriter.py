@@ -145,6 +145,7 @@ def detector_timelapse_writer(log_queue, config):
     last_positive_detection_dt = datetime.min.replace(tzinfo=timezone.utc)
     fs_expires_dt = datetime.min.replace(tzinfo=timezone.utc)
     timelapse_write_dt = datetime.min.replace(tzinfo=timezone.utc)
+    next_timelapse_frame_update = datetime.min.replace(tzinfo=timezone.utc)
     while True:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
