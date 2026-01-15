@@ -157,6 +157,7 @@ def detector_timelapse_writer(log_queue, config):
         
         #check if we got a positive detection
         if topic in config["detector_topics"]:
+            l.trace("message: " + str(msg))
             if msg[0] < last_frame_dt - detection_grace_period:
                 l.warning("detected frame too old: " + str(msg[0]) + " < " + str(last_frame_dt))
 
