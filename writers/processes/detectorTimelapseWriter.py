@@ -63,7 +63,7 @@ def detector_timelapse_writer(log_queue, config):
         for i in range(data.shape[0]):
             frame_dt = dt + timedelta(seconds=i/full_speed_output_config["hz"])
             fn = persist_location + dt_to_fnString(frame_dt) + ".qoi"
-            l.trace(config["short_name"] + " writer persisting frame: " + str(frame_dt))
+            l.trace(" writer persisting frame: " + str(frame_dt))
             qoi.write(fn, data[i])
     
     def load():#for when we switch to full speed
@@ -71,7 +71,7 @@ def detector_timelapse_writer(log_queue, config):
                     if fnString_to_dt(file) <= datetime.now(timezone.utc) -\
                         timedelta(seconds=config["time_before_seconds"])]
         
-        l.trace(config["short_name"] + " writer loading " + str(len(files)) + " files")
+        l.trace(" writer loading " + str(len(files)) + " files")
         for file in files:
             data = qoi.read(persist_location + file)
             data = np.expand_dims(data, axis=0)
@@ -85,10 +85,12 @@ def detector_timelapse_writer(log_queue, config):
             dts.append(dt)
             if dt < datetime.now(timezone.utc) -\
                 seconds_till_irrelvance:
-                l.trace(config["short_name"] + " writer deleting old file: " + str(file))
+                l.trace(" writer deleting old file: " + str(file))
                 os.remove(persist_location + file)
-        l.debug(config["short_name"] + " writer deleted " + str(len(dts)) + " old files")
-        l.debug(config["short_name"] + " writer deleted files from: " + str(min(dts)) + " to " + str(max(dts)))
+        l.debug(" writer deleted " + str(len(dts)) + " old files")
+        if len(dts) == 0:
+            return
+        l.debug(" writer deleted files from: " + str(min(dts)) + " to " + str(max(dts)))
     
     def get_file(dt):
         fn = dt_to_fnString(dt) + ".qoi"
@@ -103,7 +105,7 @@ def detector_timelapse_writer(log_queue, config):
     
     #if there are left over files from the last run, write them to the full speed video
     for dt, fr in load():
-        l.trace(config["short_name"] + " writer writing full speed frame: " + str(dt))
+        l.trace(" writer writing full speed frame: " + str(dt))
         full_speed_writer.write(dt, fr)
     delete_old_files()
 
@@ -132,7 +134,7 @@ def detector_timelapse_writer(log_queue, config):
                 l.trace(" writer timelapse after: " + str(timelapse_after))
                 if not is_full_speed:
                     switch_to_fs = True
-                    l.trace(config["short_name"] + " writer switching to full speed")
+                    l.trace(" writer switching to full speed")
                 is_full_speed = True
                 last_detection_ts = msg[0]
             
