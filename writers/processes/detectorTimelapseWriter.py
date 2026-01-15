@@ -114,7 +114,7 @@ def detector_timelapse_writer(log_queue, config):
 
 
     
-    min_dt = datetime.min.replace(tzinfo=timezone.utc) + timedelta(seconds=seconds_till_irrelvance)
+    min_dt = datetime.min.replace(tzinfo=timezone.utc) + seconds_till_irrelvance
     #if there are left over files from the last run, write them to the full speed video
     for dt, fr in load(min_dt):
         l.trace(" writer writing full speed frame: " + str(dt))
