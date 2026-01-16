@@ -834,7 +834,7 @@ detector_timelapse_writer_process_config = {
     "func_name": "detector_timelapse_writer",
     "short_name": "detector_timelapse",
     "time_to_shutdown": .1,
-    "debug_lvl": 5,
+    "debug_lvl": 10,
     "temp_file_location": "/home/pi/data/temp/",
     "completed_write_location_base": "/home/pi/data/upload/",
     "time_before_seconds": 16,
@@ -935,7 +935,7 @@ yolo_person_detector_process_config = {
     "func_name": "yolo_person_detector",
     "short_name": "yolo",
     "time_to_shutdown": 3,
-    "debug_lvl": 10,
+    "debug_lvl": 20,
     "camera_topic": camera_topic,
     "camera_endpoint": camera_endpoint,
     "pub_endpoint": f"ipc:///tmp/yolo11m_person_detection.sock",
@@ -943,7 +943,7 @@ yolo_person_detector_process_config = {
     "model": "yolo11l",
     "confidence_threshold": 0.3,
     "interval_seconds": 8,
-    "verbose": True,
+    "verbose": False,
 }
 
 # is_dark_detector_process_config = {
