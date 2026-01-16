@@ -68,7 +68,7 @@ def detector_timelapse_writer(log_queue, config):
         for i in range(data.shape[0]):
             frame_dt = dt + timedelta(seconds=i/full_speed_output_config["hz"])
             fn = persist_location + dt_to_fnString(frame_dt) + ".qoi"
-            l.trace(" writer persisting frame: " + str(frame_dt))
+            l.trace(" dbtl persisting frame: " + str(frame_dt))
             qoi.write(fn, data[i])
     
     #full speed writes all the files in prsist 
@@ -87,10 +87,10 @@ def detector_timelapse_writer(log_queue, config):
                     if fnString_to_dt(file) >= time_before_dt and 
                     (fnString_to_dt(file) < time_after_dt or till_end)]
         
-        l.trace(" writer loading " + str(len(files)) + " files")
+        l.trace(" dbtl loading " + str(len(files)) + " files")
         if len(files) > 0:
             f_dts = [fnString_to_dt(file) for file in files]
-            l.debug(" writer loading files from: " + str(min(f_dts)) + " to " + str(max(f_dts)))
+            l.debug(" dbtl loading files from: " + str(min(f_dts)) + " to " + str(max(f_dts)))
         
         for file in files:
             data = qoi.read(persist_location + file)
@@ -109,16 +109,16 @@ def detector_timelapse_writer(log_queue, config):
         dts = []
         for file in files:
             dt = fnString_to_dt(file)
-            dts.append(dt)
             if dt < dt_utc -\
                 seconds_till_irrelvance:
-                l.trace(" writer deleting old file: " + str(file))
+                l.trace(" dbtl deleting old file: " + str(file))
+                dts.append(dt)
                 os.remove(persist_location + file)
         
-        l.debug(" writer deleted " + str(len(dts)) + " old files")
+        l.debug(" dbtl deleted " + str(len(dts)) + " old files")
         if len(dts) == 0:
             return
-        l.debug(" writer deleted files from: " + str(min(dts)) + " to " + str(max(dts)))
+        l.debug(" dbtl deleted files from: " + str(min(dts)) + " to " + str(max(dts)))
     
     def get_file(dt):
         fn = dt_to_fnString(dt) + ".qoi"
@@ -151,7 +151,7 @@ def detector_timelapse_writer(log_queue, config):
         topic, msg = ZmqCodec.decode(parts)
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == config["short_name"]):
-                l.info(" writer exiting")
+                l.info(" dbtl exiting")
                 break
             continue
         
@@ -168,7 +168,7 @@ def detector_timelapse_writer(log_queue, config):
                 continue
 
             detected = msg[1]
-            l.debug(" writer detected: " + str(detected) + " at " + str(msg[0]) + " UTC")
+            l.debug(" dbtl detected: " + str(detected) + " at " + str(msg[0]) + " UTC")
             last_detection_dt = msg[0]
             if not detected:
                 continue
@@ -191,7 +191,7 @@ def detector_timelapse_writer(log_queue, config):
             l.trace(" fs expires at: " + str(fs_expires_dt))
             if not is_full_speed:
                 switch_to_fs = True
-                l.trace(" writer switching to full speed")
+                l.trace(" dbtl switching to full speed")
             is_full_speed = True
         
             
@@ -204,7 +204,7 @@ def detector_timelapse_writer(log_queue, config):
         
 
         if switch_to_fs:
-            l.info(" writer switching to full speed")
+            l.info(" dbtl switching to full speed")
             #close the timelapse writer if it's open
             timelapse_writer.close()
 
@@ -220,7 +220,7 @@ def detector_timelapse_writer(log_queue, config):
         dt_utc, frame = msg[0], msg[1]
         
         if dt_utc < fs_expires_dt:
-            l.trace(" writer writing full speed frame: " + str(dt_utc))
+            l.trace(" dbtl writing full speed frame: " + str(dt_utc))
             full_speed_writer.write(dt_utc, frame)
             continue
         
@@ -237,23 +237,28 @@ def detector_timelapse_writer(log_queue, config):
         if dt_utc.microsecond != 0:
             continue
 
-        if dt_utc >= next_timelapse_frame_update:
-            curr_timelapse_frame = get_file(dt_utc - timelapse_frame_offset)
-            if curr_timelapse_frame is None:
-                l.error(" writer no frame found for " + str(dt_utc - timelapse_frame_offset))
-                continue
-            l.debug(" writer updating timelapse frame for " + str(dt_utc - timelapse_frame_offset))
-            delete_old_files(dt_utc)
-            next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
-        
-        frame_dt = dt_utc - timelapse_frame_offset
-        l.debug(" writer writing timelapse frame at " + str(frame_dt))
-        timelapse_writer.write(frame_dt, curr_timelapse_frame)
-        
-        
+        l.trace("next timelapse frame update: " + str(next_timelapse_frame_update))
+        if dt_utc < next_timelapse_frame_update:
+            continue
 
+
+        curr_timelapse_frame = get_file(dt_utc - timelapse_frame_offset)
+        if curr_timelapse_frame is None:
+            l.error(" dbtl no frame found for " + str(dt_utc - timelapse_frame_offset))
+            next_timelapse_frame_update = dt_utc + timedelta(seconds=1/timelapse_hz)
+            continue
+        delete_old_files(dt_utc)
+
+        for i in range(int(1/timelapse_hz)):
+            frame_dt = dt_utc - timelapse_frame_offset + timedelta(seconds=i/timelapse_hz)
+            l.trace(" dbtl writing timelapse frame at " + str(frame_dt))
+            timelapse_writer.write(frame_dt, curr_timelapse_frame)
+        next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
     
-    l.info(" writer closing")
+        
+        
+    
+    l.info(" dbtl closing")
     timelapse_writer.close()
     full_speed_writer.close()
 
