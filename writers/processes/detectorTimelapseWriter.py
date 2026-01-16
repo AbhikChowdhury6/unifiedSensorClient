@@ -184,6 +184,7 @@ def detector_timelapse_writer(log_queue, config):
             
             #the dt to write the first timelapse frame
             timelapse_write_dt = msg[0] + timedelta(seconds=stitch_delay)
+            next_timelapse_frame_update = timelapse_write_dt
             #once this dt passes, we'll write timelapse frames at curr_time - Time before seconds
             #there'll be separate logic for deciding what frame to write (if it's a duplicate or an updated frame)
 

@@ -22,7 +22,8 @@ class video_output:
         
         self.output_base = output_base
         self.temp_write_location = temp_write_location
-        self.output_hz = max(1, hz)
+        self.video_hz = 32
+        self.hz = hz
         self.camera_width = camera_width
         self.camera_height = camera_height
         self.fourcc = fourcc
@@ -48,7 +49,7 @@ class video_output:
     
     def persist(self, dt, data):
         for i in range(data.shape[0]):
-            frame_dt = dt + timedelta(seconds=i/self.output_hz)
+            frame_dt = dt + timedelta(seconds=i/self.hz)
             fn = self.persist_location + dt_to_fnString(frame_dt) + ".qoi"
             qoi.write(fn, data[i])
     
@@ -67,7 +68,7 @@ class video_output:
         self.file_name = self.file_base + "_" + dt_to_fnString(dt) + ".mp4"
         self.output = cv2.VideoWriter(self.temp_output_location + self.file_name, 
                                 self.fourcc, 
-                                self.output_hz, 
+                                self.video_hz, 
                                 (self.camera_width, self.camera_height))
         if not self.output.isOpened():
             self.l.error("Failed to open video writer")

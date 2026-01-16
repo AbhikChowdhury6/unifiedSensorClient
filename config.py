@@ -941,8 +941,7 @@ yolo_person_detector_process_config = {
     "pub_endpoint": f"ipc:///tmp/yolo11m_person_detection.sock",
     "pub_topic": f"yolo11m_person_detection",
     "model": "yolo11l",
-    "confidence_threshold": 0.5,
-    "nms_threshold": 0.5,
+    "confidence_threshold": 0.3,
     "interval_seconds": 8,
     "verbose": True,
 }

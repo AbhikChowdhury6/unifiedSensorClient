@@ -144,7 +144,6 @@ def yolo_person_detector(log_queue, config):
 
     interval_s = float(config.get("interval_seconds", 4))
     conf_thresh = float(config.get("confidence_threshold", 0.7))
-    nms_thresh = float(config.get("nms_threshold", 0.7))
 
     model_name = config.get("model", "yolo11m")
     model = YOLO(model_name)
@@ -195,7 +194,7 @@ def yolo_person_detector(log_queue, config):
             sys.stdout.flush()
             maxPersonConf = max([results[0].boxes.conf[i] for i in indexesOfPeople])
             l.debug("the most confident recognition was %f", maxPersonConf)
-            if maxPersonConf > config["confidence_threshold"]:
+            if maxPersonConf > conf_thresh:
                 detected = 1
             else:
                 detected = 0
