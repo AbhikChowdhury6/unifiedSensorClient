@@ -39,7 +39,7 @@ class Writer:
         if output.variable_hz:
             self.hz = "variable"
         else:
-            self.hz = max(1, output.output_hz)
+            self.hz = output.output_hz
         self.output = output
         self.output_file = None
 
