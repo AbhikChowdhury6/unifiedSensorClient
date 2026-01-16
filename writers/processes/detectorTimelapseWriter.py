@@ -250,10 +250,12 @@ def detector_timelapse_writer(log_queue, config):
             continue
         delete_old_files(dt_utc)
 
-        for i in range(int(1/timelapse_hz)):
-            frame_dt = dt_utc - timelapse_frame_offset + timedelta(seconds=i)
-            l.trace(" dbtl writing timelapse frame at " + str(frame_dt))
-            timelapse_writer.write(frame_dt, curr_timelapse_frame)
+        # for i in range(int(1/timelapse_hz)):
+        #     frame_dt = dt_utc - timelapse_frame_offset + timedelta(seconds=i)
+        #     l.trace(" dbtl writing timelapse frame at " + str(frame_dt))
+        #     timelapse_writer.write(frame_dt, curr_timelapse_frame)
+        l.trace(" dbtl writing timelapse frame at " + str(dt_utc - timelapse_frame_offset))
+        timelapse_writer.write(dt_utc - timelapse_frame_offset, curr_timelapse_frame)
         next_timelapse_frame_update += timedelta(seconds=1/timelapse_hz)
     
         
