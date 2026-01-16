@@ -23,6 +23,7 @@ class video_output:
         self.output_base = output_base
         self.temp_write_location = temp_write_location
         self.video_hz = 32
+        self.output_hz = hz
         self.hz = hz
         self.camera_width = camera_width
         self.camera_height = camera_height
