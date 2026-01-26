@@ -2,31 +2,10 @@
 #4 CPUs
 #8 gigs of ram
 
-sudo apt install -y ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
-sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
-echo \
-"deb [arch=$(dpkg --print-architecture) \
-signed-by=/etc/apt/keyrings/docker.gpg] \
-https://download.docker.com/linux/ubuntu \
-$(lsb_release -cs) stable" | \
-sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+git clone https://github.com/AbhikChowdhury6/unifiedSensorClient.git
 
-
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-sudo usermod -aG docker $USER
-
-sudo reboot
-
-docker run hello-world
-
-
-
-
+cd unifiedSensorClient/cloud/upload-service/
 
 # copy the upload service files onto the VM (pick one option)
 # Option A: from your local machine (example):
@@ -37,7 +16,10 @@ docker run hello-world
 # go to the upload service directory
 cd /opt/upload-service
 
-# build and start the stack (FastAPI + MinIO + TimescaleDB)
+#update the app/exsecrets.env file with the minio secrets
+#rename to secrets.env
+
+# build and start the stack
 docker compose build
 docker compose up -d
 
@@ -47,8 +29,7 @@ docker compose ps
 # follow FastAPI logs
 docker compose logs -f fastapi
 
-# (optional) access MinIO console in a browser:
-# http://VM_IP:9001  (user: minio, password: minio123)
+
 
 # test the upload endpoint (replace FILE and VM_IP):
 # file name should end with a timestamp like _YYYYMMDDTHHMMSSp123Z.ext

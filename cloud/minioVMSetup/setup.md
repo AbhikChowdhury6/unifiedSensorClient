@@ -1,5 +1,6 @@
 - copy iso to proxmox
     - if you can get to pve local in the browser you can see a spot to upload the iso
+        - in the left pannel Datacenter -> hostname ->local and then there should be an iso images button
     - scp /home/chowder/Downloads/ubuntu-22.04.5-live-server-amd64.iso root@192.168.20.137:/var/lib/vz/template/iso
 
 make a vm with 
@@ -12,11 +13,7 @@ make a vm with
 
 on the ubuntu server
 - prep
-    - get public key copied (figure out a more secure way to do this) (actually don't enable ssh and use my kvm)
-        - on VM
-            - nc your-local-ip 9000 >> ~/.ssh/authorized_keys
-        - on remote
-            - cat ~/.ssh/id_ed25519.pub | nc -l -p 9000
+    - get public key copied during install by adding github key
     - add storage drive
         - in proxmox go to hardware → add and add a hard disk
 
@@ -33,7 +30,7 @@ sudo blkid /dev/sdb1
 sudo nano /etc/fstab
 add this line but with the partition uuid
 
-UUID=5c64dbba-de43-4982-9223-eb8c0c2d086f /mnt/data ext4 defaults 0 2
+UUID=232c8649-1e68-4b11-b9ed-f941fbb8d440 /mnt/data ext4 defaults 0 2
 
 sudo mount -a
 
@@ -48,6 +45,9 @@ sudo useradd -r minio-user -s /sbin/nologin
 sudo chown minio-user:minio-user /mnt/data
 
 sudo mkdir -p /etc/minio
+
+
+###### this is where you change the admin password#####
 sudo tee /etc/minio/minio.conf >/dev/null <<'EOF'
 MINIO_VOLUMES="/mnt/data"
 MINIO_OPTS="--console-address :9001"

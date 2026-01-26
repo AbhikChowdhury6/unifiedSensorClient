@@ -77,7 +77,7 @@ file_uploader_process_config = {
     "short_name": "file-up",
     "time_to_shutdown": .1,
     "debug_lvl": 20,
-    "upload_url": "http://192.168.10.36:/upload",
+    "upload_url": "http://192.168.20.36:/upload",
     "upload_retry_interval": 10,
     "subscription_topics": [
 #        f"{platform_uuid}_csi-0_{picamv3noirwide}_mp4-8fps_540x960x3_8hz_writer-process",
