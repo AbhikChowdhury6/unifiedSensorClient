@@ -1,3 +1,34 @@
+git clone https://github.com/AbhikChowdhury6/unifiedSensorClient.git
+
+sudo apt update
+sudo apt install -y  rpicam-apps tmux git
+
+
+#install miniconda
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+bash Miniforge3-Linux-aarch64.sh
+rm Miniforge3-Linux-aarch64.sh
+source ~/.bashrc
+
+source ~/miniforge3/etc/profile.d/conda.sh
+conda create --name vision311 python=3.11
+source activate vision311
+conda install -y ultralytics pytorch torchvision pyarrow fastparquet tzlocal colorlog
+
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y libcap-dev libatlas-base-dev ffmpeg libopenjp2-7
+sudo apt install -y libcamera-dev
+sudo apt install -y libkms++-dev libfmt-dev libdrm-dev
+
+
+
+pip install --upgrade pip
+# libcamera was a bit ahead of rpi-libcamera so i got this form pypi
+pip install rpi-libcamera -C setup-args="-Dversion=unknown"
+pip install rpi-kms picamera2 av
+
+
+
 conda install -y zeromq pyzmq msgpack-python python-sounddevice setproctitle colorlog
 
 pip3 install adafruit-extended-bus
@@ -8,9 +39,9 @@ pip3 install adafruit-circuitpython-bme680
 pip3 install adafruit-circuitpython-bno08x
 pip3 install adafruit-circuitpython-gps
 pip3 install lgpio qoi
-//sudo pip3 install rpi_ws281x adafruit-circuitpython-neopixel
+#pip3 install rpi_ws281x adafruit-circuitpython-neopixel
 
-sudo pip3 install adafruit-circuitpython-neopixel-spi
+pip3 install adafruit-circuitpython-neopixel-spi
 
 
 #how to do memory compression
@@ -19,7 +50,7 @@ sudo pip3 install adafruit-circuitpython-neopixel-spi
 #nmcli connection show
 #nmcli con down snet5
 #nmcli device wifi connect snet24 password secret
-#nmcli con delete snet 5
+#nmcli con delete snet5
 
 
 sudo apt install wavpack
@@ -52,11 +83,11 @@ EOF
 sudo systemctl restart NetworkManager
 
 
-sudo nmcli con mod "dnet24" connection.autoconnect yes
-sudo nmcli con mod "dnet24" connection.autoconnect-retries -1     # keep retrying forever
-sudo nmcli con mod "dnet24" 802-11-wireless.cloned-mac-address permanent
-sudo nmcli con mod "dnet24" ipv6.method ignore                     # optional: avoid IPv6 DHCP bugs
-sudo nmcli con up  "dnet24"
+sudo nmcli con mod "snet24" connection.autoconnect yes
+sudo nmcli con mod "snet24" connection.autoconnect-retries -1     # keep retrying forever
+sudo nmcli con mod "snet24" 802-11-wireless.cloned-mac-address permanent
+sudo nmcli con mod "snet24" ipv6.method ignore                     # optional: avoid IPv6 DHCP bugs
+sudo nmcli con up  "snet24"
 
 
 # Once per boot via systemd (preferred over cron)
@@ -142,3 +173,35 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable --now wifi-heal.timer
+
+
+
+
+
+######################
+run main on startup
+
+sudo nano /etc/systemd/system/datacap.service
+ [Unit]
+ Description=Run dataCap in conda env
+ After=network.target
+
+ [Service]
+ ExecStartPre=/usr/bin/rm -f /tmp/data_input
+ ExecStartPre=/usr/bin/mkfifo /tmp/data_input
+ ExecStart=/bin/bash -c "exec 3<>/tmp/data_input; /home/pi/miniforge3/envs/vision311/bin/python3.11 /home/pi/unifiedSensorClient/main.py <&3"
+ WorkingDirectory=/home/pi/unifiedSensorClient
+ User=pi
+ Restart=on-failure
+ StandardOutput=append:/home/pi/datacap.log
+ StandardError=append:/home/pi/datacap.log
+
+ [Install]
+ WantedBy=multi-user.target
+
+
+#to send commands - check this
+echo command > /tmp/data_input
+
+# to start again
+sudo systemctl restart datacap.service

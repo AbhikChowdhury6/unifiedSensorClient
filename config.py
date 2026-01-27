@@ -32,7 +32,7 @@ picamv3noirwide = "picamV3-sony-imx708-noir-120fov-12MP"
 picamv3noir = "picamV3-sony-imx708-noir-80fov-12MP"
 picamv3wide = "picamV3-sony-imx708-120fov-12MP"
 
-repoPath = "/home/pi/Documents/"
+repoPath = "/home/pi/"
 
 ###########################################Platform Utilities###########################################
 
