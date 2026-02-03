@@ -13,7 +13,6 @@ source ~/.bashrc
 source ~/miniforge3/etc/profile.d/conda.sh
 conda create --name vision311 python=3.11
 source activate vision311
-conda install -y ultralytics pytorch torchvision pyarrow fastparquet tzlocal colorlog
 
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y libcap-dev libatlas-base-dev ffmpeg libopenjp2-7
@@ -22,14 +21,22 @@ sudo apt install -y libkms++-dev libfmt-dev libdrm-dev
 
 
 
-pip install --upgrade pip
+#pip install --upgrade pip
 # libcamera was a bit ahead of rpi-libcamera so i got this form pypi
-pip install rpi-libcamera -C setup-args="-Dversion=unknown"
-pip install rpi-kms picamera2 av
+#pip install rpi-libcamera -C setup-args="-Dversion=unknown"
+#pip install rpi-kms picamera2 av
+
+sudo apt install -y libcap-dev python3-dev pkg-config
+pip install python-prctl
+pip install rpi-libcamera
+pip install picamera2
 
 
 
 conda install -y zeromq pyzmq msgpack-python python-sounddevice setproctitle colorlog
+
+conda install -y ultralytics
+conda install -y pytorch
 
 pip3 install adafruit-extended-bus
 pip3 install adafruit-circuitpython-scd4x

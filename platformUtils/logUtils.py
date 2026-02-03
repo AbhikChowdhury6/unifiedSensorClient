@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import zmq
 from platformUtils.zmq_codec import ZmqCodec
-from config import logging_process_config, zmq_control_endpoint, all_process_configs
+from config import logging_process_config, zmq_control_endpoint, all_process_configs, zmq_logger_endpoint
 
 
 
@@ -101,8 +101,45 @@ def check_apply_level(obj, process_name, logger_name=None):
         logging.getLogger(logger_name).error(f"log level not given for {process_name}")
         return False
 
-def worker_configurer(queue, level=logging.INFO):
-    handler = logging.handlers.QueueHandler(queue)
+class ZmqLogHandler(logging.Handler):
+    """
+    Logging handler that publishes formatted log records over ZMQ to the logger endpoint.
+    """
+    def __init__(self, endpoint: str, topic: str = "log"):
+        super().__init__()
+        self._ctx = zmq.Context.instance()
+        self._pub = self._ctx.socket(zmq.PUB)
+        # Workers connect to the logger SUB endpoint bound by the logging process
+        self._pub.connect(endpoint)
+        self._topic = topic
+
+    def emit(self, record: logging.LogRecord):
+        try:
+            payload = {
+                "name": record.name,
+                "levelno": record.levelno,
+                "levelname": record.levelname,
+                "pathname": record.pathname,
+                "lineno": record.lineno,
+                "funcName": record.funcName,
+                "processName": getattr(record, "processName", ""),
+                "threadName": getattr(record, "threadName", ""),
+                "created": record.created,
+                "msecs": record.msecs,
+                # send formatted message to avoid args/exc serialization issues
+                "msg": record.getMessage(),
+            }
+            self._pub.send_multipart(ZmqCodec.encode(self._topic, payload))
+        except Exception:
+            # never raise from logging; fallback to stderr
+            try:
+                sys.stderr.write("ZmqLogHandler failed to emit log record\n")
+                sys.stderr.flush()
+            except Exception:
+                pass
+
+def worker_configurer(level=logging.INFO):
+    handler = ZmqLogHandler(zmq_logger_endpoint, topic="log")
     root = logging.getLogger()
     root.handlers = []  # remove defaults in the worker
     root.addHandler(handler)

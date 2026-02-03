@@ -12,6 +12,8 @@ platform_uuid = testpi5UUID
 zmq_control_endpoint = f"ipc:///tmp/control.sock"
 # separate inbound requests endpoint (workers PUB -> main SUB)
 zmq_control_requests_endpoint = f"ipc:///tmp/control_requests.sock"
+zmq_logger_endpoint = f"ipc:///tmp/{platform_uuid}_logger.sock"
+
 
 # this is the platform name
 platform_name = "raspberry_pi_5"

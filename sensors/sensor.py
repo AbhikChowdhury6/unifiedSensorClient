@@ -24,7 +24,6 @@ class Sensor:
                     shape = None,
                     hz = None,
                     grace_period_samples = 0,
-                    log_queue = None,
                     file_writer_config = {},
                     debug_lvl = 30,
                     retrieve_data = lambda: None,
@@ -32,9 +31,6 @@ class Sensor:
                     **kwargs
                     ):
         
-        if log_queue is None:
-            raise ValueError("log_queue is required")
-        self.log_queue = log_queue
         self.debug_lvl = debug_lvl
         self.l = logging.getLogger("sensor_startup")
         self.l.setLevel(debug_lvl)
@@ -133,12 +129,10 @@ class Sensor:
             wc = file_writer_config
             if "additional_output_config" not in wc:
                 wc["additional_output_config"] = {}
-            wc["additional_output_config"]["log_queue"] = log_queue
             if "file_size_check_interval_s_range" not in wc:
                 wc["file_size_check_interval_s_range"] = (300, 600)
             writer_args = {
                            "debug_lvl": debug_lvl,
-                           "log_queue": log_queue,
                            "topic": self.topic,
                            "hz": self.hz,
                            "output_hz": wc["output_hz"],

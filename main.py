@@ -25,7 +25,6 @@ allow_dict[mp.current_process().name] = ["all"]
 # Ensure logs produced inside the logging process are allowed (we name it below)
 allow_dict["logging"] = ["all"]
 deny_dict = {}
-q = mp.Queue()
 
 def _start_processes_dynamically():
     processes = {}
@@ -35,7 +34,7 @@ def _start_processes_dynamically():
             module_path = cfg.get("module_path")
             module = importlib.import_module(module_path)
             target = getattr(module, cfg.get("func_name"))
-            p = mp.Process(target=target, name=cfg.get("short_name"), args=(q,cfg))
+            p = mp.Process(target=target, name=cfg.get("short_name"), args=(cfg,))
             p.start()
             processes[name] = p
     return processes
@@ -61,11 +60,11 @@ if __name__ == "__main__":
     sys.stdout.flush()
     sys.stdout.flush()
 
-    listener_process = mp.Process(target=logging_process, name=logging_process_config.get("short_name", "logging"), args=(q,allow_dict, deny_dict))
+    listener_process = mp.Process(target=logging_process, name=logging_process_config.get("short_name", "logging"), args=(allow_dict, deny_dict))
     listener_process.start()
     listener_process.is_alive()
 
-    worker_configurer(q, main_debug_lvl)
+    worker_configurer(main_debug_lvl)
     l=logging.getLogger("main")
     l.setLevel(main_debug_lvl)
 
@@ -85,12 +84,7 @@ if __name__ == "__main__":
         module = importlib.import_module(module_name)
 
         target = getattr(module, func_name)
-        try:
-            params = inspect.signature(target).parameters
-            args = (q,) if len(params) >= 1 else ()
-        except (ValueError, TypeError):
-            args = ()
-        p = mp.Process(target=target, name=cfg.get("short_name"), args=args)
+        p = mp.Process(target=target, name=cfg.get("short_name"), args=(cfg,))
         p.start()
         processes[process_name] = p
         return p

@@ -97,10 +97,10 @@ def _upload_file(path: str, config: dict, l: logging.Logger):
     return
 
 
-def file_uploader(log_queue, config):
+def file_uploader(config):
     l = logging.getLogger(config["short_name"])
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l.info(config["short_name"] + " process starting")
 
     ctx = zmq.Context()

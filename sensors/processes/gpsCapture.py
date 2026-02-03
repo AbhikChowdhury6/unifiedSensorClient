@@ -19,10 +19,10 @@ import serial
 
 
 
-def gps_capture(log_queue: queue.Queue, config: dict):
+def gps_capture(config: dict):
     l = logging.getLogger(config["short_name"])
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l.info(config["short_name"] + " process starting")
 
 
@@ -149,11 +149,8 @@ def gps_capture(log_queue: queue.Queue, config: dict):
     
     sensors = []
     for sensor in config["sensors"]:
-        if "file_writer_config" in sensor:
-            sensor["file_writer_config"]["log_queue"] = log_queue
         if "debug_lvl" not in sensor:
             sensor["debug_lvl"] = config["debug_lvl"]
-        sensor["log_queue"] = log_queue
         sensor["is_ready"] = is_ready
         sensor["retrieve_data"] = retrieve_datas[sensor["sensor_type"]]
         sensor["bus_location"] = config["bus_location"]

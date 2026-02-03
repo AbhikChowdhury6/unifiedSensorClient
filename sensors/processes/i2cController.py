@@ -29,9 +29,9 @@ def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def i2c_controller(log_queue, config):
+def i2c_controller(config):
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " controller starting")
 
@@ -64,7 +64,6 @@ def i2c_controller(log_queue, config):
             "device_config": {
                 "bus": I2C_BUS,
                 "address": device['address'],
-                "log_queue": log_queue,
                 },
             },
         ))

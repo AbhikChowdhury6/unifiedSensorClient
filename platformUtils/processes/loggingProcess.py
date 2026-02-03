@@ -3,8 +3,7 @@ import sys
 import logging
 import zmq
 from datetime import datetime, timezone, timedelta
-from queue import Empty
-from config import logging_process_config, zmq_control_endpoint
+from config import logging_process_config, zmq_control_endpoint, zmq_logger_endpoint
 from platformUtils.zmq_codec import ZmqCodec
 from platformUtils.logUtils import set_process_title, TRACE_LEVEL_NUM
 import colorlog
@@ -77,8 +76,8 @@ def listener_configurer(config, allow_dict, deny_dict):
     root.setLevel(TRACE_LEVEL_NUM)  # allow all; filtering done by handlers/filters
 
 
-
-def logging_process(q, allow_dict, deny_dict):
+ 
+def logging_process(allow_dict, deny_dict):
     config = logging_process_config
     # set process title for the logging listener
     try:
@@ -91,72 +90,79 @@ def logging_process(q, allow_dict, deny_dict):
     l.info(config["short_name"] + " process starting")
 
     ctx = zmq.Context()
+    # Single SUB: bind to logger endpoint (workers PUB connect), and connect to control bus
     sub = ctx.socket(zmq.SUB)
+    sub.bind(zmq_logger_endpoint)
     sub.connect(zmq_control_endpoint)
+    sub.setsockopt(zmq.SUBSCRIBE, b"log")
     sub.setsockopt(zmq.SUBSCRIBE, b"control")
     sub.setsockopt(zmq.RCVTIMEO, 50)
-    l.info(config["short_name"] + " process connected to control topic")
+    l.info(config["short_name"] + " process listening on logger " + zmq_logger_endpoint + " and control " + zmq_control_endpoint)
     exit_time = datetime.max.replace(tzinfo=timezone.utc)
 
     while True:
         if datetime.now(timezone.utc) > exit_time:
             l.info(config["short_name"] + " process exiting")
             break
-        # Drain log queue first (non-blocking)
-        while True:
-            try:
-                record = q.get_nowait()
-            except Empty:
-                break
-            if record is None:
-                return
-            logger = logging.getLogger(record.name)
-            logger.handle(record)
 
-        # Then handle control messages (non-blocking via timeout)
         try:
             parts = sub.recv_multipart()
             topic, obj = ZmqCodec.decode(parts)
         except zmq.Again:
             continue
-        
-        if topic == "control" and obj[0] == "exit_all":
-            l.info(config["short_name"] + " process got control exit exiting in " + str(max_time_to_shutdown + .5) + " seconds")
-            exit_time = datetime.now(timezone.utc) + timedelta(seconds=max_time_to_shutdown + .5)
+
+        if topic == "log" and isinstance(obj, dict):
+            try:
+                rec = logging.LogRecord(
+                    name=obj.get("name", ""),
+                    level=obj.get("levelno", logging.INFO),
+                    pathname=obj.get("pathname", ""),
+                    lineno=obj.get("lineno", 0),
+                    msg=obj.get("msg", ""),
+                    args=(),
+                    exc_info=None,
+                    func=obj.get("funcName", None),
+                )
+                rec.processName = obj.get("processName", "")
+                rec.threadName = obj.get("threadName", "")
+                rec.created = obj.get("created", rec.created)
+                rec.msecs = obj.get("msecs", rec.msecs)
+                logging.getLogger(rec.name).handle(rec)
+            except Exception:
+                pass
             continue
-        
-        if not (topic == "control" and obj[0] == "log"):
-            continue
 
-        log_cmd = obj[1]
-        target_process = obj[2]
+        if topic == "control":
+            if obj[0] == "exit_all":
+                l.info(config["short_name"] + " process got control exit exiting in " + str(max_time_to_shutdown + .5) + " seconds")
+                exit_time = datetime.now(timezone.utc) + timedelta(seconds=max_time_to_shutdown + .5)
+                continue
+            if obj[0] != "log":
+                continue
 
-        if log_cmd == "e":
-            target_method = obj[3]
-            if target_process not in allow_dict:
-                allow_dict[target_process] = []
-            allow_dict[target_process].append(target_method)
-            
-            # update the deny dict
-            if target_process in deny_dict:
-                if target_method == "all":
-                    del deny_dict[target_process]
-                else:
-                    deny_dict[target_process].remove(target_method)
-            
-            
-        elif log_cmd == "d":           
-            target_method = obj[3]
-            if target_process not in deny_dict:
-                deny_dict[target_process] = []
-            deny_dict[target_process].append(target_method)
+            log_cmd = obj[1]
+            target_process = obj[2]
 
-            # update the allow dict
-            if target_process in allow_dict:
-                if target_method == "all":
-                    del allow_dict[target_process]
-                else:
-                    if "all" not in allow_dict[target_process]:
-                        allow_dict[target_process].remove(target_method)
+            if log_cmd == "e":
+                target_method = obj[3]
+                if target_process not in allow_dict:
+                    allow_dict[target_process] = []
+                allow_dict[target_process].append(target_method)
+                if target_process in deny_dict:
+                    if target_method == "all":
+                        del deny_dict[target_process]
+                    else:
+                        deny_dict[target_process].remove(target_method)
+            elif log_cmd == "d":
+                target_method = obj[3]
+                if target_process not in deny_dict:
+                    deny_dict[target_process] = []
+                deny_dict[target_process].append(target_method)
+                if target_process in allow_dict:
+                    if target_method == "all":
+                        del allow_dict[target_process]
+                    else:
+                        if "all" not in allow_dict[target_process]:
+                            allow_dict[target_process].remove(target_method)
     print("logUtils: logging process exiting")
     sys.stdout.flush()

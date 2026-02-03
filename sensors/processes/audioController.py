@@ -17,9 +17,9 @@ from platformUtils.zmq_codec import ZmqCodec
 from sensors.audio.audioCapture import AudioCapture
 
 config = audio_controller_process_config
-def audio_controller(log_queue):
+def audio_controller():
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " controller starting")
 
@@ -75,6 +75,6 @@ def audio_controller(log_queue):
 
 
 if __name__ == "__main__":
-    audio_controller(None)
+    audio_controller()
 
 

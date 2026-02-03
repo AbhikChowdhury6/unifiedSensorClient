@@ -114,9 +114,9 @@ def _compute_next_capture_dt(now_dt: datetime, interval_s: float) -> datetime:
 #like 8 seconds on the pi5 and 8 seconds on the pi4 with a smaller model
 
 
-def yolo_person_detector(log_queue, config):
+def yolo_person_detector(config):
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " process starting")
 

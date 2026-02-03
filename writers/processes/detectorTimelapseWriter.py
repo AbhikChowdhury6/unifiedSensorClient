@@ -16,10 +16,10 @@ from writers.writer import Writer
 from writers.videoOutput import video_output
 import qoi
 
-def detector_timelapse_writer(log_queue, config):
+def detector_timelapse_writer(config):
     #set up logging
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.setLevel(config["debug_lvl"])
     l.info(config["short_name"] + " writer starting")

@@ -23,9 +23,9 @@ def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def video_controller(log_queue, config):
+def video_controller(config):
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " controller starting")
 
@@ -36,8 +36,6 @@ def video_controller(log_queue, config):
     l.info(" controller connected to control topic")
 
     fwc = config['file_writer_config']
-    if fwc not in [None, {}]:
-        fwc["log_queue"] = log_queue
 
     camera = load_class_and_instantiate(
         config['camera_class_loc'] + config['camera_module_name'] + '.py',
@@ -51,7 +49,7 @@ def video_controller(log_queue, config):
             "data_type": config['data_type'],
             "shape": config['shape'],
             "hz": config['hz'],
-            "log_queue": log_queue,
+            "log_queue": None,
             "file_writer_config": fwc,
             "debug_lvl": config['debug_lvl'],
             "camera_index": config['camera_index'],

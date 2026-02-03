@@ -15,9 +15,9 @@ from platformUtils.logUtils import worker_configurer, check_apply_level, set_pro
 from config import sqlite_writer_process_config, zmq_control_endpoint
 config = sqlite_writer_process_config
 
-def sqlite_writer(log_queue):
+def sqlite_writer():
     set_process_title(config["short_name"])
-    worker_configurer(log_queue, config["debug_lvl"])
+    worker_configurer(config["debug_lvl"])
     l = logging.getLogger(config["short_name"])
     l.info(config["short_name"] + " writer starting")
 
