@@ -2,18 +2,12 @@ import os
 import sys
 import zmq
 from datetime import datetime, timezone
-import numpy as np
 import requests
-import traceback
-import time
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
-import logging
-from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
-
-from config import zmq_control_endpoint, fnString_to_dt
+from platformUtils.utils import configure_process, fnString_to_dt
 
 
 def _iter_files_recursive(root_dir: str):
@@ -50,7 +44,7 @@ def _iter_files_recursive(root_dir: str):
 #         except Exception as e:
 #             l.warning(config["short_name"] + " process failed to remove directory " + dirpath + ": " + str(e))
 
-def _upload_files_in_backlog(time_till_ready: int, config: dict, l: logging.Logger):
+def _upload_files_in_backlog(time_till_ready: int, config: dict, l):
     now_cutoff = datetime.now(timezone.utc).timestamp() - time_till_ready
     candidates = []
     data_root = config["data_dir"]
@@ -85,7 +79,7 @@ def _upload_files_in_backlog(time_till_ready: int, config: dict, l: logging.Logg
     return
 
 
-def _upload_file(path: str, config: dict, l: logging.Logger):
+def _upload_file(path: str, config: dict, l):
     # post to the upload url
     response = requests.post(config["upload_url"], files={"file": open(path, "rb")})
     if response.status_code != 200:
@@ -97,18 +91,11 @@ def _upload_file(path: str, config: dict, l: logging.Logger):
     return
 
 
-def file_uploader(config):
-    l = logging.getLogger(config["short_name"])
-    set_process_title(config["short_name"])
-    worker_configurer(config["debug_lvl"])
-    l.info(config["short_name"] + " process starting")
-
+def file_uploader(config_name):
     ctx = zmq.Context()
-    sub = ctx.socket(zmq.SUB)
-    sub.connect(zmq_control_endpoint)
-    sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    # Wake up at least once per second if no messages arrive
-    sub.setsockopt(zmq.RCVTIMEO, config["upload_retry_interval"]*1000)
+    l, sub, config = configure_process(ctx, config_name)
+    l.info(config_name + " process starting")
+
     # for endpoint in config["subscription_endpoints"]:
     #     sub.connect(endpoint)
     # for topic in config["subscription_topics"]:
@@ -134,7 +121,7 @@ def file_uploader(config):
 
         if topic == "control":
             if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == "file-up"):
-                l.info(config["short_name"] + " process got control exit")
+                l.info("process got control exit")
                 break
             continue
         
@@ -166,16 +153,8 @@ def file_uploader(config):
         #     else:
         #         l.debug(config["short_name"] + " process got message without valid path: " + str(msg))
     
-    l.info(config["short_name"] + " process exiting")
+    l.info("process exiting")
 
 if __name__ == "__main__":
-    config = {
-        "data_dir": "/home/pi/data/temp/",
-        "upload_url": "http://localhost:8000/upload",
-        "time_till_ready": 0,
-        "short_name": "file-up",
-        "debug_lvl": "debug",
-        "upload_retry_interval": 1,
-    }
-    l = logging.getLogger("file-up")
-    _upload_files_in_backlog(0, config, l)
+    config_name = sys.argv[1]
+    file_uploader(config_name)

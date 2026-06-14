@@ -5,13 +5,13 @@ import numpy as np
 
 import sys
 
-repoPath = "/home/pi/Documents/"
-sys.path.append(repoPath + "unifiedSensorClient/")
+
 from platformUtils.zmq_codec import ZmqCodec
 import logging
 import multiprocessing as mp
 from writers.processes.writerProcess import writer_process
-from config import camera_topic, camera_endpoint
+from config import zmq_control_endpoint
+from platformUtils.utils import send_orchestrator_command
 
 
 class Sensor:
@@ -89,17 +89,17 @@ class Sensor:
 
         self.endpoint = f"ipc:///tmp/{self.topic}.sock"
         self.ctx = zmq.Context()
-        self.pub = self.ctx.socket(zmq.PUB)
-        self.pub.bind(self.endpoint)
+        self.sensor_pub = self.ctx.socket(zmq.PUB)
+        self.sensor_pub.bind(self.endpoint)
 
         #logging setup
         self.l = logging.getLogger(self.topic)
         self.l.setLevel(debug_lvl)
         self.l.debug(self.topic + " connected to " + self.endpoint)
-        self.l.debug(self.topic)
-        self.l.debug(camera_topic)
-        self.l.debug(self.endpoint)
-        self.l.debug(camera_endpoint)
+#        self.l.debug(self.topic)
+#        self.l.debug(camera_topic)
+#        self.l.debug(self.endpoint)
+#        self.l.debug(camera_endpoint)
 
 
         #ready
@@ -140,29 +140,19 @@ class Sensor:
                            "output_module": wc["output_module"],
                            "file_size_check_interval_s_range": wc["file_size_check_interval_s_range"],
                            "additional_output_config": wc["additional_output_config"]}
-            self.writer_process = mp.Process(target=writer_process, name=self.topic + "_writer-process", kwargs=writer_args)
-            self.writer_process.start()
-            self.writer_process.is_alive()
-        self.log(20, lambda: self.topic + " initialized")
+            
+            self.writer_process_name = "writer@" + wc["output_base"] + ".service"
 
-    def log(self, lvl:int, msg):
-        if lvl < self.debug_lvl:
-            return
-        if callable(msg):
-            msg = msg()
-        if lvl == 5:
-            self.l.trace(msg)
-        elif lvl == 10:
-            self.l.debug(msg)
-        elif lvl == 20:
-            self.l.info(msg)
-        elif lvl == 30:
-            self.l.warning(msg)
-        elif lvl == 40:
-            self.l.error(msg)
-        elif lvl == 50:
-            self.l.critical(msg)
-    
+            #make a shared memory muliprocessing manager dictionary
+            self.writer_process_shm = mp.Manager().dict()
+            self.writer_process_shm[self.writer_process_name] = {writer_args}
+            
+            #send a command to the orchestrator to spawn the writer process
+            self.control_pub = self.ctx.socket(zmq.PUB)
+            self.control_pub.bind(zmq_control_endpoint)
+            send_orchestrator_command(self.control_pub, "start", self.writer_process_name)
+        self.l.info(self.topic + " initialized")
+
     def read_data(self):
         if not self.is_ready():
             return
@@ -173,12 +163,12 @@ class Sensor:
         now = now.replace(microsecond=int(rounded_down_micros))
 
         if self.hz == "variable":
-            self.log(5, lambda: "sending data at time: " + str(now))
+            self.l.trace("sending data at time: " + str(now))
             rd = self.retrieve_data()
             if rd is None:
                 return
             self.curr_data = np.array(rd)
-            self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
+            self.sensor_pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
             return
         
         #The highest frequency thing will be the message hz, so we can check that first
@@ -188,45 +178,45 @@ class Sensor:
         #if it has been longer than the update hz, fill the messages (for higher hz sensors)
         if self.last_read_dt is not None:
             seconds_since_last_read = (now - self.last_read_dt).total_seconds()
-            self.log(5, lambda: "time since last read: " + str(seconds_since_last_read) + " seconds")
+            self.l.trace("time since last read: " + str(seconds_since_last_read) + " seconds")
 
         if self.last_read_dt is not None and seconds_since_last_read > 1/self.sensor_hz:
             messages_to_fill = min(int(seconds_since_last_read * self.message_hz) - 1, self.messages_to_interp)
-            self.log(5, lambda: "messages to fill: " + str(messages_to_fill))
+            self.l.trace("messages to fill: " + str(messages_to_fill))
             if messages_to_fill > 0:
-                self.log(5, lambda: "it has been " + str(now - self.last_read_dt) + " seconds since the last read")
-                self.log(5, lambda: "we have a maximum of " + str(self.messages_to_interp) + " messages to interp")
-                self.log(5, lambda: "we will be writing " + str(messages_to_fill) + " number of messages")
+                self.l.trace("it has been " + str(now - self.last_read_dt) + " seconds since the last read")
+                self.l.trace("we have a maximum of " + str(self.messages_to_interp) + " messages to interp")
+                self.l.trace("we will be writing " + str(messages_to_fill) + " number of messages")
                 
                 for i in range(1, messages_to_fill + 1):
                     dt = self.last_read_dt + timedelta(seconds=i/self.message_hz)
-                    self.log(5, lambda: "filling message " + str(i) + " of " + str(messages_to_fill) + " at " + str(dt))
-                    self.pub.send_multipart(ZmqCodec.encode(self.topic, [dt, self.curr_data]))
+                    self.l.trace("filling message " + str(i) + " of " + str(messages_to_fill) + " at " + str(dt))
+                    self.sensor_pub.send_multipart(ZmqCodec.encode(self.topic, [dt, self.curr_data]))
             
 
 
         #check if it's the right time to update the data
         if now >= self.sensor_update_after:            
-            self.log(5, lambda: "updating data from " + self.topic)
+            self.l.trace("updating data from " + self.topic)
 
             #ts = now.timestamp()
             rd = self.retrieve_data()
             if rd is None:
                 return
             self.curr_data = np.array(rd)
-            #self.log(5, lambda: "read time: " + str(now.timestamp() - ts) + " seconds")
+            #self.l.trace("read time: " + str(now.timestamp() - ts) + " seconds")
             #self.max_read_micros = max(self.max_read_micros, (now.timestamp() - ts) * 1_000_000)
-            #self.log(5, lambda: "max read time: " + str(self.max_read_micros) + " microseconds")
+            #self.l.trace("max read time: " + str(self.max_read_micros) + " microseconds")
 
             self.last_read_dt = now
             
             self.sensor_update_after = now + timedelta(microseconds=self.sensor_delay_micros)
-            self.log(5, lambda: "next sensor update after" + str(self.sensor_update_after))
+            self.l.trace("next sensor update after" + str(self.sensor_update_after))
 
         
         #for lower hz sensors, we need to fill the messages
         #if it's not time to get new data but it is time to send the interpolate as well
-        self.pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
+        self.sensor_pub.send_multipart(ZmqCodec.encode(self.topic, [now, self.curr_data]))
         self.message_update_after = now + timedelta(microseconds=self.message_delay_micros)
         #we currently aren't supporting interpolation for lower hz sensors     
 

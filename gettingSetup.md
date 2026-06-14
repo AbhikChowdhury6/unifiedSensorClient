@@ -120,7 +120,7 @@ sudo nano /usr/local/sbin/wifi-heal.sh
 set -euo pipefail
 
 IF=wlan0
-CONN="HomeWiFi"               # your saved connection profile name
+CONN="snet24"               # your saved connection profile name
 GATEWAY=$(ip route | awk '/^default/ {print $3; exit}')
 
 # 1) If radio is blocked, unblock

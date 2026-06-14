@@ -9,9 +9,7 @@ import zmq
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
-import logging
-from platformUtils.logUtils import worker_configurer, check_apply_level, set_process_title
-from config import zmq_control_endpoint
+from platformUtils.utils import configure_process, should_exit
 
 def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     module_name = os.path.splitext(os.path.basename(filepath))[0]
@@ -23,17 +21,10 @@ def load_class_and_instantiate(filepath, class_name, l, *args, **kwargs):
     instance = tcls(*args, **kwargs)
     return instance
 
-def video_controller(config):
-    set_process_title(config["short_name"])
-    worker_configurer(config["debug_lvl"])
-    l = logging.getLogger(config["short_name"])
-    l.info(config["short_name"] + " controller starting")
-
+def video_controller(config_name):
     ctx = zmq.Context()
-    sub = ctx.socket(zmq.SUB)
-    sub.connect(zmq_control_endpoint)
-    sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    l.info(" controller connected to control topic")
+    l, sub, config = configure_process(ctx, config_name)
+    l.info(config_name + " controller starting")
 
     fwc = config['file_writer_config']
 
@@ -74,12 +65,8 @@ def video_controller(config):
         try:
             parts = sub.recv_multipart(flags=zmq.NOBLOCK)
             topic, obj = ZmqCodec.decode(parts)
-            if check_apply_level(obj, config["short_name"]):
-                continue
-
             l.debug("video controller message: " + str(topic) + " " + str(obj))
-            if topic == "control" and (obj[0] == "exit_all" or (obj[0] == "exit" and obj[-1] == "video")):
-                l.info('video controller exiting')
+            if should_exit(topic, obj, config_name):
                 break
         except zmq.Again:
             # No message available
@@ -90,4 +77,8 @@ def video_controller(config):
         l.trace("sleeping for " + str(micros_to_delay) + " microseconds")
         time.sleep(micros_to_delay/1_000_000)
 
-    l.info(config["short_name"] + " controller exiting")
+    l.info(config_name + " controller exiting")
+
+if __name__ == "__main__":
+    config_name = sys.argv[1]
+    video_controller(config_name)

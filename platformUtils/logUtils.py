@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import zmq
 from platformUtils.zmq_codec import ZmqCodec
-from config import logging_process_config, zmq_control_endpoint, all_process_configs, zmq_logger_endpoint
+from config import zmq_logger_endpoint
 
 
 

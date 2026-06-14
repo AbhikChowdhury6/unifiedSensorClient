@@ -1,35 +1,20 @@
 import sys
 import os
-import time
 from datetime import datetime, timezone, timedelta
 import numpy as np
+import zmq
 
 repoPath = "/home/pi/Documents/"
 sys.path.append(repoPath + "unifiedSensorClient/")
 from platformUtils.zmq_codec import ZmqCodec
-from config import zmq_control_endpoint
-import zmq
-import logging
-from platformUtils.logUtils import worker_configurer, set_process_title
 from config import dt_to_fnString, fnString_to_dt, file_writer_process_info
 from writers.writer import Writer
 from writers.videoOutput import video_output
 import qoi
+from platformUtils.utils import configure_process, handle_args, should_exit
 
 def detector_timelapse_writer(config):
-    #set up logging
-    set_process_title(config["short_name"])
-    worker_configurer(config["debug_lvl"])
-    l = logging.getLogger(config["short_name"])
-    l.setLevel(config["debug_lvl"])
-    l.info(config["short_name"] + " writer starting")
-
-    #set up connections
-    ctx = zmq.Context()
-    sub = ctx.socket(zmq.SUB)
-    sub.connect(zmq_control_endpoint)
-    sub.setsockopt(zmq.SUBSCRIBE, b"control")
-    l.info(" writer connected to control topic")
+    l, sub, signal_handler = configure_process(config)
 
     for endpoint in config["detector_endpoints"]:
         sub.connect(endpoint)
@@ -129,8 +114,6 @@ def detector_timelapse_writer(config):
         return None
     
 
-
-    
     min_dt = datetime.min.replace(tzinfo=timezone.utc) + seconds_till_irrelvance
     #if there are left over files from the last run, write them to the full speed video
     load(min_dt, True)
@@ -146,14 +129,11 @@ def detector_timelapse_writer(config):
     fs_expires_dt = datetime.min.replace(tzinfo=timezone.utc)
     timelapse_write_dt = datetime.min.replace(tzinfo=timezone.utc)
     next_timelapse_frame_update = datetime.min.replace(tzinfo=timezone.utc)
-    while True:
+    while not signal_handler.stop:
         parts = sub.recv_multipart()
         topic, msg = ZmqCodec.decode(parts)
-        if topic == "control":
-            if msg[0] == "exit_all" or (msg[0] == "exit" and msg[-1] == config["short_name"]):
-                l.info(" dbtl exiting")
-                break
-            continue
+        if should_exit(topic, msg, config["name"]):
+            break
         
         #check if we got a positive detection
         if topic in config["detector_topics"]:
@@ -265,3 +245,7 @@ def detector_timelapse_writer(config):
     timelapse_writer.close()
     full_speed_writer.close()
 
+
+if __name__ == "__main__":
+    config = handle_args(sys.argv)
+    detector_timelapse_writer(config)

@@ -1,0 +1,11 @@
+[Unit]
+Description=detector timelapse writer instance: %i
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/python /path/to/repo/detector_timelapse_writer.py detector_timelapse_writer@%i.service
+
+#we'll figure out custom targets in a bit
+[Install]
+WantedBy=multi-user.target
